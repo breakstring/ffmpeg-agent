@@ -1,0 +1,79 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "artifact_id": {
+      "title": "Artifact Id",
+      "type": "string"
+    },
+    "job_id": {
+      "title": "Job Id",
+      "type": "string"
+    },
+    "kind": {
+      "enum": [
+        "file",
+        "collection"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "state": {
+      "enum": [
+        "ready",
+        "retiring"
+      ],
+      "title": "State",
+      "type": "string"
+    },
+    "media": {
+      "additionalProperties": true,
+      "title": "Media",
+      "type": "object"
+    },
+    "size_bytes": {
+      "title": "Size Bytes",
+      "type": "integer"
+    },
+    "sha256": {
+      "title": "Sha256",
+      "type": "string"
+    },
+    "retain_until": {
+      "title": "Retain Until",
+      "type": "string"
+    },
+    "published_at": {
+      "title": "Published At",
+      "type": "string"
+    },
+    "member_count": {
+      "title": "Member Count",
+      "type": "integer"
+    },
+    "item_count": {
+      "title": "Item Count",
+      "type": "integer"
+    },
+    "access": {
+      "additionalProperties": true,
+      "title": "Access",
+      "type": "object"
+    }
+  },
+  "required": [
+    "artifact_id",
+    "job_id",
+    "kind",
+    "state",
+    "media",
+    "size_bytes",
+    "sha256",
+    "retain_until",
+    "published_at",
+    "member_count",
+    "item_count",
+    "access"
+  ],
+  "title": "ArtifactResult",
+  "type": "object"
+}

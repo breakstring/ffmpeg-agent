@@ -1,0 +1,21 @@
+{
+  "state_dir": "/var/lib/ffmpeg-agent/state",
+  "work_dir": "/var/lib/ffmpeg-agent/work",
+  "storages": {
+    "input": {"root": "/media/input", "role": "input", "callers": ["demo"]},
+    "output": {"root": "/media/output", "role": "output", "callers": ["demo"]}
+  },
+  "callers": {
+    "demo": {
+      "tokens": ["REPLACE_WITH_A_RANDOM_TOKEN_AT_LEAST_24_CHARACTERS"],
+      "default_output_storage": "output",
+      "source_rules": []
+    }
+  },
+  "worker_concurrency": 1,
+  "ffmpeg_threads": 2,
+  "ffmpeg_filter_threads": 1,
+  "public_base_url": "http://localhost:8080",
+  "runtime_mode": "container",
+  "engine_series": "7.1"
+}

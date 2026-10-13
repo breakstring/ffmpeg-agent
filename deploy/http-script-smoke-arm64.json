@@ -1,0 +1,60 @@
+{
+  "status": "passed",
+  "scope": "single_host_http_smoke",
+  "host_separation_basis": "not_applicable_single_host",
+  "recorded_at": "2026-10-13T05:09:34.329015+00:00",
+  "business_host": {
+    "platform": "Darwin",
+    "architecture": "arm64",
+    "machine_sha256": "f71c7f4520600205af1f734f5f8e4d170c80ea4a157e371a8a743d8b01b1e8f1",
+    "hostname_sha256": "00696bf34bb651a50bad2449b8313c3bc9897e50d85a0eb447fc25cf2546a8af"
+  },
+  "media_host": {
+    "platform": "Darwin",
+    "architecture": "arm64",
+    "machine_sha256": "f71c7f4520600205af1f734f5f8e4d170c80ea4a157e371a8a743d8b01b1e8f1",
+    "hostname_sha256": "00696bf34bb651a50bad2449b8313c3bc9897e50d85a0eb447fc25cf2546a8af",
+    "recorded_at": "2026-10-13T05:09:30.670704+00:00",
+    "docker_daemon_sha256": "e2d22ada006e3be508d6354ccae61c424732cf759689d25237cf4b9a43a55a72",
+    "image_id": "sha256:f5a01280a8b1771e80e8df8fbeb3d1136ed95f6dbb6469d187fbf0dd5e2c236b",
+    "image_architecture": "arm64"
+  },
+  "service_engine": {
+    "ffmpeg": "7.1.5-0+deb13u1",
+    "ffprobe": "7.1.5-0+deb13u1",
+    "pillow": "12.3.0",
+    "image_version": "v1-validation-20261013",
+    "contract_sha256": "b94692fe3307a17189b632882517b56a7686c1b47e1f8fbf5b3193bd39dc2573",
+    "presets_sha256": "3075a9273018409fe3a523a84d845bfa4683dc4a266be868b8904b4fc950dc13"
+  },
+  "job_id": "job_920343b27f6342b28a20b08514958252",
+  "artifact_id": "art_e01a366ce2774d468353909fc2279252",
+  "input_sha256": "c29e17b6fa7293a62dddc2e3a7201eaccc43964b8f0cb6699a5dec4785e26527",
+  "output_sha256": "1d8f1fbeeec5bacf52d96a887cbc976bd6d76c175115fa6304b8a5189a3451f4",
+  "output_size_bytes": 1830265,
+  "elapsed_seconds": 3.5671687913127244,
+  "output_media": {
+    "video_codec": "h264",
+    "width": 720,
+    "height": 720,
+    "pixel_format": "yuv420p",
+    "frame_rate": "30/1",
+    "audio_codec": "aac",
+    "audio_sample_rate": "48000",
+    "audio_channels": 2
+  },
+  "checks": [
+    "http_input_integrity",
+    "idempotency_replay",
+    "video_transcode",
+    "input_released",
+    "explicit_lease",
+    "head",
+    "single_range_if_range",
+    "full_download_integrity",
+    "ffprobe_output",
+    "lease_released",
+    "owned_artifact_released",
+    "source_preserved"
+  ]
+}

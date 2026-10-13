@@ -1,0 +1,50 @@
+name: ffmpeg-agent
+
+services:
+  media:
+    image: ffmpeg-agent:v1-local
+    build:
+      context: ..
+      args:
+        BUILD_REVISION: ${BUILD_REVISION:-local}
+    init: true
+    user: "10001:10001"
+    restart: unless-stopped
+    stop_grace_period: 60s
+    ports:
+      - "${MEDIA_BIND_ADDRESS:-127.0.0.1}:${MEDIA_PORT:-8080}:8080"
+    environment:
+      MEDIA_CONFIG_FILE: /run/secrets/media-config.json
+    secrets:
+      - source: media_config
+        target: media-config.json
+    volumes:
+      - state:/var/lib/ffmpeg-agent/state
+      - work:/var/lib/ffmpeg-agent/work
+      - shared_input:/media/input:ro
+      - shared_output:/media/output
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=64m,uid=10001,gid=10001,mode=0700
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    cpus: "2.0"
+    mem_limit: 2g
+    pids_limit: 128
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+secrets:
+  media_config:
+    file: ${MEDIA_CONFIG_PATH:-./local/media-config.json}
+
+volumes:
+  state:
+  work:
+  shared_input:
+  shared_output:

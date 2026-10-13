@@ -1,0 +1,25 @@
+# 业务侧示例：业务镜像由调用方提供，两个挂载位置故意与媒体服务不同。
+name: ffmpeg-agent-consumer
+services:
+  business:
+    image: ${BUSINESS_IMAGE:?设置实际业务镜像}
+    user: "10001:10001"
+    init: true
+    volumes:
+      - media_input:/app/media-to-process
+      - media_output:/app/media-results:ro
+    networks:
+      - media_shared
+    environment:
+      MEDIA_SERVICE_URL: http://media:8080
+volumes:
+  media_input:
+    external: true
+    name: ${MEDIA_INPUT_VOLUME:-ffmpeg-agent-shared-input}
+  media_output:
+    external: true
+    name: ${MEDIA_OUTPUT_VOLUME:-ffmpeg-agent-shared-output}
+networks:
+  media_shared:
+    external: true
+    name: ${MEDIA_SHARED_NETWORK:-ffmpeg-agent-shared-network}

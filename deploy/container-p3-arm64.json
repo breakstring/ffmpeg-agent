@@ -1,0 +1,16 @@
+{
+  "image": "sha256:f5a01280a8b1771e80e8df8fbeb3d1136ed95f6dbb6469d187fbf0dd5e2c236b",
+  "workers": 1,
+  "checks": [
+    "ready_and_authentication",
+    "concurrent_idempotency",
+    "conflict_409",
+    "real_probe",
+    "second_instance_rejected",
+    "hard_restart_preserves_published_checkpoint"
+  ],
+  "image_id": "sha256:f5a01280a8b1771e80e8df8fbeb3d1136ed95f6dbb6469d187fbf0dd5e2c236b",
+  "job_id": "job_ec0373009415450197cb081459693647",
+  "artifact_id": "art_5fb6d4a1e80e4ee49f05d6c828f24176",
+  "status": "passed"
+}

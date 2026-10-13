@@ -1,0 +1,18 @@
+# 与 compose.yaml 合并：共享卷和网络由部署方预建，状态和工作卷继续私有。
+services:
+  media:
+    networks:
+      - media_shared
+
+volumes:
+  shared_input:
+    external: true
+    name: ${MEDIA_INPUT_VOLUME:-ffmpeg-agent-shared-input}
+  shared_output:
+    external: true
+    name: ${MEDIA_OUTPUT_VOLUME:-ffmpeg-agent-shared-output}
+
+networks:
+  media_shared:
+    external: true
+    name: ${MEDIA_SHARED_NETWORK:-ffmpeg-agent-shared-network}

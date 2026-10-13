@@ -1,0 +1,11 @@
+# 与 compose.yaml 合并，以业务镜像替换 BUSINESS_IMAGE；不单独运行本文件。
+services:
+  business:
+    image: ${BUSINESS_IMAGE:?设置实际业务镜像}
+    user: "10001:10001"
+    init: true
+    volumes:
+      - shared_input:/app/media-to-process
+      - shared_output:/app/media-results:ro
+    environment:
+      MEDIA_SERVICE_URL: http://media:8080

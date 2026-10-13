@@ -1,0 +1,62 @@
+{
+  "date": "2026-10-13",
+  "image_id": "sha256:f5a01280a8b1771e80e8df8fbeb3d1136ed95f6dbb6469d187fbf0dd5e2c236b",
+  "architecture": "arm64",
+  "host_pytest": {
+    "command": ".venv/bin/pytest -q",
+    "result": "238 passed in 20.43s",
+    "exit_code": 0
+  },
+  "ruff": {
+    "command": ".venv/bin/ruff check .",
+    "exit_code": 0
+  },
+  "pyright": {
+    "command": ".venv/bin/pyright",
+    "result": "0 errors, 0 warnings, 0 informations",
+    "exit_code": 0
+  },
+  "source_sha256": {
+    "src/media_service/__init__.py": "91447944015cec709e8aa7655f7e9d64e1e4508e7023a57fe3746911c0fc6fed",
+    "src/media_service/__main__.py": "f905cfaf617c389eb4b80076082c93757804cc04e07ab378694f5fb5be4e4a9f",
+    "src/media_service/api.py": "e029220aba68e3372feb8ef9834c18c6242b9d6d14300bb955178194308e86da",
+    "src/media_service/artifacts.py": "0b9fe9f29b39a5ab212c0420dfd788de5f87fd1e7fb331755456cadc324a520e",
+    "src/media_service/config.py": "5fa57b92b76fa92d8aad6bc67863534869b02baa67815edd4ba3d456b23457d4",
+    "src/media_service/content.py": "3869820e3c9a67f9af5afd3577b3c0c504370429587c2a17cff30eafc327cfd7",
+    "src/media_service/database.py": "768629a91372946e7b7d802854bf589d6022245403bc2c6b9847b5990013612f",
+    "src/media_service/downloader.py": "258ec7e8214b2aa5932f92a37fb30898a8b7f5dd6085cdee569a258ad8e089e8",
+    "src/media_service/errors.py": "e5513a87c1629c0b177e11b3131566a46602aca5ead06ad031cf9b82b940f8fb",
+    "src/media_service/executor.py": "3a01a664a1032828baf01742872a8dd09e2371d0b9e6e558f73cec99cb3a4430",
+    "src/media_service/files.py": "3b77ad28aa1a21ad9122024308ce4192597e33782f86e3bf741d60f0f6fdd578",
+    "src/media_service/image_worker.py": "79ebb91272527cc8c283918961cc3cd7c333a0b29e346a90ed27ef5bd86b13cd",
+    "src/media_service/media.py": "4957fcd54910fe737bc8199141c137477d6214379cd4e6da89aa76696bcd5bcb",
+    "src/media_service/models.py": "cc0487b2c1fbb6fb0d05b04c7358a204cf44c079cd5deaeebbf2a3c232f23798",
+    "src/media_service/products.py": "f343ad904dcb23d86ab8c6e71d442882a2a6ccc769f8c60070867059654d60d2",
+    "src/media_service/publishing.py": "515d447b8881795ffa1e07b65a14e5588fea4cd6c57a6ad19920956554eb131f",
+    "src/media_service/runtime.py": "ccdebdf67908075afc1ea790a0bc301fff859f3b55989aa865c8294f20417c76",
+    "src/media_service/scheduler.py": "8317a36efccf40f8a88608d8014ac6d8f6693d6029de016ae566a4892a76b52e",
+    "src/media_service/service.py": "138fc2813b4a893dc9bf9e7144cb2cf0626ae6271772e1b85fb455c412b78c20",
+    "src/media_service/state.py": "8d47fcde495b7c7953c8d570c2bedf7daa0d97ecfc87899f075db200f53e4aaa",
+    "src/media_service/telemetry.py": "cbcc02b5c8b0238d43594679c52d3a99da399353ca6546a97806049eeaa13f72"
+  },
+  "remaining": [
+    "two physical hosts HTTP acceptance"
+  ],
+  "container_pytest": {
+    "result": "238 passed in 33.39s",
+    "report": "deploy/tests-arm64.json",
+    "exit_code": 0
+  },
+  "container_faults": {
+    "cases_passed": 8,
+    "whole_container_kills": 10,
+    "report": "docs/verification/container-faults-arm64.json",
+    "exit_code": 0
+  },
+  "deployment_reports": [
+    "deploy/container-p3-arm64.json",
+    "deploy/deployments-arm64.json",
+    "deploy/http-script-smoke-arm64.json"
+  ],
+  "verification_resource_cleanup": "no labeled test containers or volumes remain"
+}

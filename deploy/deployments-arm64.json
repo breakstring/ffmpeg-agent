@@ -1,0 +1,38 @@
+[
+  {
+    "deployment": "same-compose",
+    "image": "sha256:f5a01280a8b1771e80e8df8fbeb3d1136ed95f6dbb6469d187fbf0dd5e2c236b",
+    "image_id": "sha256:f5a01280a8b1771e80e8df8fbeb3d1136ed95f6dbb6469d187fbf0dd5e2c236b",
+    "status": "passed",
+    "job_id": "job_ec46f95835904199984682f86ede8e6e",
+    "artifact_id": "art_1e6b22322adb43c6b3cb53df47725d6d",
+    "checks": [
+      "atomic_input_handoff",
+      "real_probe",
+      "distinct_mount_paths",
+      "lease_protected_shared_read",
+      "output_readonly",
+      "source_preserved",
+      "actual_shared_volume_identity",
+      "private_state_and_work"
+    ]
+  },
+  {
+    "deployment": "cross-compose",
+    "image": "sha256:f5a01280a8b1771e80e8df8fbeb3d1136ed95f6dbb6469d187fbf0dd5e2c236b",
+    "image_id": "sha256:f5a01280a8b1771e80e8df8fbeb3d1136ed95f6dbb6469d187fbf0dd5e2c236b",
+    "status": "passed",
+    "job_id": "job_bdc8314c9a6344e29d4054647705c651",
+    "artifact_id": "art_216b97e2f593413aae5eb8e922399ed1",
+    "checks": [
+      "atomic_input_handoff",
+      "real_probe",
+      "distinct_mount_paths",
+      "lease_protected_shared_read",
+      "output_readonly",
+      "source_preserved",
+      "actual_shared_volume_identity",
+      "private_state_and_work"
+    ]
+  }
+]
