@@ -4,7 +4,14 @@ from types import SimpleNamespace
 
 from media_service.api import create_app
 from media_service.config import Settings
-from media_service.models import ArtifactResult, ErrorEnvelope, JobCreate, JobResult, MembersResult
+from media_service.models import (
+    ArtifactResult,
+    ErrorEnvelope,
+    FileResult,
+    JobCreate,
+    JobResult,
+    MembersResult,
+)
 
 
 def main():
@@ -18,7 +25,7 @@ def main():
     root.mkdir(exist_ok=True, parents=True)
     values = {"v1-openapi": app.openapi()}
     values.update({model.__name__: model.model_json_schema() for model in
-                   (JobCreate, JobResult, ArtifactResult, MembersResult, ErrorEnvelope)})
+                   (JobCreate, JobResult, ArtifactResult, MembersResult, FileResult, ErrorEnvelope)})
     for name, value in values.items():
         (root / f"{name}.json").write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n")
     print(f"exported {len(values)} contracts")

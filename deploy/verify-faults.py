@@ -39,7 +39,7 @@ class Harness:
     def __enter__(self):
         config_path = Path(self.temp.name) / "config.json"
         config = json.loads((ROOT / "deploy/media-config.example.json").read_text())
-        config["callers"]["demo"]["tokens"] = [self.token]
+        config["service_token"] = self.token
         config["max_attempts"] = 1 if self.mode in {"staged", "renamed", "committed"} else 2
         config_path.write_text(json.dumps(config))
         config_path.chmod(0o644)

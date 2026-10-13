@@ -42,7 +42,7 @@ class SourceRule(BaseModel):
 
 class Caller(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    tokens: list[SecretStr] = Field(min_length=1, max_length=2)
+    tokens: list[SecretStr] = Field(default_factory=list, max_length=2)
     default_output_storage: str
     max_queued_jobs: int = Field(default=16, ge=1, le=1024)
     max_running_jobs: int = Field(default=4, ge=1, le=4)
@@ -57,6 +57,13 @@ class Settings(BaseSettings):
     work_dir: Path = Path("/var/lib/ffmpeg-agent/work")
     storages: dict[str, Storage]
     callers: dict[str, Caller]
+    service_token: SecretStr | None = None
+    service_caller: str | None = None
+    upload_retention_seconds: int = Field(default=86400, ge=1, le=604800)
+    max_upload_bytes: int = Field(default=4 * 1024**3, gt=0)
+    upload_timeout_seconds: float = Field(default=300, gt=0)
+    upload_idle_seconds: float = Field(default=30, gt=0)
+    max_uploads: int = Field(default=2, ge=1, le=4)
     worker_concurrency: int = Field(default=1, ge=1, le=4)
     ffmpeg_threads: int = Field(default=2, ge=1, le=16)
     ffmpeg_filter_threads: int = Field(default=1, ge=1, le=4)
@@ -95,6 +102,15 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def consistent(self):
+        if self.service_caller is None and len(self.callers) == 1:
+            self.service_caller = next(iter(self.callers))
+        if "service_token" in self.model_fields_set:
+            if self.service_caller not in self.callers:
+                raise ValueError("single-token mode requires a configured service caller")
+            if self.service_token is not None:
+                value = self.service_token.get_secret_value()
+                if len(value) < 24 or any(ord(c) < 33 or ord(c) > 126 for c in value):
+                    raise ValueError("service token must be printable ASCII with at least 24 characters")
         roots = [self.state_dir, self.work_dir] + [s.root for s in self.storages.values()]
         for root in roots:
             if not root.is_absolute():
@@ -106,6 +122,8 @@ class Settings(BaseSettings):
                     raise ValueError("storage roots must not overlap")
         seen_tokens = set()
         for name, caller in self.callers.items():
+            if "service_token" not in self.model_fields_set and not caller.tokens:
+                raise ValueError("legacy authentication requires caller tokens")
             output = self.storages.get(caller.default_output_storage)
             if output is None or output.role != "output" or name not in output.callers:
                 raise ValueError("caller requires an authorized default output storage")
@@ -121,6 +139,10 @@ class Settings(BaseSettings):
                     )
                 seen_tokens.add(value)
         return self
+
+    @property
+    def uploads_dir(self) -> Path:
+        return self.work_dir / "_uploads"
 
     @classmethod
     def from_file(cls) -> Settings:
@@ -148,6 +170,11 @@ class Settings(BaseSettings):
                 "max_lease_total_seconds",
                 "idempotency_seconds",
                 "max_request_bytes",
+                "upload_retention_seconds",
+                "max_upload_bytes",
+                "upload_timeout_seconds",
+                "upload_idle_seconds",
+                "max_uploads",
             )
         } | {
             "max_inputs": 4,

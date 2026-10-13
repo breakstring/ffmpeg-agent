@@ -87,7 +87,10 @@ def owned_remove(name: str, owner: str, volume: bool = False) -> None:
     raw = docker(*kind, name, check=False)
     if not raw:
         return
-    info = json.loads(raw)[0]
+    entries = json.loads(raw)
+    if not entries:
+        return
+    info = entries[0]
     labels = info.get("Labels", {}) if volume else info["Config"].get("Labels", {})
     if (labels or {}).get(LABEL) != owner:
         raise RuntimeError("拒绝清理不属于本次验收的 Docker 资源")
@@ -115,7 +118,7 @@ def main() -> None:
     with tempfile.TemporaryDirectory(prefix="ffmpeg-agent-container-") as temp:
         config_path = Path(temp) / "config.json"
         config = json.loads((root / "deploy/media-config.example.json").read_text())
-        config["callers"]["demo"]["tokens"] = [token]
+        config["service_token"] = token
         config["worker_concurrency"] = args.workers
         config_path.write_text(json.dumps(config))
         config_path.chmod(0o644)

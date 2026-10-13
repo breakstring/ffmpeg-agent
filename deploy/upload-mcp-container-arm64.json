@@ -1,0 +1,80 @@
+{
+  "image_id": "sha256:9c66f952922fb6d0e126bfcab2e2f4591e041aef4abedbcee480b46b38ac8da4",
+  "created_at": "2026-10-13T06:45:56.335550+00:00",
+  "modes": [
+    {
+      "token_enabled": true,
+      "checks": [
+        "nonroot_readonly_2cpu_2gib_init_without_shared_input",
+        "authenticated_raw_http_upload",
+        "remote_mcp_handshake_and_tools",
+        "transcode_video",
+        "mcp_query_artifact",
+        "http_head_range_sha_download",
+        "real_tcp_multipart_upload_submit",
+        "multipart_http_query_probe_download",
+        "hard_kill_reclaims_registered_incomplete_upload",
+        "restart_reuses_completed_upload_via_remote_mcp",
+        "project_fixture_remains_unchanged",
+        "only_owned_resources_removed"
+      ],
+      "resource_owner_id": "03c2440a1ee644268432624277ae33a2",
+      "file_id": "file_369733d1c5f14f109f031475567cbd1e",
+      "job_id": "job_0fc3cdcfd51242aba30af5294b3d282d",
+      "artifact_id": "art_0fd39353efd246cd9931c6eca72b1b9b",
+      "artifact_sha256": "327a7d8acceb35a7c8d48ea20bae0243e01d787dbdd1be67bf3043f65afc58f5",
+      "media": {
+        "codec": "h264",
+        "width": 640,
+        "height": 360,
+        "duration_seconds": 1.045
+      },
+      "multipart_job_id": "job_03cec4e0fad5475199764fcdff189f46",
+      "multipart_artifact_id": "art_9a5eec1642de439c8f60f84cc6605182",
+      "multipart_artifact_sha256": "194d879612f150a0f5f0a7557adb12cb531077c2f4c36db8897cad9d29676ca4",
+      "kill": {
+        "signal": "SIGKILL",
+        "exit_code": 137,
+        "file_id": "file_6c681a7a41fc4f8fa76c702d35af809d",
+        "registered_partial_observed": true
+      },
+      "recovery_job_id": "job_7da530ded6e647459ae9472c1b1a1f84",
+      "cleanup": {
+        "containers_remaining": 0,
+        "volumes_remaining": 0
+      }
+    },
+    {
+      "token_enabled": false,
+      "checks": [
+        "nonroot_readonly_2cpu_2gib_init_without_shared_input",
+        "token_off_raw_http_upload",
+        "remote_mcp_handshake_and_tools",
+        "probe_media",
+        "mcp_query_artifact",
+        "http_head_range_sha_download",
+        "real_tcp_multipart_upload_submit",
+        "multipart_http_query_probe_download",
+        "project_fixture_remains_unchanged",
+        "only_owned_resources_removed"
+      ],
+      "resource_owner_id": "96b32f8c8f044f11931daf6f01df1e5e",
+      "file_id": "file_146d2e77039a40e182fbd72acdcc0d5e",
+      "job_id": "job_3c33bdd160c7476786d7954fd64d7eec",
+      "artifact_id": "art_ffe4d12a61324be393cb243fa7776714",
+      "artifact_sha256": "194d879612f150a0f5f0a7557adb12cb531077c2f4c36db8897cad9d29676ca4",
+      "multipart_job_id": "job_b971c14372f8425ca3e858577993d623",
+      "multipart_artifact_id": "art_e207f534c22f4d368d99a197ac1c844f",
+      "multipart_artifact_sha256": "194d879612f150a0f5f0a7557adb12cb531077c2f4c36db8897cad9d29676ca4",
+      "cleanup": {
+        "containers_remaining": 0,
+        "volumes_remaining": 0
+      }
+    }
+  ],
+  "fixture": {
+    "size_bytes": 62835,
+    "sha256": "16af66744b6aaafdd4c4eec194d518b224d26d0db88c7fc697f4066b67152340"
+  },
+  "status": "passed"
+}

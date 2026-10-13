@@ -262,6 +262,27 @@
       ],
       "title": "StepBinding",
       "type": "object"
+    },
+    "UploadedFile": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "uploaded_file",
+          "title": "Kind",
+          "type": "string"
+        },
+        "file_id": {
+          "pattern": "^file_[a-f0-9]{32}$",
+          "title": "File Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "file_id"
+      ],
+      "title": "UploadedFile",
+      "type": "object"
     }
   },
   "additionalProperties": false,
@@ -275,7 +296,8 @@
             "mapping": {
               "artifact": "#/$defs/ArtifactInput",
               "http_file": "#/$defs/HttpFile",
-              "shared_file": "#/$defs/SharedFile"
+              "shared_file": "#/$defs/SharedFile",
+              "uploaded_file": "#/$defs/UploadedFile"
             },
             "propertyName": "kind"
           },
@@ -288,6 +310,9 @@
             },
             {
               "$ref": "#/$defs/ArtifactInput"
+            },
+            {
+              "$ref": "#/$defs/UploadedFile"
             }
           ]
         }

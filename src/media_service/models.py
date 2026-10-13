@@ -73,7 +73,21 @@ class ArtifactInput(StrictModel):
     member_key: str | None = Field(default=None, pattern=r"^[A-Za-z0-9_.-]{1,128}$")
 
 
-Input = Annotated[SharedFile | HttpFile | ArtifactInput, Field(discriminator="kind")]
+class UploadedFile(StrictModel):
+    kind: Literal["uploaded_file"]
+    file_id: str = Field(pattern=r"^file_[a-f0-9]{32}$")
+
+
+Input = Annotated[SharedFile | HttpFile | ArtifactInput | UploadedFile, Field(discriminator="kind")]
+
+
+class FileResult(StrictModel):
+    file_id: str
+    state: Literal["uploading", "ready", "retiring", "deleting", "deleted"]
+    size_bytes: int
+    sha256: str | None
+    created_at: str
+    retain_until: str | None
 
 
 class SourceBinding(StrictModel):

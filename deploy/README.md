@@ -24,6 +24,16 @@ curl --fail http://127.0.0.1:8080/health/ready
 
 默认 1 个 Worker、2 CPU、2 GiB 内存、128 PID、64 MiB `/tmp`、60 秒容器停止宽限期。配置中的 `max_work_bytes`、存储 `quota_bytes` 和磁盘余量控制持久工作/输出区域；Compose 的内存限制不构成磁盘配额。提高 Worker 数量之前先完成目标宿主机实测。构建参数 `BUILD_REVISION` 记录交付版本，不修改冻结操作或预设含义。
 
+## 上传与远程 MCP
+
+新生成配置使用一个 `service_token`，HTTP、上传、产物下载与 `/mcp` 共用 Bearer 校验。显式设为 `null` 开放服务；已有配置缺少这个字段时继续使用原 `callers.tokens`，升级不会意外关闭认证。配置内保留的 `service_caller` 仅指定现有任务和存储所用的服务空间，不增加用户系统。
+
+独立上传使用 `POST /v1/files`（原始二进制、`application/octet-stream`）；请求内上传使用 `POST /v1/jobs/upload`（multipart，`job` JSON 在先）。托管输入放在私有 work 卷的 `_uploads`，不额外要求业务共享卷，也不写只读输入卷。默认总上传预算 4 GiB、同时接收 2 个、总时限 300 秒、闲置 30 秒，且受整个 work 卷预算限制；实际配置和能力查询为准。上传完成和任务接受是不同检查点，失败请求中的完整文件按有限 TTL 保留供重试，半文件关闭后定向回收。
+
+远程 MCP 使用 `public_base_url` 加 `/mcp`，同进程提供 Streamable HTTP。入口按该公开地址检查 Host 和 Origin；反向代理应保留正确的公开 Host。客户端先用 HTTP 上传取得 `file_id`，再通过 MCP 处理和查询，最后带同一 Token 从 HTTP 下载产物。没有 stdio 桥接或远端客户端路径读取。调用示例见[README](../README.md#远程-mcp)。
+
+升级会在单实例锁内把 SQLite schema 1 事务迁移到 2，保留原有任务与产物，新增上传登记和引用表。新版本写入 schema 2 后，旧镜像不能直接读取该数据库；回退应恢复升级前一致性备份。备份现有 state/work/output 已包含托管上传文件。
+
 ## 同 Compose
 
 提供实际业务镜像并合并示例：
@@ -110,6 +120,15 @@ docker build --build-arg BUILD_REVISION=local-verification -t ffmpeg-agent:v1-lo
 ```
 
 完整测试脚本先解析不可变镜像 ID，在非 root、只读根文件系统的容器中运行；锁定的开发依赖只安装到临时 tmpfs。该测试 tmpfs 允许加载 Python 动态扩展，服务部署的 `/tmp` 配置不受影响。传入 amd64 镜像时应使用不同报告文件名，且需区分模拟和原生执行。
+
+上传/MCP 增量验收使用独立报告，保留原 P0～P7 证据。以实际精确镜像 ID 替换下例参数：
+
+```sh
+.venv/bin/python deploy/verify-upload-mcp.py --image <精确镜像ID> \
+  --report deploy/upload-mcp-container-arm64.json
+```
+
+脚本使用两组独立容器和私有卷，分别验证 Token 开/关、原始上传、真实 TCP multipart、远程 MCP、HEAD/Range/SHA 与 ffprobe，并在观察到登记半成品后强停整个测试容器验证恢复；不挂载业务共享输入，只清理本次所有权标签资源。当前结果见[增量进度](../docs/plans/v1-implementation-progress.md)。该单机远程协议验收不计为两台宿主机证据。
 
 2026-10-13 的原生 Linux arm64 实测如下。每组用 `Feline_Apocalypse.mp4` 执行 8 次 `video.transcode.v1` / `web_720p_v1`，限制为 2 CPU / 2 GiB / 128 PID。完整数据及镜像 ID 在 [`capacity-arm64.json`](capacity-arm64.json)。
 

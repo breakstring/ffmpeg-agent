@@ -47,7 +47,7 @@ def verify(image: str, mode: str) -> dict:
         private = Path(temp)
         config_path = private / "media-config.json"
         config = json.loads((root / "deploy/media-config.example.json").read_text())
-        config["callers"]["demo"]["tokens"] = [token]
+        config["service_token"] = token
         config_path.write_text(json.dumps(config))
         config_path.chmod(0o644)
         token_path = private / "caller-token"

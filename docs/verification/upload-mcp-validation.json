@@ -1,0 +1,65 @@
+{
+  "recorded_at": "2026-10-13T06:50:06.079741+00:00",
+  "status": "passed",
+  "image_id": "sha256:9c66f952922fb6d0e126bfcab2e2f4591e041aef4abedbcee480b46b38ac8da4",
+  "architecture": "arm64",
+  "local_python": "3.14.7",
+  "sdk_version": "2.1.0",
+  "multipart_version": "0.0.22",
+  "checks": {
+    "ruff": {
+      "command": "uv run ruff check .",
+      "exit_code": 0
+    },
+    "pyright": {
+      "command": "uv run pyright",
+      "exit_code": 0,
+      "errors": 0,
+      "warnings": 0
+    },
+    "local_pytest": {
+      "command": "uv run pytest -q",
+      "exit_code": 0,
+      "summary": "275 passed in 26.96s"
+    },
+    "image_source_matches_workspace": true
+  },
+  "source_sha256": {
+    "src/media_service/__init__.py": "91447944015cec709e8aa7655f7e9d64e1e4508e7023a57fe3746911c0fc6fed",
+    "src/media_service/__main__.py": "f905cfaf617c389eb4b80076082c93757804cc04e07ab378694f5fb5be4e4a9f",
+    "src/media_service/api.py": "6e29f3da3a01b6142ca597125f185f36f5990c2d836ab52c152062cf4c15ef6d",
+    "src/media_service/artifacts.py": "0b9fe9f29b39a5ab212c0420dfd788de5f87fd1e7fb331755456cadc324a520e",
+    "src/media_service/auth.py": "bc7dad2db7d5d835858fe0e198d64f97b786ad049bf964ac832c004e6bdd4306",
+    "src/media_service/config.py": "1b9ca9a3c1dc9671e07a09a0c6c61034d83f8b2bdff01846f033786e7862892c",
+    "src/media_service/content.py": "3869820e3c9a67f9af5afd3577b3c0c504370429587c2a17cff30eafc327cfd7",
+    "src/media_service/database.py": "155e1f2d9299296efcdddccf99838460a6dc34ed9aab1e16c5a8046dbeb09e85",
+    "src/media_service/downloader.py": "258ec7e8214b2aa5932f92a37fb30898a8b7f5dd6085cdee569a258ad8e089e8",
+    "src/media_service/errors.py": "f1a04f0dbee852d9a44e78b19d8144bbe252c37b2b24a648616ed6575edf2422",
+    "src/media_service/executor.py": "3a01a664a1032828baf01742872a8dd09e2371d0b9e6e558f73cec99cb3a4430",
+    "src/media_service/files.py": "3b77ad28aa1a21ad9122024308ce4192597e33782f86e3bf741d60f0f6fdd578",
+    "src/media_service/image_worker.py": "79ebb91272527cc8c283918961cc3cd7c333a0b29e346a90ed27ef5bd86b13cd",
+    "src/media_service/mcp.py": "4d6125212f72b9c6fa64b0696ccab056dacb973349f8c57d49d7b5dfa477f8be",
+    "src/media_service/media.py": "4957fcd54910fe737bc8199141c137477d6214379cd4e6da89aa76696bcd5bcb",
+    "src/media_service/models.py": "3a862736b3be74001bd6bcccc2a719f29ecc822e6a7e1f6e29ab8fdf89e2d6ec",
+    "src/media_service/products.py": "f343ad904dcb23d86ab8c6e71d442882a2a6ccc769f8c60070867059654d60d2",
+    "src/media_service/publishing.py": "515d447b8881795ffa1e07b65a14e5588fea4cd6c57a6ad19920956554eb131f",
+    "src/media_service/runtime.py": "ccdebdf67908075afc1ea790a0bc301fff859f3b55989aa865c8294f20417c76",
+    "src/media_service/scheduler.py": "8317a36efccf40f8a88608d8014ac6d8f6693d6029de016ae566a4892a76b52e",
+    "src/media_service/service.py": "1d78791efad90aa5c81c072be9e85c853b1e0c4cc10c9b467a32f7ce989aa4c9",
+    "src/media_service/state.py": "6bb63e3d865ae271811a458bb5429f0ff506c4b4e41585f32c684053c8984c02",
+    "src/media_service/telemetry.py": "cbcc02b5c8b0238d43594679c52d3a99da399353ca6546a97806049eeaa13f72",
+    "src/media_service/uploads.py": "8ab7d4394f60babfacbec064b021399a34f2af93835f94108893d67139aef7e7"
+  },
+  "fixture_provenance_sha256": "238595f065fe854db5820c7e6b14ff639108ff2c72082052ae4dd08d0cc75ce8",
+  "evidence": [
+    "deploy/upload-mcp-tests-arm64.json",
+    "deploy/upload-mcp-container-arm64.json",
+    "deploy/upload-mcp-faults-arm64.json",
+    "deploy/upload-mcp-deployments-arm64.json"
+  ],
+  "not_verified": [
+    "two_actual_hosts_http_mcp",
+    "native_amd64_upload_mcp_runtime_and_capacity",
+    "all_third_party_mcp_clients"
+  ]
+}

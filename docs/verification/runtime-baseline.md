@@ -23,10 +23,13 @@
 | FastAPI / Pydantic / pydantic-settings | 0.143.0 / 2.14.1 / 2.15.0 |
 | Uvicorn / aiosqlite / aiohttp | 0.54.0 / 0.22.1 / 3.14.5 |
 | Pillow | 12.3.0 |
+| MCP SDK / python-multipart（P8～P12 增量） | 2.1.0 / 0.0.22 |
 | Ruff / pyright | 0.17.0 / 1.1.414 |
 | pytest / pytest-asyncio / httpx | 9.1.1 / 1.4.0 / 0.28.1 |
 
 直接依赖在 `pyproject.toml` 使用精确版本；传递依赖、下载位置与摘要在 `uv.lock`。构建仅安装运行依赖。本机安装包含开发依赖。
+
+MCP/上传增量已在本机和原生 arm64 服务镜像验证，见[增量验证记录](upload-mcp-validation.json)。P0 的双架构探测只覆盖当时依赖；尚未把新 MCP 依赖作为 amd64 运行验收通过。
 
 基础镜像已从官方 registry 实时读取清单：
 

@@ -1,8 +1,8 @@
 # ffmpeg-agent
 
-独立的单容器媒体处理服务。业务提交声明式任务图，服务持久化任务、调度 FFmpeg/Pillow 处理并发布不可变产物；业务通过共享卷或 HTTP 消费结果。首版使用 Python 3.14、FastAPI、单 API 进程、SQLite/aiosqlite，逻辑 Worker 默认 1、允许 1～4。
+独立的单容器媒体处理服务。业务或远程 Agent 通过 HTTP / MCP 提交声明式任务，服务持久化任务、调度 FFmpeg/Pillow 处理并发布不可变产物；输入支持共享卷、HTTP 来源和直接上传，结果通过共享卷或 HTTP 消费。首版使用 Python 3.14、FastAPI、单 API 进程、SQLite/aiosqlite，逻辑 Worker 默认 1、允许 1～4。
 
-实现范围和验收状态以 [API 合同](docs/api/v1-contract.md) 与 [实施进度](docs/plans/v1-implementation-progress.md) 为准。当前真实容器和容量记录覆盖原生 Linux arm64；amd64 已完成模拟环境的依赖/引擎探测，原生 amd64 容量与两台实际宿主机交付仍未验证。
+实现范围和验收状态以 [API 合同](docs/api/v1-contract.md) 与 [实施进度](docs/plans/v1-implementation-progress.md) 为准。P8～P12 增量合同将两种 HTTP 上传、一个可选服务 Token 和远程 Streamable HTTP MCP 纳入首版必交付；本页接口用法不代替验收证据。既有真实容器和容量记录覆盖原生 Linux arm64；amd64 已完成模拟环境的依赖/引擎探测，原生 amd64 容量与两台实际宿主机交付仍未验证。
 
 ## 支持范围
 
@@ -15,7 +15,7 @@
 | `video.extract_frames.v1` | 按精确播放时间抽帧，保留逐项结果与实际时间 |
 | `image.resize.v1` | 静态 JPEG / PNG / WebP 的方向、色彩、缩放与格式转换 |
 
-任务最多 4 个输入、16 个步骤、16 个声明输出；步骤顺序不必为拓扑顺序。输入可以是 `shared_file`、受控来源的 `http_file` 或已有 `artifact`。参数、端口和版本严格校验，不接受任意 FFmpeg 命令或未知字段。运行中的准确能力与限制由 `GET /v1/capabilities` 返回。
+任务最多 4 个输入、16 个步骤、16 个声明输出；步骤顺序不必为拓扑顺序。输入可以是 `shared_file`、受控来源的 `http_file`、已上传的 `uploaded_file` 或已有 `artifact`。参数、端口和版本严格校验，不接受任意 FFmpeg 命令或未知字段。运行中的准确能力与限制由 `GET /v1/capabilities` 返回。共享卷、HTTP 上传和下载可以并用。
 
 ## 启动
 
@@ -29,13 +29,13 @@ docker compose -f deploy/compose.yaml up -d media
 curl --fail http://127.0.0.1:8080/health/ready
 ```
 
-配置生成到 Git 忽略的 `deploy/local/media-config.json`，token 不输出到终端。目录必须保持 `0700`；配置作为只读 secret 挂载。请在私有文件中编辑调用方、授权存储、HTTP 来源规则和 `public_base_url`，不要把凭据放入 shell 命令参数、日志或提交。默认 HTTP 来源规则为空，默认禁止外部下载。
+配置生成到 Git 忽略的 `deploy/local/media-config.json`，Token 不输出到终端。目录必须保持 `0700`；配置作为只读 secret 挂载。简单模式使用一个 `service_token`：显式配置 Token 时统一校验 Bearer，配置 `null` 时开放访问，内部使用固定 `service_caller` 作为服务空间，仅配置一个调用方时自动选定；省略字段兼容原 `callers.tokens` 认证。请在私有文件中编辑存储、HTTP 来源规则和 `public_base_url`，不要把凭据放入 shell 命令参数、日志或提交。默认 HTTP 来源规则为空，默认禁止外部下载；直接上传不依赖外部来源规则。
 
 服务以 UID/GID `10001:10001` 运行，根文件系统只读，`state`、`work`、输入和输出各自独立。默认资源为 2 CPU、2 GiB、128 PID，端口仅映射到宿主机 `127.0.0.1:8080`。跨机调用通过受控 HTTPS 入口，配置可达的 `public_base_url`。同 Compose、跨 Compose 外部卷与网络配置见 [部署说明](deploy/README.md)。
 
 ## 提交和查询任务
 
-所有 `/v1` 请求携带 `Authorization: Bearer <token>`；创建任务还必须携带调用方内稳定的 `Idempotency-Key`。以下请求假设业务已把 `sample.mp4` 以“写临时文件、关闭、同文件系统重命名”的方式交到授权输入卷：
+配置 Token 时，所有 `/v1` 与 `/mcp` 请求（含上传、查询和下载）携带 Bearer 认证头；开放模式不需要该头。创建任务必须携带服务空间内稳定的 `Idempotency-Key`。以下请求假设业务已把 `sample.mp4` 以“写临时文件、关闭、同文件系统重命名”的方式交到授权输入卷：
 
 ```json
 {
@@ -63,12 +63,14 @@ import urllib.request
 from pathlib import Path
 
 config = json.loads(Path("deploy/local/media-config.json").read_text())
+token = config["service_token"]
+auth_headers = {"Authorization": "Bearer " + token} if token else {}
 request = urllib.request.Request(
     "http://127.0.0.1:8080/v1/jobs",
     data=Path("job.json").read_bytes(),
     headers={
         "Content-Type": "application/json",
-        "Authorization": "Bearer " + config["callers"]["demo"]["tokens"][0],
+        **auth_headers,
         "Idempotency-Key": "example-video-001",
     },
     method="POST",
@@ -106,6 +108,109 @@ HTTP 输入时，将完整示例中的 `inputs` 替换为下列对象；实际�
 
 共享输入必须保持不变，直到 `inputs_released=true`。`POST /v1/jobs/{job_id}/cancel` 只接受取消意图；业务等待终态和输入释放，不能把返回 `202` 当作 FFmpeg 已停止。HTTP 来源须满足调用方的精确协议、hostname、端口和网络规则，建议附带预期大小与 SHA-256；完整获取后服务使用固定副本。
 
+## 直接上传文件
+
+独立上传使用 `POST /v1/files`，内容类型为 `application/octet-stream`，必须有 `Idempotency-Key`。完整上传后首次返回 `201` 与 `file_id`、大小、SHA-256 和期限；有效保留期间同键同内容重放返回 `200`，不同内容返回 `409`。下面使用项目环境中的 httpx 流式读取文件；凭据只从私有配置读取，输出仅为文件 ID：
+
+```python
+import json
+from pathlib import Path
+
+import httpx
+
+config = json.loads(Path("deploy/local/media-config.json").read_text())
+token = config["service_token"]
+headers = {"Authorization": "Bearer " + token} if token else {}
+source = Path("sample.mp4")
+headers.update({
+    "Content-Type": "application/octet-stream",
+    "Idempotency-Key": "example-file-001",
+    "X-File-Size": str(source.stat().st_size),
+})
+with source.open("rb") as stream, httpx.Client(timeout=300) as client:
+    chunks = iter(lambda: stream.read(1024 * 1024), b"")
+    response = client.post(
+        "http://127.0.0.1:8080/v1/files", headers=headers, content=chunks
+    )
+    response.raise_for_status()
+    print(response.json()["file_id"])
+```
+
+取得文件 ID 后，把任务示例的 `inputs` 替换为下列对象即可复用输入；上传和任务提交使用各自的稳定幂等键：
+
+```json
+{
+  "source": {"kind": "uploaded_file", "file_id": "file_0123456789abcdef0123456789abcdef"}
+}
+```
+
+`GET /v1/files/{file_id}` 返回输入元数据；`POST /v1/files/{file_id}/release` 停止新的任务引用。默认上传 TTL 从完整上传时起算 24 小时，已接受任务在排队、执行和自动重试期间由内部引用保护文件。到期或 release 不打断这些任务，最后引用释放后才物理回收。文件结束保留后同键上传返回 `410 FILE_GONE`，物理删除后保留幂等墓碑默认至少 24 小时；服务私有 `work_dir/_uploads` 不向业务共享。
+
+也可通过 `POST /v1/jobs/upload` 在一个 multipart 请求中上传并提交：第一个 part 必须是名为 `job` 的任务 JSON，把其中待上传输入写成 `{"kind":"upload","part":"source"}`；`part` 必须与输入名相同，后续同名文件 part 与其绑定。下面沿用前例的 `headers` 认证，元数据放在文件之前：
+
+```python
+job = json.loads(Path("job.json").read_text())
+job["inputs"]["source"] = {"kind": "upload", "part": "source"}
+auth_headers = {"Authorization": "Bearer " + token} if token else {}
+auth_headers["Idempotency-Key"] = "example-job-upload-001"
+with Path("sample.mp4").open("rb") as stream, httpx.Client(timeout=300) as client:
+    response = client.post(
+        "http://127.0.0.1:8080/v1/jobs/upload",
+        headers=auth_headers,
+        files=[
+            ("job", (None, json.dumps(job), "application/json")),
+            ("source", ("sample.mp4", stream, "application/octet-stream")),
+        ],
+    )
+    response.raise_for_status()
+    print(response.json()["job_id"])
+```
+
+该请求等待上传完成和任务持久接受，首次返回 `202` 后异步处理；轮询和下载使用原有任务、产物接口。同键同任务与文件内容重放返回原任务，不因重传重复处理。文件先于 `job`、重复/缺失/未声明 part 和超限请求会被拒绝。
+
+## 远程 MCP
+
+MCP 客户端连接服务的 `/mcp` Streamable HTTP 入口。配置服务 Token 时，把同一 Bearer 认证头配置在 MCP 连接和文件 HTTP 请求上；Token 不作为工具参数，不放入下载 URL。只支持远程请求，不提供 stdio 或本地文件路径桥接。
+
+工具包括六个语义媒体操作，以及能力、任务图提交/查询/取消、托管输入元数据/release、产物元数据/成员/保留/release 和租约管理。媒体工具提交后短请求返回 `job_id`，通过查询取得结构化状态和 `artifact_id`；操作预设和任务生命周期与 HTTP 一致。实际工具名称与参数 schema 通过 `tools/list` 发现。
+
+六个媒体工具是 `probe_media`、`transcode_video`、`transcode_audio`、`extract_audio`、`extract_frames` 和 `resize_image`，均接受 `source`、`params`、`idempotency_key` 与可选 `output_policy`，声明输出名为 `result`。通用控制工具及字段见 [MCP 合同](docs/api/v1-contract.md#远程-mcp)。使用已锁定的官方 Python SDK，可在 HTTP 上传取得文件 ID 后提交探测任务：
+
+```python
+import asyncio
+import json
+from pathlib import Path
+
+import httpx2
+from mcp import ClientSession
+from mcp.client.streamable_http import streamable_http_client
+
+config = json.loads(Path("deploy/local/media-config.json").read_text())
+token = config["service_token"]
+headers = {"Authorization": "Bearer " + token} if token else {}
+endpoint = config["public_base_url"].rstrip("/") + "/mcp"
+
+async def submit(file_id: str) -> None:
+    async with httpx2.AsyncClient(headers=headers) as client:
+        async with streamable_http_client(endpoint, http_client=client) as (read, write):
+            async with ClientSession(read, write, read_timeout_seconds=30) as session:
+                await session.initialize()
+                result = await session.call_tool("probe_media", {
+                    "source": {"kind": "uploaded_file", "file_id": file_id},
+                    "params": {},
+                    "idempotency_key": "example-mcp-probe-001",
+                })
+                if result.is_error:
+                    raise RuntimeError(result.structured_content["error"]["code"])
+                print(result.structured_content["job_id"])
+
+asyncio.run(submit("file_0123456789abcdef0123456789abcdef"))
+```
+
+将示例 ID 替换成真实上传的 `file_id`。随后调用 `get_job` 轮询；终态输出中的 `result.artifact_id` 可交给 `get_artifact` 查询 HTTP 下载信息。`cancel_job` 返回取消请求后的状态，仍须等待 `inputs_released=true` 确认实际输入使用结束。
+
+远程调用闭环为：`HTTP 上传取得 file_id → MCP 提交与查询 → artifact_id → HTTP 下载`。文件字节继续走 HTTP，工具参数不承载 base64 大文件；容器也不能读取 MCP 客户端电脑上的路径。已有 HTTP 来源、配置的共享输入和产物引用仍可使用。
+
 ## 读取和保留产物
 
 | 请求 | 行为 |
@@ -134,7 +239,7 @@ uv run pyright
 uv run pytest
 ```
 
-机器可读合同为 [OpenAPI](docs/api/v1-openapi.json)、[创建任务](docs/api/JobCreate.json)、[任务结果](docs/api/JobResult.json)、[产物元数据](docs/api/ArtifactResult.json)、[成员分页](docs/api/MembersResult.json) 和 [统一错误](docs/api/ErrorEnvelope.json)。从当前实现重新导出：
+机器可读合同为 [OpenAPI](docs/api/v1-openapi.json)、[创建任务](docs/api/JobCreate.json)、[任务结果](docs/api/JobResult.json)、[产物元数据](docs/api/ArtifactResult.json)、[托管输入](docs/api/FileResult.json)、[成员分页](docs/api/MembersResult.json) 和 [统一错误](docs/api/ErrorEnvelope.json)。从当前实现重新导出：
 
 ```sh
 PYTHONPATH=src uv run python scripts/export_contract.py

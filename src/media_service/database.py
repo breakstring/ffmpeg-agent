@@ -10,6 +10,23 @@ import aiosqlite
 
 T = TypeVar("T")
 
+UPLOAD_SCHEMA = """
+CREATE TABLE uploaded_files (
+ id TEXT PRIMARY KEY, caller TEXT NOT NULL, upload_key TEXT NOT NULL,
+ state TEXT NOT NULL CHECK(state IN ('uploading','ready','retiring','deleting','deleted')),
+ path TEXT NOT NULL UNIQUE, size_bytes INTEGER NOT NULL DEFAULT 0,
+ sha256 TEXT, created REAL NOT NULL, retain_until REAL, request_hash TEXT, deleted_at REAL,
+ UNIQUE(caller,upload_key)
+);
+CREATE INDEX uploaded_files_expiry ON uploaded_files(state,retain_until);
+CREATE TABLE file_refs (
+ file_id TEXT NOT NULL REFERENCES uploaded_files(id),
+ job_id TEXT NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+ PRIMARY KEY(file_id,job_id)
+);
+"""
+
+
 SCHEMA = """
 CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 CREATE TABLE jobs (
@@ -66,7 +83,7 @@ CREATE TABLE downloads (
  size_bytes INTEGER NOT NULL, sha256 TEXT NOT NULL,
  PRIMARY KEY(job_id, input_name)
 );
-"""
+""" + UPLOAD_SCHEMA
 
 
 async def wait_settled[T](task: asyncio.Task[T]) -> T:
@@ -134,9 +151,14 @@ class Database:
                 version = row[0] if row else -1
             if version == 0:
                 await self.connection.executescript(
-                    "BEGIN IMMEDIATE;\n" + SCHEMA + "\nPRAGMA user_version=1;\nCOMMIT;"
+                    "BEGIN IMMEDIATE;\n" + SCHEMA + "\nPRAGMA user_version=2;\nCOMMIT;"
                 )
-            elif version != 1:
+            elif version == 1:
+                # 原有任务与产物表不变；新增托管输入及其任务引用。
+                await self.connection.executescript(
+                    "BEGIN IMMEDIATE;\n" + UPLOAD_SCHEMA + "\nPRAGMA user_version=2;\nCOMMIT;"
+                )
+            elif version != 2:
                 raise RuntimeError("unsupported state schema; explicit migration required")
             async with self.connection.execute("PRAGMA quick_check") as cursor:
                 row = await cursor.fetchone()

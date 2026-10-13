@@ -1,5 +1,6 @@
 import asyncio
-import hmac
+import hashlib
+import json
 import logging
 import sqlite3
 import time
@@ -10,11 +11,14 @@ from uuid import uuid4
 from fastapi import Depends, FastAPI, Query, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi.security import HTTPBearer
+from pydantic import ValidationError
 from starlette.datastructures import Headers, MutableHeaders
 from starlette.exceptions import HTTPException
+from starlette.routing import Route
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
+from media_service.auth import authorize
 from media_service.config import Settings
 from media_service.content import ArtifactResponse
 from media_service.database import wait_settled
@@ -22,6 +26,7 @@ from media_service.errors import ServiceError
 from media_service.models import (
     ArtifactResult,
     ErrorEnvelope,
+    FileResult,
     JobCreate,
     JobResult,
     LeaseRequest,
@@ -31,6 +36,7 @@ from media_service.models import (
     capabilities,
 )
 from media_service.telemetry import event
+from media_service.uploads import MultipartReader
 
 logger = logging.getLogger("media_service")
 
@@ -45,9 +51,9 @@ def error_response(error: ServiceError, request_id: str) -> JSONResponse:
 
 
 class RequestBoundary:
-    def __init__(self, app: ASGIApp, max_bytes: int):
+    def __init__(self, app: ASGIApp, config: Settings):
         self.app = app
-        self.max_bytes = max_bytes
+        self.config = config
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
@@ -65,7 +71,21 @@ class RequestBoundary:
                 MutableHeaders(scope=message)["X-Request-ID"] = request_id
             await send(message)
 
-        lengths = Headers(scope=scope).getlist("content-length")
+        headers = Headers(scope=scope)
+        path = scope["path"]
+        if path.startswith("/v1/") or path in {"/mcp", "/mcp/"}:
+            try:
+                scope["state"]["caller"] = authorize(self.config, headers)
+            except ServiceError as exc:
+                await error_response(exc, request_id)(scope, receive, send_with_id)
+                return
+        streaming = scope["method"] == "POST" and path in {"/v1/files", "/v1/jobs/upload"}
+        max_bytes = self.config.max_request_bytes
+        if streaming:
+            max_bytes = self.config.max_input_bytes if path == "/v1/files" else (
+                4 * self.config.max_input_bytes + self.config.max_request_bytes + 65536
+            )
+        lengths = headers.getlist("content-length")
         if lengths:
             if len(lengths) != 1 or not lengths[0].isascii() or not lengths[0].isdigit():
                 await error_response(ServiceError("INVALID_REQUEST", 400), request_id)(
@@ -73,11 +93,36 @@ class RequestBoundary:
                 )
                 return
             length = lengths[0].lstrip("0") or "0"
-            if len(length) > len(str(self.max_bytes)) or int(length) > self.max_bytes:
+            if len(length) > len(str(max_bytes)) or int(length) > max_bytes:
                 await error_response(ServiceError("REQUEST_TOO_LARGE", 413), request_id)(
                     scope, receive, send_with_id
                 )
                 return
+
+        if streaming:
+            received = 0
+
+            async def bounded_receive() -> Message:
+                nonlocal received
+                try:
+                    async with asyncio.timeout(self.config.upload_idle_seconds):
+                        message = await receive()
+                except TimeoutError:
+                    raise ServiceError("UPLOAD_TIMEOUT", 408, True) from None
+                if message["type"] == "http.request":
+                    received += len(message.get("body", b""))
+                    if received > max_bytes:
+                        raise ServiceError("REQUEST_TOO_LARGE", 413)
+                return message
+
+            try:
+                await self.app(scope, bounded_receive, send_with_id)
+            finally:
+                route = scope.get("route")
+                event("request_finished", request_id=request_id, method=scope["method"],
+                      route=getattr(route, "path", "unmatched"), status=status,
+                      duration_ms=round((time.monotonic() - started) * 1000, 2))
+            return
 
         body = bytearray()
         while True:
@@ -87,7 +132,7 @@ class RequestBoundary:
             if message["type"] != "http.request":
                 continue
             data = message.get("body", b"")
-            if len(body) + len(data) > self.max_bytes:
+            if len(body) + len(data) > max_bytes:
                 await error_response(ServiceError("REQUEST_TOO_LARGE", 413), request_id)(
                     scope, receive, send_with_id
                 )
@@ -121,12 +166,16 @@ def create_app(settings: Settings | None = None, service: Any = None) -> FastAPI
         settings = settings or Settings.from_file()
         service = Service(settings)
     config: Settings = settings or service.settings
+    from media_service.mcp import create_mcp
+
+    mcp_app, mcp_server = create_mcp(service, config)
 
     @asynccontextmanager
     async def lifespan(_: FastAPI):
         await service.start()
         try:
-            yield
+            async with mcp_server.session_manager.run():
+                yield
         finally:
             await wait_settled(asyncio.create_task(service.close()))
 
@@ -134,7 +183,7 @@ def create_app(settings: Settings | None = None, service: Any = None) -> FastAPI
                   responses={code: {"model": ErrorEnvelope} for code in
                              (400, 401, 403, 404, 409, 410, 413, 416, 422, 429, 503)})
     app.state.service = service
-    app.add_middleware(RequestBoundary, max_bytes=config.max_request_bytes)
+    app.add_middleware(RequestBoundary, config=config)
 
     def request_id(request: Request) -> str:
         return getattr(request.state, "request_id", uuid4().hex)
@@ -169,22 +218,33 @@ def create_app(settings: Settings | None = None, service: Any = None) -> FastAPI
 
     bearer = HTTPBearer(auto_error=False)
 
-    async def caller(request: Request, _: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)]) -> str:
-        authorizations = request.headers.getlist("authorization")
-        if len(authorizations) != 1:
-            raise ServiceError("UNAUTHORIZED", 401)
-        scheme, separator, value = authorizations[0].partition(" ")
-        if scheme.lower() != "bearer" or not separator or not value or not value.isascii():
-            raise ServiceError("UNAUTHORIZED", 401)
-        matched = None
-        supplied = value.encode("ascii")
-        for name, account in config.callers.items():
-            for token in account.tokens:
-                if hmac.compare_digest(supplied, token.get_secret_value().encode("utf-8")):
-                    matched = name
-        if matched is None:
-            raise ServiceError("UNAUTHORIZED", 401)
-        return matched
+    async def caller(request: Request, _: Annotated[Any, Depends(bearer)]) -> str:
+        return authorize(config, request.headers)
+
+    def idempotency_key(request: Request) -> str:
+        values = request.headers.getlist("idempotency-key")
+        if (len(values) != 1 or not 1 <= len(values[0]) <= 128
+                or any(ord(c) < 32 or ord(c) > 126 for c in values[0])):
+            raise ServiceError("INVALID_REQUEST", 400)
+        return values[0]
+
+    def expected_headers(request: Request) -> tuple[int | None, str | None]:
+        sizes = request.headers.getlist("x-file-size")
+        hashes = request.headers.getlist("x-file-sha256")
+        if len(sizes) > 1 or len(hashes) > 1:
+            raise ServiceError("INVALID_REQUEST", 400)
+        size = None
+        if sizes:
+            value = sizes[0]
+            if not value.isascii() or not value.isdigit() or len(value) > 20:
+                raise ServiceError("INVALID_REQUEST", 400)
+            size = int(value)
+            if size > config.max_input_bytes:
+                raise ServiceError("INPUT_TOO_LARGE", 413)
+        digest = hashes[0] if hashes else None
+        if digest is not None and (len(digest) != 64 or any(c not in "0123456789abcdef" for c in digest)):
+            raise ServiceError("INVALID_REQUEST", 400)
+        return size, digest
 
     @app.get("/health/live")
     async def live() -> dict:
@@ -216,17 +276,109 @@ def create_app(settings: Settings | None = None, service: Any = None) -> FastAPI
         response: Response,
         identity: str = Depends(caller),
     ) -> dict:
-        values = request.headers.getlist("idempotency-key")
-        if (
-            len(values) != 1
-            or not 1 <= len(values[0]) <= 128
-            or any(ord(char) < 32 or ord(char) > 126 for char in values[0])
-        ):
-            raise ServiceError("INVALID_REQUEST", 400)
+        key = idempotency_key(request)
         if not service.ready:
             raise ServiceError("STATE_UNAVAILABLE", 503, True)
-        job_id, created = await service.accept(identity, values[0], definition)
+        job_id, created = await service.accept(identity, key, definition)
         event("job_accepted", request_id=request_id(request), job_id=job_id, created=created)
+        response.status_code = 202 if created else 200
+        response.headers["Location"] = f"/v1/jobs/{job_id}"
+        return await service.state.job(identity, job_id)
+
+    @app.post("/v1/files", response_model=FileResult, status_code=201,
+              responses={200: {"model": FileResult}},
+              openapi_extra={"requestBody": {"required": True, "content": {
+                  "application/octet-stream": {"schema": {"type": "string", "format": "binary"}}
+              }}})
+    async def upload_file(request: Request, response: Response,
+                          identity: str = Depends(caller)) -> dict:
+        if not service.ready:
+            raise ServiceError("STATE_UNAVAILABLE", 503, True)
+        if request.headers.get("content-type", "").split(";", 1)[0].strip().lower() != "application/octet-stream":
+            raise ServiceError("INVALID_REQUEST", 400)
+        key = idempotency_key(request)
+        size, digest = expected_headers(request)
+        metadata, created = await service.uploads.receive_stream(
+            identity, key, request.stream(), expected_size=size, expected_sha256=digest
+        )
+        response.status_code = 201 if created else 200
+        response.headers["Location"] = f"/v1/files/{metadata['file_id']}"
+        return metadata
+
+    @app.get("/v1/files/{file_id}", response_model=FileResult)
+    async def uploaded_file_metadata(file_id: str, identity: str = Depends(caller)) -> dict:
+        return await service.uploads.metadata(identity, file_id)
+
+    @app.post("/v1/files/{file_id}/release", response_model=FileResult)
+    async def release_uploaded_file(file_id: str, identity: str = Depends(caller)) -> dict:
+        return await service.uploads.release(identity, file_id)
+
+    async def accept_multipart(request: Request, identity: str, key: str) -> tuple[str, bool]:
+        reader = MultipartReader(
+            request.stream(), request.headers.get("content-type", ""),
+            max_bytes=4 * config.max_input_bytes + config.max_request_bytes + 65536,
+            max_parts=5,
+        )
+        first = await reader.next_part()
+        if first is None or first.name != "job" or first.is_file:
+            raise ServiceError("INVALID_REQUEST", 400)
+        body = bytearray()
+        async for chunk in first.stream():
+            if len(body) + len(chunk) > config.max_request_bytes:
+                raise ServiceError("REQUEST_TOO_LARGE", 413)
+            body.extend(chunk)
+        try:
+            raw = json.loads(body)
+            if not isinstance(raw, dict) or not isinstance(raw.get("inputs"), dict):
+                raise ValueError
+            parts: set[str] = set()
+            for name, source in raw["inputs"].items():
+                if isinstance(source, dict) and source.get("kind") == "upload":
+                    if set(source) != {"kind", "part"} or source["part"] != name:
+                        raise ValueError
+                    parts.add(name)
+                    raw["inputs"][name] = {"kind": "uploaded_file", "file_id": "file_" + "0" * 32}
+            if not parts:
+                raise ValueError
+            JobCreate.model_validate(raw)
+        except (ValueError, TypeError, ValidationError):
+            raise ServiceError("INVALID_REQUEST", 422) from None
+        existing = await service.db.one(
+            "SELECT id FROM jobs WHERE caller=? AND idempotency_key=?", (identity, key)
+        )
+        seen: set[str] = set()
+        while (part := await reader.next_part()) is not None:
+            if not part.is_file or part.name not in parts or part.name in seen:
+                raise ServiceError("INVALID_REQUEST", 400)
+            upload_key = "job:" + hashlib.sha256(
+                json.dumps([key, part.name], separators=(",", ":")).encode()
+            ).hexdigest()
+            metadata, _ = await service.uploads.receive_stream(
+                identity, upload_key, part.stream(), allow_retired_replay=existing is not None
+            )
+            raw["inputs"][part.name]["file_id"] = metadata["file_id"]
+            seen.add(part.name)
+        if seen != parts:
+            raise ServiceError("INVALID_REQUEST", 400)
+        return await service.accept(identity, key, JobCreate.model_validate(raw))
+
+    @app.post("/v1/jobs/upload", response_model=JobResult,
+              responses={202: {"model": JobResult}},
+              openapi_extra={"requestBody": {"required": True, "content": {
+                  "multipart/form-data": {"schema": {"type": "object", "required": ["job"],
+                      "properties": {"job": {"type": "string", "description": "任务JSON；必须先于命名文件parts"}},
+                      "additionalProperties": {"type": "string", "format": "binary"}}
+              }}}})
+    async def upload_job(request: Request, response: Response,
+                         identity: str = Depends(caller)) -> dict:
+        if not service.ready:
+            raise ServiceError("STATE_UNAVAILABLE", 503, True)
+        key = idempotency_key(request)
+        try:
+            async with asyncio.timeout(config.upload_timeout_seconds):
+                job_id, created = await accept_multipart(request, identity, key)
+        except TimeoutError:
+            raise ServiceError("UPLOAD_TIMEOUT", 408, True) from None
         response.status_code = 202 if created else 200
         response.headers["Location"] = f"/v1/jobs/{job_id}"
         return await service.state.job(identity, job_id)
@@ -324,4 +476,5 @@ def create_app(settings: Settings | None = None, service: Any = None) -> FastAPI
             lease_id=lease_header(request),
         )
 
+    app.router.routes.append(Route("/mcp", endpoint=mcp_app, methods=["GET", "POST", "DELETE"]))
     return app

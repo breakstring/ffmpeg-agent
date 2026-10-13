@@ -1,0 +1,16 @@
+{
+  "status": "passed",
+  "image_id": "sha256:9c66f952922fb6d0e126bfcab2e2f4591e041aef4abedbcee480b46b38ac8da4",
+  "architecture": "arm64",
+  "recorded_at": "2026-10-13T06:39:54.627832+00:00",
+  "engine_series": "7.1",
+  "checks": [
+    "non_root",
+    "readonly_root",
+    "locked_test_dependencies",
+    "full_pytest_suite"
+  ],
+  "exit_code": 0,
+  "pytest_summary": "275 passed in 43.01s",
+  "elapsed_seconds": 50.362939124926925
+}

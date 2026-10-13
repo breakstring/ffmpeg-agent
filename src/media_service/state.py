@@ -7,7 +7,7 @@ from uuid import uuid4
 from media_service.config import Settings
 from media_service.database import Database, Transaction
 from media_service.errors import ServiceError
-from media_service.models import OPERATIONS, ArtifactInput, JobCreate, SharedFile
+from media_service.models import OPERATIONS, ArtifactInput, JobCreate, SharedFile, UploadedFile
 
 TERMINAL = {"succeeded", "partial", "failed", "canceled"}
 
@@ -82,7 +82,19 @@ class State:
             ):
                 raise ServiceError("QUOTA_EXCEEDED", 429, True)
             artifacts: set[str] = set()
+            uploaded_files: set[str] = set()
             for name, source in request.inputs.items():
+                if isinstance(source, UploadedFile):
+                    item = await tx.one(
+                        "SELECT * FROM uploaded_files WHERE id=? AND caller=?",
+                        (source.file_id, caller),
+                    )
+                    if item is None:
+                        raise ServiceError("NOT_FOUND", 404)
+                    if item["state"] != "ready" or item["retain_until"] <= now:
+                        raise ServiceError("FILE_GONE", 410)
+                    uploaded_files.add(source.file_id)
+                    continue
                 if not isinstance(source, ArtifactInput):
                     continue
                 artifact = await tx.one(
@@ -145,6 +157,10 @@ class State:
                 await tx.execute(
                     "INSERT INTO refs(id,artifact_id,job_id,kind,created) VALUES(?,?,?,'job',?)",
                     (uid("ref"), artifact_id, job_id, now),
+                )
+            for file_id in uploaded_files:
+                await tx.execute(
+                    "INSERT INTO file_refs(file_id,job_id) VALUES(?,?)", (file_id, job_id)
                 )
             return job_id, True
 
@@ -356,6 +372,7 @@ class State:
             (now, job_id),
         )
         await tx.execute("DELETE FROM refs WHERE job_id=?", (job_id,))
+        await tx.execute("DELETE FROM file_refs WHERE job_id=?", (job_id,))
 
     async def finish(self, job_id: str, attempt_id: str, status: str, error: dict | None = None):
         async def complete(tx: Transaction):

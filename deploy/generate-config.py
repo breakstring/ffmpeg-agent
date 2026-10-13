@@ -12,7 +12,9 @@ def main() -> None:
     args = parser.parse_args()
     example = Path(__file__).with_name("media-config.example.json")
     config = json.loads(example.read_text())
-    config["callers"]["demo"]["tokens"] = [secrets.token_urlsafe(48)]
+    config["service_token"] = secrets.token_urlsafe(48)
+    config["service_caller"] = "demo"
+    config["callers"]["demo"].pop("tokens", None)
     config["public_base_url"] = args.public_base_url.rstrip("/")
     args.output.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     if args.output.parent.stat().st_mode & 0o077:

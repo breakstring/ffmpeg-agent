@@ -134,7 +134,7 @@ def run(image: str, workers: int, jobs: int) -> dict:
     samples = []
     with tempfile.TemporaryDirectory(prefix="ffmpeg-benchmark-") as temp:
         config = json.loads((root / "deploy/media-config.example.json").read_text())
-        config["callers"]["demo"]["tokens"] = [token]
+        config["service_token"] = token
         config["worker_concurrency"] = workers
         config_path = Path(temp) / "config.json"
         config_path.write_text(json.dumps(config))

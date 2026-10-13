@@ -15,12 +15,13 @@ from media_service.errors import ServiceError
 from media_service.executor import Executor
 from media_service.files import file_job, safe_open, sha256_fd
 from media_service.media import MediaEngine
-from media_service.models import ArtifactInput, JobCreate, SharedFile, SourceBinding
+from media_service.models import ArtifactInput, JobCreate, SharedFile, SourceBinding, UploadedFile
 from media_service.publishing import Publisher
 from media_service.runtime import Runtime
 from media_service.scheduler import Scheduler
 from media_service.state import State
 from media_service.telemetry import event
+from media_service.uploads import Uploads
 
 logger = logging.getLogger("media_service")
 
@@ -36,6 +37,7 @@ class Service:
         self.publisher = Publisher(self.state)
         self.artifacts = Artifacts(self.state)
         self.downloader = Downloader(self.state)
+        self.uploads = Uploads(self.state)
         self.scheduler = Scheduler(self.state, self.execute)
         self.engine: dict = {}
         self.ready = False
@@ -56,9 +58,12 @@ class Service:
         try:
             self.engine = await self.media.inspect()
             await self.runtime.begin()
+            await self.uploads.initialize()
+            await self.uploads.recover()
             await self.publisher.reconcile(self.engine)
             await self.runtime.recover_jobs(self.engine)
             await self.artifacts.gc()
+            await self.uploads.gc()
             self.scheduler.start()
             self.maintenance = asyncio.create_task(self.maintain())
             self.ready = True
@@ -92,6 +97,7 @@ class Service:
             try:
                 await self.state.expire_queued()
                 await self.artifacts.gc()
+                await self.uploads.gc()
             except Exception:
                 logger.error('{"event":"gc_retry","code":"STATE_UNAVAILABLE"}')
 
@@ -211,6 +217,16 @@ class Service:
                         if storage is None or job["caller"] not in storage.callers:
                             raise ServiceError("FORBIDDEN")
                         fd = safe_open(storage.root, source.key, self.settings.max_input_bytes)
+                    elif isinstance(source, UploadedFile):
+                        item = await self.db.one(
+                            "SELECT f.path FROM uploaded_files f WHERE f.id=? "
+                            "AND f.state IN ('ready','retiring') AND EXISTS "
+                            "(SELECT 1 FROM file_refs r WHERE r.file_id=f.id AND r.job_id=?)",
+                            (source.file_id, job["id"]),
+                        )
+                        if item is None:
+                            raise ServiceError("FILE_GONE", 410)
+                        fd = safe_open(self.settings.uploads_dir, item["path"], self.settings.max_input_bytes)
                     elif isinstance(source, ArtifactInput):
                         path = await self.resolve_artifact(
                             job["id"], source.artifact_id, source.member_key
@@ -322,6 +338,7 @@ class Service:
     async def close(self):
         self.ready = False
         self.closing = True
+        await self.uploads.close()
         await self.scheduler.stop()
         await self.executor.stop_all()
         if self.maintenance:

@@ -26,6 +26,8 @@ MESSAGES = {
     "FORBIDDEN": "当前身份无权执行此操作",
     "NOT_FOUND": "资源不存在",
     "ARTIFACT_GONE": "产物已结束保留",
+    "FILE_GONE": "上传文件已结束保留",
+    "UPLOAD_TIMEOUT": "上传超过允许时限",
     "INVALID_REQUEST": "请求格式不符合接口约定",
     "UNSUPPORTED_OPERATION": "不支持该操作或参数",
     "INVALID_GRAPH": "步骤依赖或端口不符合约定",

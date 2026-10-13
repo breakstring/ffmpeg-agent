@@ -2,7 +2,7 @@
 
 日期：2026-10-13（Asia/Shanghai）。执行项目：cfKanban **KZ / ffmpeg-agent**，关联记录为 `.cfkanban-scope.json`。
 
-首版代码和当前环境可执行的验收已完成。**P7 的真实双宿主机验收按用户要求保留待办，后续具备环境后补验。** 同机容器和单机 HTTP 结果未计为跨宿主机通过。
+P0～P7 原范围及本轮 P8～P12 当前环境可执行的实现和验收已完成。**P7/P12 的真实双宿主机验收按用户要求保留待办，后续具备环境后补验。** 同机容器和单机 HTTP/MCP 结果未计为跨宿主机通过。
 
 ## 阶段状态
 
@@ -16,8 +16,44 @@
 | P5 生命周期 | CFK-773 | 完成 | 租约/引用/定向 GC、取消、检查点恢复及最终镜像故障矩阵通过 |
 | P6 HTTP 通路 | CFK-774 | 完成 | 27项来源、22项内容与2项真实 TCP 测试通过；容器 HTTP 转码消费通过 |
 | P7 集成交付 | CFK-775 | 完成代码与交付材料 | 本机与 arm64 容器全部通过；真实双宿主机验收保留待办，待环境补验 |
+| P8 合同与单 Token | CFK-781 | 完成 | Token/显式 null 开放/旧配置兼容；各入口统一校验，上传读 body 前鉴权 |
+| P9 托管上传 | CFK-782 | 完成 | 20 项管理/并发/取消/引用/回收测试；schema 1→2 迁移；生产上传强停恢复 |
+| P10 请求内上传 | CFK-783 | 完成 | 严格绑定、完整边界后接受、输入删除后幂等重放；两 Token 模式真实 TCP probe 下载 |
+| P11 远程 MCP | CFK-784 | 完成 | 19 工具；6 项 TCP 测试、2025 握手/2026 发现、协议错误脱敏；仅 Streamable HTTP |
+| P12 增量交付 | CFK-785 | 完成当前环境范围 | 本机/容器各 275 项、8 项故障矩阵、生产上传/MCP/下载、两 Compose 模式通过；双宿主机仍待 |
 
-## 交付与关键决定
+## P8～P12 增量证据
+
+本轮把直接 HTTP 上传、远程 MCP 和一个可选服务 Token 纳入首版必交付。参考项目的工具语义、明确参数和流式接收体验已吸收，继续复用原持久任务、不可变产物和引用回收；backlog 新增 CFK-781～CFK-785。MCP 不包含 stdio 桥接、客户端本地路径或大文件 base64 参数。
+
+- 独立上传返回 `file_id`；请求内 job-first multipart 上传返回异步任务 ID。共用私有 `_uploads`、幂等、配额、总/闲置超时与回收，上传不占媒体 Worker 槽。
+- 接受事务按当前时间验证文件资格并取得引用，覆盖排队和重试；实际进程/文件停止后释放。中断文件关闭后回收；完整但未接受的文件按有限 TTL 保留供重试；删除后幂等墓碑满配置窗口再清除。
+- 显式 `service_token` 为 Token 时统一 Bearer 校验，为 null 时开放，缺字段继续旧认证。schema 1→2 短事务迁移保留原记录；回退旧镜像须使用升级前一致性备份。
+- 官方 MCP SDK 2.1.0 同进程直接复用 Service，19 工具提供严格输入和结构化输出。未知协议方法/非法参数返回固定 -32601/-32602，不回显原输入；工具错误沿用脱敏语义目录。
+
+增量正式验收固定精确镜像：
+
+```text
+sha256:9c66f952922fb6d0e126bfcab2e2f4591e041aef4abedbcee480b46b38ac8da4
+```
+
+原生 Linux arm64、Python 3.14.8、FFmpeg/ffprobe 7.1.5；镜像内 24 份源码 SHA-256 已与工作区逐项核对一致。旧容量报告和 P0 双架构基线保留原镜像范围，不作为增量 amd64 或新容量证据。
+
+| 验证 | 实际结果 | 证据 |
+| --- | --- | --- |
+| `uv run ruff check .` / `uv run pyright` | 退出 0；0 errors / 0 warnings | [增量验证记录](../verification/upload-mcp-validation.json) |
+| `uv run pytest -q` | **275 passed in 26.96s**；本机 Python 3.14.7 / FFmpeg 9.0.1 | 同上 |
+| 精确镜像完整 pytest | **275 passed in 43.01s**；7.1 引擎、非 root、只读根 | [容器测试](../../deploy/upload-mcp-tests-arm64.json) |
+| 生产镜像 HTTP/MCP 闭环 | 两 Token 模式通过；转码/探测、HEAD/Range/SHA/ffprobe；两模式真实 TCP multipart probe | [闭环报告](../../deploy/upload-mcp-container-arm64.json) |
+| 上传强停恢复 | 观察登记 uploading 与实际 partial 后 KILL/退出 137；恢复删除半成品，原完整输入仍可复用 | 同上；测试入口仅在 `tests/container/upload_control.py` |
+| 既有故障矩阵复验 | **8/8 通过**：执行、发布、取消、热重启及孤儿锁 | [故障矩阵](../../deploy/upload-mcp-faults-arm64.json) |
+| 同/跨 Compose 复验 | 两组通过；新 Token 配置、共享输入保持、输出只读、租约保护 | [部署复验](../../deploy/upload-mcp-deployments-arm64.json) |
+
+闭环报告两组随机 owner 的容器/卷残留均为 0；按脚本名称前缀读回，包括调试尝试也无残留。私有配置、Token、原始异常和生成媒体未进入提交；机器合同已重新导出（含 FileResult）。
+
+剩余条件：实际双宿主机的上传/MCP/下载、增量原生 amd64 运行与容量未验证。客户端证据为官方 SDK 的真实 TCP 请求，不声称所有第三方客户端均兼容。CFK-785 保留未完成环境项。
+
+## P0～P7 既有交付与关键决定
 
 - 初始仓库只有三份基线文档。按其范围实现，保留单服务容器、单 API 进程、私有 SQLite/aiosqlite、默认1个逻辑 Worker（允许1～4）。无独立数据库、队列或分布式执行器。
 - 三类输入、六个版本化操作、有限 DAG、部分成功、不可变发布、取消、恢复、租约、HTTP 发送保护及短期清理均已实现。实际 schema 与预设见 [API 合同](../api/v1-contract.md) 和 [OpenAPI](../api/v1-openapi.json)。
@@ -29,7 +65,7 @@
 - 已创建并随实现更新项目 [AGENTS.md](../../AGENTS.md)。所有文档已去除旧组织/项目名称及来源绝对路径，保留文件名、摘要和技术合同。
 - Git已初始化为 `main`；按用户授权将当前实现、文档、测试与验收记录归档为本地首次提交，提交信息以 Git 记录为准。未 push、merge、tag 或生产部署。部署私有配置、临时数据和测试日志在忽略范围内。
 
-## 最终验证
+## P0～P7 既有验证
 
 最终服务镜像为 `ffmpeg-agent:v1-local`，不可变 ID：
 
@@ -61,7 +97,7 @@ sha256:f5a01280a8b1771e80e8df8fbeb3d1136ed95f6dbb6469d187fbf0dd5e2c236b
 
 ## 运行、调用与剩余条件
 
-运行与三种输入调用示例见[README](../../README.md)，同/跨 Compose、租约消费、配置、备份、排空升级及验证脚本见[部署说明](../../deploy/README.md)。配置生成器不打印 token，真实配置仅存私有目录；共享输入须保持到 `inputs_released=true`。
+运行与四种输入调用示例见[README](../../README.md)，同/跨 Compose、租约消费、配置、备份、排空升级及验证脚本见[部署说明](../../deploy/README.md)。配置生成器不打印 token，真实配置仅存私有目录；共享输入须保持到 `inputs_released=true`。
 
 真实双宿主机验收先保留待办，后续有**第二台实际宿主机**、两侧受控网络可达的服务/来源地址及专用测试凭据后，再执行 `deploy/verify-http-remote.py host` 和 `run`。详细步骤、私有配置模板、主机身份核对及结果校验已备齐；单机脚本自验不能将此项打勾。P7保持未完成。
 

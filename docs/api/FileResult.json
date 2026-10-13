@@ -1,0 +1,60 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "file_id": {
+      "title": "File Id",
+      "type": "string"
+    },
+    "state": {
+      "enum": [
+        "uploading",
+        "ready",
+        "retiring",
+        "deleting",
+        "deleted"
+      ],
+      "title": "State",
+      "type": "string"
+    },
+    "size_bytes": {
+      "title": "Size Bytes",
+      "type": "integer"
+    },
+    "sha256": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Sha256"
+    },
+    "created_at": {
+      "title": "Created At",
+      "type": "string"
+    },
+    "retain_until": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Retain Until"
+    }
+  },
+  "required": [
+    "file_id",
+    "state",
+    "size_bytes",
+    "sha256",
+    "created_at",
+    "retain_until"
+  ],
+  "title": "FileResult",
+  "type": "object"
+}
