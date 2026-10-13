@@ -1,5 +1,7 @@
 # 容器运行说明
 
+使用者入门：[English](../README.md) · [简体中文](../README.zh-CN.md)。根目录 `docker-compose.yaml` 复用本目录服务定义；下文保留共享卷、跨 Compose 与验收的进阶说明。
+
 运行基线及已验证范围见 [P0 基线](../docs/verification/runtime-baseline.md)。下面的 Compose 固定一个服务容器和一个 Python API 进程；`worker_concurrency` 是容器内部的逻辑任务槽数，不是 Uvicorn 进程数。
 
 ## 准备和运行
@@ -7,16 +9,17 @@
 在仓库根目录执行：
 
 ```sh
-uv sync --frozen
+cp .env.example .env
 python3 deploy/generate-config.py
-docker compose -f deploy/compose.yaml build media
-docker compose -f deploy/compose.yaml up -d media
-docker compose -f deploy/compose.yaml ps
+docker compose up -d --build
+docker compose ps
 curl --fail http://127.0.0.1:8080/health/live
 curl --fail http://127.0.0.1:8080/health/ready
 ```
 
 生成器拒绝覆盖已有文件，随机 token 只进入 `deploy/local/media-config.json`，不打印到终端。该目录必须为 `0700`；目录内文件 `0644` 便于绑定到容器后由 UID/GID `10001:10001` 读取，宿主机其他用户无法穿过私有目录。请保持配置目录权限，不把配置加入 Git、构建上下文或日志。可以直接编辑该文件设置调用方、存储和来源规则；不要通过命令行参数或环境变量传 token。
+
+已有 `.env` 和私有 JSON 时保留它们，跳过复制和生成。`.env.example` 仅配置 Compose 项目名、镜像、端口、配置文件位置和容器资源，根目录 `MEDIA_CONFIG_PATH` 相对仓库解析。单独使用旧 `-f deploy/compose.yaml` 时其相对配置路径仍按 deploy 目录解析，外部配置使用绝对路径。
 
 服务以非 root 运行，根文件系统只读；`state`、`work`、`shared_input` 和 `shared_output` 是四个独立卷。SQLite 只在 `state` 卷，业务容器不挂载 state/work。服务对共享输入只读，对共享输出可写；业务对输出只读。所有区域不能嵌套。外部 bind mount 需要预先满足 UID/GID 的读写权限，不能启动后自动递归修改既有业务目录所有权。
 
@@ -30,7 +33,7 @@ curl --fail http://127.0.0.1:8080/health/ready
 
 独立上传使用 `POST /v1/files`（原始二进制、`application/octet-stream`）；请求内上传使用 `POST /v1/jobs/upload`（multipart，`job` JSON 在先）。托管输入放在私有 work 卷的 `_uploads`，不额外要求业务共享卷，也不写只读输入卷。默认总上传预算 4 GiB、同时接收 2 个、总时限 300 秒、闲置 30 秒，且受整个 work 卷预算限制；实际配置和能力查询为准。上传完成和任务接受是不同检查点，失败请求中的完整文件按有限 TTL 保留供重试，半文件关闭后定向回收。
 
-远程 MCP 使用 `public_base_url` 加 `/mcp`，同进程提供 Streamable HTTP。入口按该公开地址检查 Host 和 Origin；反向代理应保留正确的公开 Host。客户端先用 HTTP 上传取得 `file_id`，再通过 MCP 处理和查询，最后带同一 Token 从 HTTP 下载产物。没有 stdio 桥接或远端客户端路径读取。调用示例见[README](../README.md#远程-mcp)。
+远程 MCP 使用 `public_base_url` 加 `/mcp`，同进程提供 Streamable HTTP。入口按该公开地址检查 Host 和 Origin；反向代理应保留正确的公开 Host。客户端先用 HTTP 上传取得 `file_id`，再通过 MCP 处理和查询，最后带同一 Token 从 HTTP 下载产物。没有 stdio 桥接或远端客户端路径读取。调用示例见[README](../README.zh-CN.md)。
 
 升级会在单实例锁内把 SQLite schema 1 事务迁移到 2，保留原有任务与产物，新增上传登记和引用表。新版本写入 schema 2 后，旧镜像不能直接读取该数据库；回退应恢复升级前一致性备份。备份现有 state/work/output 已包含托管上传文件。
 

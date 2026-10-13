@@ -1,0 +1,19 @@
+{
+  "recorded_at": "2026-10-13T07:14:57.740501+00:00",
+  "status": "passed",
+  "image_id": "sha256:9c66f952922fb6d0e126bfcab2e2f4591e041aef4abedbcee480b46b38ac8da4",
+  "checks": [
+    "root_compose_paths_ports_resources_and_health",
+    "readme_standard_library_upload_transcode_poll_lease_download",
+    "readme_idempotency_replay_same_input_and_job",
+    "readme_multipart_upload_and_async_video_task",
+    "readme_remote_mcp_arguments_and_download",
+    "project_fixture_unchanged",
+    "only_isolated_compose_project_removed"
+  ],
+  "cleanup": {
+    "containers_remaining": 0,
+    "volumes_remaining": 0,
+    "networks_remaining": 0
+  }
+}

@@ -2,7 +2,7 @@ name: ffmpeg-agent
 
 services:
   media:
-    image: ffmpeg-agent:v1-local
+    image: ${MEDIA_IMAGE:-ffmpeg-agent:v1-local}
     build:
       context: ..
       args:

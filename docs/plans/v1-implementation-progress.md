@@ -53,6 +53,14 @@ sha256:9c66f952922fb6d0e126bfcab2e2f4591e041aef4abedbcee480b46b38ac8da4
 
 剩余条件：实际双宿主机的上传/MCP/下载、增量原生 amd64 运行与容量未验证。客户端证据为官方 SDK 的真实 TCP 请求，不声称所有第三方客户端均兼容。CFK-785 保留未完成环境项。
 
+## 使用者交付入口补充
+
+2026-10-13 补充根目录 `docker-compose.yaml` 与 `.env.example`；根入口通过 extends 复用既有服务配置，提供镜像、端口、配置位置及资源设置，Token 仍保存在私有 JSON。旧 deploy 入口和共享卷组合继续可用。
+
+默认英文 `README.md` 与简体中文 `README.zh-CN.md` 顶部互链，面向使用者说明启动、上传、异步处理、远程 MCP、下载与保留/取消；两份代码相同。已有配置不覆盖，改端口须同步公开 URL。
+
+定向验证：根入口、`.env.example`、同 Compose/外部卷组合及旧入口解析通过；Ruff 退出 0，Pyright 0 错误/警告；Python/JSON 示例与本地链接通过。随机独立 Compose 项目使用上述精确镜像实际启动，原样运行 README 标准库上传/转码/租约下载、同键重放、multipart 上传及 MCP 参数示例；长度与 SHA 校验通过，fixture 未改变。只移除本次项目，容器/卷/网络残留均为 0。证据见[Compose 与 README 实跑](../verification/compose-readme-smoke.json)。本轮未修改服务 Python 源码，媒体运行基线沿用前述证据。
+
 ## P0～P7 既有交付与关键决定
 
 - 初始仓库只有三份基线文档。按其范围实现，保留单服务容器、单 API 进程、私有 SQLite/aiosqlite、默认1个逻辑 Worker（允许1～4）。无独立数据库、队列或分布式执行器。

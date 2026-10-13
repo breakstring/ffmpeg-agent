@@ -1,0 +1,23 @@
+name: ${COMPOSE_PROJECT_NAME:-ffmpeg-agent}
+
+services:
+  media:
+    extends:
+      file: ./deploy/compose.yaml
+      service: media
+    image: ${MEDIA_IMAGE:-ffmpeg-agent:v1-local}
+    build:
+      context: .
+    cpus: ${MEDIA_CPUS:-2.0}
+    mem_limit: ${MEDIA_MEMORY:-2g}
+    pids_limit: ${MEDIA_PIDS_LIMIT:-128}
+
+secrets:
+  media_config:
+    file: ${MEDIA_CONFIG_PATH:-./deploy/local/media-config.json}
+
+volumes:
+  state:
+  work:
+  shared_input:
+  shared_output:
