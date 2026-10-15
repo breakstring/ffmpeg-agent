@@ -172,7 +172,11 @@ Opus 本轮固定使用编码器支持的 48 kHz，允许 1/2/3/6/8 声道及 mo
 
 ## 能力发现、执行与兼容
 
-`capabilities` 同时给出六个操作的参数 schema、预设、软件编码器可用性、容器兼容组合、质量/采样率等取值边界和部署限额。`operations` 每项同时提供 `params_schema` 和 `default_params`；后者为省略参数时实际采用的规范化默认值，例如 JPEG quality 90，避免从 schema 的中间默认值推测最终设置。支持集合取“已实现适配 ∩ 运行时探测可用”，不能把 FFmpeg 列出的所有编码器直接当作可调用能力。
+MCP `tools/list` 的六个媒体工具描述直接说明通用默认、主要可选值和组合约束，`inputSchema` 内的 `params` 提供字段说明、枚举、单位、范围、示例及默认规则。HTTP OpenAPI 和能力接口复用同一参数模型；调用方可直接从工具描述和 schema 选择参数，无需先阅读 README。通用任务图的 `steps` schema 通过 `oneOf` 按 `operation` 关联对应的完整参数模型，适用于 HTTP 普通任务、multipart 内任务 JSON 与 MCP `submit_job`。
+
+schema 的 `default` 表示字段的普通默认，需结合预设、父对象及字段说明理解；依赖编码、格式、模式、容器或其他字段的默认分别使用 `x-default-by-codec`、`x-default-by-format`、`x-default-by-mode`、`x-default-by-container`、`x-default-by-value` 描述。视频 `audio` 的 `x-default-by-container` 给出各容器对应的完整规范化音频默认。条件默认不使用误导性的 `default: null`。这些是供调用方理解的默认规则，不要求客户端自动补齐；省略字段与显式 `null` 不可互换，仍以各字段说明和校验为准。只发送需要改变的字段，避免把另一编码或格式的默认值带入请求。
+
+`capabilities` 同时给出六个操作的说明、参数 schema、预设、软件编码器可用性、容器兼容组合、质量/采样率等取值边界和部署限额。`operations` 每项提供 `description`、`params_schema` 和 `default_params`；后者是整个 `params` 省略、未选择预设时的规范化默认值，例如 JPEG quality 90，不是可套用于所有参数组合的模板。schema 枚举描述已适配范围；实际支持集合取“已实现适配 ∩ 运行时探测可用”，选择可选编码器还须检查 `media_parameters`，不能把 FFmpeg 列出的所有编码器直接当作可调用能力。
 
 基础能力所需引擎缺失影响就绪；可选编码器缺失只使相应能力不可用，并明确拒绝选择该编码器。不得改用另一编码器、自动降低分辨率、忽略显式质量参数或减少抽帧数来伪造成功。软件编码器设置由结构化参数生成无 shell 的命令数组，继续使用安全 FD、单媒体进程槽、超时取消及有界输出。
 

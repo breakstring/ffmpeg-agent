@@ -4,6 +4,14 @@
 
 HTTP and MCP use the same `params`. You can omit it for every operation; the tables below list values and combinations to use when you need to customize the output. JSON strings are case-sensitive, so use the lowercase spellings shown here.
 
+## Choose parameters directly from the interface
+
+MCP `tools/list` includes available choices, default rules, units, ranges, compatibility constraints, and examples in the six media tools' descriptions and `inputSchema`, so an AI can choose parameters without reading the README. HTTP [OpenAPI](../api/v1-openapi.json) uses the same parameter models. Steps in regular jobs, the `job` JSON in upload requests, and MCP `submit_job` expose the complete `params` schema for each `operation`.
+
+A schema `default` describes a field's ordinary default; interpret it together with presets, the parent object, and the field description. `x-default-by-codec`, `x-default-by-format`, `x-default-by-mode`, `x-default-by-container`, and `x-default-by-value` describe defaults that depend on other choices, such as JPEG quality 90 versus WebP quality 85. Video `audio` also uses `x-default-by-container` to list the complete audio defaults for each container. **Send only the fields you want to change; do not copy every default into a request or replace omitted fields with `null`.** Each field defines whether `null` is allowed and what it means. The capability response's `default_params` shows the normalized result when all of `params` is omitted and no preset is selected; it is not a request template for every combination.
+
+Schema enums describe the choices implemented by the service. Before selecting an optional encoder, also query the runtime capabilities below to confirm availability in the deployment.
+
 ## What determines support?
 
 The available features are the **intersection of what this service implements and what its runtime engines provide**, subject to container compatibility, input media properties, and deployment limits.
@@ -197,7 +205,7 @@ Use HTTP `GET /v1/capabilities` or MCP `list_capabilities` with `{}` as its argu
 | `media_parameters.video_audio_codecs` | Audio codecs available within each video container |
 | `media_parameters.audio_sample_rates` / `mp3_bitrates_bps` | Codec-specific sample rate and MP3 bitrate tables |
 | `media_parameters.pcm_sample_formats` | Available PCM sample formats |
-| `operations[operation identifier].params_schema` / `default_params` | Parameter structure, enums/ranges, and actual normalized defaults; image enums are also here |
+| `operations[operation identifier].description` / `params_schema` / `default_params` | Operation description, parameter structure, enums/ranges, and normalized defaults when all of params is omitted; image enums are also here |
 | `limits` | Deployment limits for dimensions, frame counts, input/output sizes, time, and more |
 
 The schema describes the full implemented parameter contract; an optional encoder may be unavailable in a particular deployment. Check `media_parameters` when choosing a codec, rather than relying only on schema enums. `audio_codecs` lists codecs available for encoding. Copying does not require the corresponding encoder: the service checks the source codec and target muxer separately, so that list alone cannot determine whether copying will work. Changing only the container while omitting the codec still uses the operation's default codec; the service does not infer a codec from the container. For example, replace audio `{"container":"mp3"}` with `{"codec":"mp3"}`, or supply both fields.

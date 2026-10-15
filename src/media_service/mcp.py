@@ -32,6 +32,7 @@ from media_service.models import (
     RetentionRequest,
     StrictModel,
 )
+from media_service.parameters import parameter_description
 from media_service.telemetry import event
 
 IdempotencyKey = Annotated[str, Field(min_length=1, max_length=128, pattern=r"^[\x20-\x7e]+$")]
@@ -301,9 +302,12 @@ def create_mcp(service: Any, settings: Settings) -> tuple[ASGIApp, Server]:
         return await service.uploads.release(caller, arguments.file_id)
 
     definitions = [
-        ToolDefinition("list_capabilities", "查询版本化媒体操作、限制和 HTTP 文件传输入口。",
+        ToolDefinition("list_capabilities", "查询实际可用编码器、容器兼容组合、参数 schema/默认值、部署限额和 HTTP 文件传输入口。"
+                       "工具 schema 枚举表示已适配范围；选择可选编码器前以此处 media_parameters 为准。",
                        EmptyArgs, CapabilitiesResult, list_capabilities, True),
-        ToolDefinition("submit_job", "提交异步媒体任务图；幂等键复用须保持定义相同。立即返回任务，随后查询状态。",
+        ToolDefinition("submit_job", "提交异步媒体任务图；steps 按 operation 选择对应 params schema，params 可省略使用默认。"
+                       "只填写要改变的参数，条件默认随编码/格式选择；实际编码器和限额查 list_capabilities。"
+                       "幂等键复用须保持定义相同。立即返回任务，随后查询状态。",
                        SubmitArgs, SubmittedResult, accept),
         ToolDefinition("get_job", "查询任务状态和产物 ID；inputs_released 表示输入已停止使用。",
                        JobArgs, JobResult, get_job, True),
@@ -359,11 +363,14 @@ def create_mcp(service: Any, settings: Settings) -> tuple[ASGIApp, Server]:
         arguments = create_model(
             f"{name}Args", __base__=StrictModel,
             source=(Input, ...), idempotency_key=(IdempotencyKey, ...),
-            params=(params_model, Field(default_factory=params_model)),
+            params=(params_model, Field(default_factory=params_model,
+                description=parameter_description(params_model), json_schema_extra={"default": {}})),
             output_policy=(OutputPolicy, Field(default_factory=OutputPolicy)),
         )
         definitions.append(ToolDefinition(
-            name, f"{description}；params 可省略，与 HTTP 同参。立即返回任务 ID，使用 get_job 查询。文件通过 HTTP 上传下载。",
+            name, f"{description}。{parameter_description(params_model)}\n"
+                  "与 HTTP 同参；仅填写需要改变的字段，条件默认不等于无条件 default，省略不等于传 null。"
+                  "立即返回任务 ID，使用 get_job 查询。文件通过 HTTP 上传下载。",
             arguments, SubmittedResult, intent_handler(operation),
         ))
     tools = {definition.name: definition for definition in definitions}

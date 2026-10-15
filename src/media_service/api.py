@@ -40,6 +40,28 @@ from media_service.uploads import MultipartReader
 logger = logging.getLogger("media_service")
 
 
+def multipart_job_schema() -> dict:
+    # 文件 part 由流式接收器解析；文档复用 JobCreate，只有上传占位输入不同。
+    job = JobCreate.model_json_schema()
+    reference = "#/components/schemas/JobCreate/properties/"
+    inputs = job["properties"]["inputs"].copy()
+    pattern = next(iter(inputs.pop("patternProperties")))
+    pattern_pointer = pattern.replace("~", "~0").replace("/", "~1")
+    inputs |= {
+        "propertyNames": {"pattern": pattern},
+        "description": "至少一个输入为 kind=upload；part 必须与输入名及随后文件 part 名一致。",
+        "additionalProperties": {"anyOf": [
+            {"$ref": reference + "inputs/patternProperties/" + pattern_pointer},
+            {"type": "object", "additionalProperties": False, "required": ["kind", "part"],
+             "properties": {"kind": {"type": "string", "const": "upload"},
+                            "part": {"type": "string", "description": "与该输入的键及文件 part 名相同。"}}},
+        ]},
+    }
+    return {"type": "object", "additionalProperties": False, "required": job["required"],
+            "properties": {name: {"$ref": reference + name} for name in job["properties"]}
+                          | {"inputs": inputs}}
+
+
 def error_response(error: ServiceError, request_id: str) -> JSONResponse:
     headers = {"X-Request-ID": request_id}
     if error.status == 401:
@@ -358,7 +380,16 @@ def create_app(settings: Settings | None = None, service: Any = None) -> FastAPI
               responses={202: {"model": JobResult}},
               openapi_extra={"requestBody": {"required": True, "content": {
                   "multipart/form-data": {"schema": {"type": "object", "required": ["job"],
-                      "properties": {"job": {"type": "string", "description": "任务JSON；必须先于命名文件parts"}},
+                      "properties": {"job": {"type": "string", "contentMediaType": "application/json",
+                          "contentSchema": multipart_job_schema(),
+                          "description": "任务 JSON 字符串，必须先于命名文件 parts；steps/params 与 POST /v1/jobs "
+                                         "及 MCP 相同，见 contentSchema。至少一个输入为 {kind:upload,part:输入名}。",
+                          "examples": [json.dumps({
+                              "inputs": {"main": {"kind": "upload", "part": "main"}},
+                              "steps": [{"id": "convert", "operation": "video.transcode.v1",
+                                         "inputs": {"video": {"source": "main"}}, "params": {"codec": "hevc"}}],
+                              "outputs": {"result": {"step": "convert", "output": "video"}},
+                          })]}},
                       "additionalProperties": {"type": "string", "format": "binary"}}
               }}}})
     async def upload_job(request: Request, response: Response,
@@ -469,4 +500,18 @@ def create_app(settings: Settings | None = None, service: Any = None) -> FastAPI
         )
 
     app.router.routes.append(Route("/mcp", endpoint=mcp_app, methods=["GET", "POST", "DELETE"]))
+
+    default_openapi = app.openapi
+
+    def documented_openapi() -> dict:
+        if app.openapi_schema is None:
+            document = default_openapi()
+            # FastAPI 序列化 OpenAPI 时递归排除 None，会丢掉条件默认中的“不适用”值。
+            # 从共享模型恢复请求 schema，保证 HTTP 与 MCP 看到相同的默认规则。
+            job_schema = JobCreate.model_json_schema(ref_template="#/components/schemas/{model}")
+            document["components"]["schemas"].update(job_schema.pop("$defs", {}))
+            document["components"]["schemas"]["JobCreate"] = job_schema
+        return app.openapi_schema or {}
+
+    app.openapi = documented_openapi
     return app

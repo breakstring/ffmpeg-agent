@@ -4,6 +4,14 @@
 
 HTTP 与 MCP 使用相同的 `params`。所有能力都可以省略它；下面列出需要调整时可填写的值和组合。JSON 字符串区分大小写，请使用表中的小写拼写。
 
+## 直接从接口选择参数
+
+MCP `tools/list` 已在六个媒体工具的描述和 `inputSchema` 中提供可选值、默认规则、单位、范围、兼容约束及示例，AI 无需翻阅 README。HTTP [OpenAPI](../api/v1-openapi.json) 使用同一参数模型；普通任务、请求内上传的 `job` JSON，以及 MCP `submit_job` 的步骤，都按 `operation` 提供对应的完整 `params` schema。
+
+schema 的 `default` 是字段的普通默认，需结合预设、父对象及字段说明理解；`x-default-by-codec`、`x-default-by-format`、`x-default-by-mode`、`x-default-by-container`、`x-default-by-value` 表示依赖其他选择的默认，例如 JPEG quality 90、WebP quality 85。视频 `audio` 的 `x-default-by-container` 还列出各容器对应的完整音频默认。**只传需要调整的字段，不要把全部默认值复制进请求，也不要用 `null` 代替省略**；是否允许 `null` 及其含义由各字段决定。能力接口的 `default_params` 展示整个 `params` 省略、未选择预设时的结果，不是所有组合通用的模板。
+
+schema 的枚举描述服务已适配的范围；选用可选编码器前，仍应查询下文的运行时能力，确认当前部署支持。
+
 ## 支持范围由什么决定
 
 实际可用范围是 **本服务已适配的功能 ∩ 运行引擎提供的功能**，再根据容器兼容性、输入媒体特征和部署限额校验。
@@ -197,7 +205,7 @@ HTTP 调用 `GET /v1/capabilities`；MCP 调用 `list_capabilities`，参数为 
 | `media_parameters.video_audio_codecs` | 各视频容器内可用的音频编码 |
 | `media_parameters.audio_sample_rates` / `mp3_bitrates_bps` | 编码相关采样率和 MP3 码率表 |
 | `media_parameters.pcm_sample_formats` | 当前可用的 PCM 采样格式 |
-| `operations[操作标识].params_schema` / `default_params` | 参数形状、枚举/范围与实际规范化默认值；图片枚举也在这里 |
+| `operations[操作标识].description` / `params_schema` / `default_params` | 操作说明、参数形状、枚举/范围与省略整个 params 时的规范化默认值；图片枚举也在这里 |
 | `limits` | 当前部署的尺寸、帧数、输入输出大小及时间等限制 |
 
 schema 描述整个已适配参数合同；可选编码器不一定在某个部署可用。选择编码时还要检查 `media_parameters`，不要只根据 schema 的枚举判断。`audio_codecs` 表示可编码集合；copy 不需要对应编码器，由服务另行检查源编码与目标封装器，不能仅用该集合判断能否复制。只改容器而省略 codec 时仍会使用该能力的默认编码，不会反向按容器猜测编码；例如音频 `{"container":"mp3"}` 应改为 `{"codec":"mp3"}` 或同时填写两者。

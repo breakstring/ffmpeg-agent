@@ -1006,7 +1006,66 @@
                 "properties": {
                   "job": {
                     "type": "string",
-                    "description": "任务JSON；必须先于命名文件parts"
+                    "contentMediaType": "application/json",
+                    "contentSchema": {
+                      "properties": {
+                        "inputs": {
+                          "additionalProperties": {
+                            "anyOf": [
+                              {
+                                "$ref": "#/components/schemas/JobCreate/properties/inputs/patternProperties/^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+                              },
+                              {
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "const": "upload"
+                                  },
+                                  "part": {
+                                    "type": "string",
+                                    "description": "与该输入的键及文件 part 名相同。"
+                                  }
+                                },
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "kind",
+                                  "part"
+                                ]
+                              }
+                            ]
+                          },
+                          "propertyNames": {
+                            "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+                          },
+                          "type": "object",
+                          "maxProperties": 4,
+                          "minProperties": 1,
+                          "title": "Inputs",
+                          "description": "至少一个输入为 kind=upload；part 必须与输入名及随后文件 part 名一致。"
+                        },
+                        "steps": {
+                          "$ref": "#/components/schemas/JobCreate/properties/steps"
+                        },
+                        "outputs": {
+                          "$ref": "#/components/schemas/JobCreate/properties/outputs"
+                        },
+                        "output_policy": {
+                          "$ref": "#/components/schemas/JobCreate/properties/output_policy"
+                        }
+                      },
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "inputs",
+                        "steps",
+                        "outputs"
+                      ]
+                    },
+                    "description": "任务 JSON 字符串，必须先于命名文件 parts；steps/params 与 POST /v1/jobs 及 MCP 相同，见 contentSchema。至少一个输入为 {kind:upload,part:输入名}。",
+                    "examples": [
+                      "{\"inputs\": {\"main\": {\"kind\": \"upload\", \"part\": \"main\"}}, \"steps\": [{\"id\": \"convert\", \"operation\": \"video.transcode.v1\", \"inputs\": {\"video\": {\"source\": \"main\"}}, \"params\": {\"codec\": \"hevc\"}}], \"outputs\": {\"result\": {\"step\": \"convert\", \"output\": \"video\"}}}"
+                    ]
                   }
                 },
                 "additionalProperties": {
@@ -3099,37 +3158,38 @@
   "components": {
     "schemas": {
       "ArtifactInput": {
+        "additionalProperties": false,
         "properties": {
           "kind": {
-            "type": "string",
             "const": "artifact",
-            "title": "Kind"
+            "title": "Kind",
+            "type": "string"
           },
           "artifact_id": {
-            "type": "string",
             "pattern": "^art_[a-f0-9]{32}$",
-            "title": "Artifact Id"
+            "title": "Artifact Id",
+            "type": "string"
           },
           "member_key": {
             "anyOf": [
               {
-                "type": "string",
-                "pattern": "^[A-Za-z0-9_.-]{1,128}$"
+                "pattern": "^[A-Za-z0-9_.-]{1,128}$",
+                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
+            "default": null,
             "title": "Member Key"
           }
         },
-        "additionalProperties": false,
-        "type": "object",
         "required": [
           "kind",
           "artifact_id"
         ],
-        "title": "ArtifactInput"
+        "title": "ArtifactInput",
+        "type": "object"
       },
       "ArtifactResult": {
         "properties": {
@@ -3209,6 +3269,375 @@
           "access"
         ],
         "title": "ArtifactResult"
+      },
+      "AudioAutoBitrate": {
+        "additionalProperties": false,
+        "properties": {
+          "mode": {
+            "const": "auto",
+            "default": "auto",
+            "description": "默认有损音频码率策略，按编码器、实际采样率与声道数选择兼容目标码率。",
+            "title": "Mode",
+            "type": "string"
+          }
+        },
+        "title": "AudioAutoBitrate",
+        "type": "object"
+      },
+      "AudioBitrate": {
+        "additionalProperties": false,
+        "properties": {
+          "mode": {
+            "const": "bitrate",
+            "default": "bitrate",
+            "description": "AAC/MP3/Opus 显式目标码率模式。",
+            "title": "Mode",
+            "type": "string"
+          },
+          "bitrate_bps": {
+            "description": "音频码率，bit/s；128 kbps 写 128000。MP3 需符合采样率对应码率表；AAC 不超过 6 × sample_rate × channels；详情查 capabilities.media_parameters。",
+            "examples": [
+              128000
+            ],
+            "exclusiveMinimum": 0,
+            "title": "Bitrate Bps",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "bitrate_bps"
+        ],
+        "title": "AudioBitrate",
+        "type": "object"
+      },
+      "AudioEncoding": {
+        "additionalProperties": false,
+        "properties": {
+          "mode": {
+            "default": "encode",
+            "description": "encode 重新编码（默认）；copy 复制源音轨，禁止设置编码、采样率、声道、质量或裁剪。仅视频内音轨另支持 drop 去掉音轨；copy 仍须源编码与目标容器兼容。",
+            "enum": [
+              "encode",
+              "copy",
+              "drop"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "audio_stream": {
+            "default": 0,
+            "description": "所选音轨在音频流中的序号，从 0 开始；默认第一条音轨，不是容器全局流索引。",
+            "maximum": 31,
+            "minimum": 0,
+            "title": "Audio Stream",
+            "type": "integer"
+          },
+          "codec": {
+            "anyOf": [
+              {
+                "enum": [
+                  "aac",
+                  "mp3",
+                  "opus",
+                  "flac",
+                  "pcm"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "encode 默认 aac；mp3/opus 为其他有损编码，flac 无损压缩，pcm 未压缩。copy/drop 请省略。视频 WebM 音轨默认 opus；支持范围还需查 list_capabilities。",
+            "title": "Codec",
+            "x-default-by-mode": {
+              "copy": null,
+              "encode": "aac"
+            }
+          },
+          "sample_rate": {
+            "anyOf": [
+              {
+                "maximum": 384000,
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "enum": [
+                  "auto",
+                  "source"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "采样率，Hz。auto 默认优先源值，不兼容则回落到 48000；source 严格保持。可传 44100/48000 等兼容整数；Opus 仅 48000，MP3/AAC 需符合能力接口的采样率表。copy/drop 省略。",
+            "examples": [
+              "auto",
+              "source",
+              44100,
+              48000
+            ],
+            "title": "Sample Rate",
+            "x-default-by-mode": {
+              "copy": null,
+              "encode": "auto"
+            }
+          },
+          "channels": {
+            "anyOf": [
+              {
+                "maximum": 8,
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "enum": [
+                  "auto",
+                  "source"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "声道数：auto 默认优先源值，不兼容则回落到双声道；source 严格保持；整数为 1～8。MP3 仅 1/2，Opus 仅 1/2/3/6/8；指定 channel_layout 时按布局推导。copy/drop 省略。",
+            "examples": [
+              "auto",
+              "source",
+              1,
+              2
+            ],
+            "title": "Channels",
+            "x-default-by-mode": {
+              "copy": null,
+              "encode": "auto"
+            }
+          },
+          "channel_layout": {
+            "anyOf": [
+              {
+                "enum": [
+                  "mono",
+                  "stereo",
+                  "2.1",
+                  "3.0",
+                  "4.0",
+                  "5.1",
+                  "7.1"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "声道布局，省略时由源与声道数推导。mono=1、stereo=2、2.1/3.0=3、4.0=4、5.1=6、7.1=8；显式 channels 必须一致。Opus 不支持 2.1/4.0。copy/drop 省略。",
+            "title": "Channel Layout"
+          },
+          "sample_format": {
+            "anyOf": [
+              {
+                "enum": [
+                  "s16",
+                  "s24",
+                  "f32"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "仅 PCM：s16 为 16-bit 整数（默认），s24 为 24-bit 整数，f32 为 32-bit 浮点。其他编码及 copy/drop 请省略。",
+            "title": "Sample Format",
+            "x-default-by-codec": {
+              "pcm": "s16"
+            }
+          },
+          "rate_control": {
+            "anyOf": [
+              {
+                "discriminator": {
+                  "mapping": {
+                    "auto": "#/components/schemas/AudioAutoBitrate",
+                    "bitrate": "#/components/schemas/AudioBitrate",
+                    "quality": "#/components/schemas/AudioQuality"
+                  },
+                  "propertyName": "mode"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/AudioBitrate"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AudioQuality"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AudioAutoBitrate"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "AAC/MP3/Opus 默认 {mode:auto}，可改 bitrate；AAC/MP3 还可用 quality。FLAC/PCM 和 copy/drop 请省略；整个对象替换默认策略。",
+            "examples": [
+              {
+                "mode": "auto"
+              },
+              {
+                "bitrate_bps": 128000,
+                "mode": "bitrate"
+              }
+            ],
+            "title": "Rate Control",
+            "x-default-by-codec": {
+              "aac": {
+                "mode": "auto"
+              },
+              "flac": null,
+              "mp3": {
+                "mode": "auto"
+              },
+              "opus": {
+                "mode": "auto"
+              },
+              "pcm": null
+            }
+          },
+          "compression_level": {
+            "anyOf": [
+              {
+                "maximum": 12,
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "仅 FLAC：压缩等级 0～12，默认 5，影响编码工作量和体积；当前输出固定 16-bit。其他编码及 copy/drop 请省略。",
+            "title": "Compression Level",
+            "x-default-by-codec": {
+              "flac": 5
+            }
+          }
+        },
+        "title": "AudioEncoding",
+        "type": "object"
+      },
+      "AudioQuality": {
+        "additionalProperties": false,
+        "properties": {
+          "mode": {
+            "const": "quality",
+            "default": "quality",
+            "description": "仅 AAC/MP3 支持质量模式。",
+            "title": "Mode",
+            "type": "string"
+          },
+          "value": {
+            "description": "AAC 0.1～5；MP3 0～9。两种编码的质量刻度不能直接比较。",
+            "examples": [
+              2
+            ],
+            "maximum": 9,
+            "minimum": 0,
+            "title": "Value",
+            "type": "number"
+          }
+        },
+        "required": [
+          "value"
+        ],
+        "title": "AudioQuality",
+        "type": "object"
+      },
+      "CRF": {
+        "additionalProperties": false,
+        "properties": {
+          "mode": {
+            "const": "crf",
+            "default": "crf",
+            "description": "按质量编码，与 bitrate 模式互斥。",
+            "title": "Mode",
+            "type": "string"
+          },
+          "value": {
+            "default": 23.0,
+            "description": "CRF 越低通常越清晰；H.264/HEVC 0～51，VP9/AV1 为 0～63 整数。本对象省略 value 为 23；整个 rate_control 省略时 VP9/AV1 使用 32。",
+            "examples": [
+              23,
+              32
+            ],
+            "maximum": 63,
+            "minimum": 0,
+            "title": "Value",
+            "type": "number"
+          }
+        },
+        "title": "CRF",
+        "type": "object"
+      },
+      "CountSampling": {
+        "additionalProperties": false,
+        "properties": {
+          "start_ms": {
+            "default": 0,
+            "description": "开始时间，毫秒；默认 0。",
+            "examples": [
+              0,
+              1000
+            ],
+            "minimum": 0,
+            "title": "Start Ms",
+            "type": "integer"
+          },
+          "end_ms": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "结束时间，毫秒；省略/null 表示到媒体结束，必须大于 start_ms。",
+            "examples": [
+              5000
+            ],
+            "title": "End Ms"
+          },
+          "mode": {
+            "const": "count",
+            "default": "count",
+            "description": "在指定区间均匀取样，包含首末端点。",
+            "title": "Mode",
+            "type": "string"
+          },
+          "count": {
+            "description": "请求帧数；1 表示只取开始点；受部署 max_frame_count 限制，失败项不自动补齐。",
+            "examples": [
+              3
+            ],
+            "minimum": 1,
+            "title": "Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "count"
+        ],
+        "title": "CountSampling",
+        "type": "object"
       },
       "ErrorEnvelope": {
         "properties": {
@@ -3324,26 +3753,71 @@
         ],
         "title": "FileResult"
       },
+      "FrameRate": {
+        "additionalProperties": false,
+        "properties": {
+          "mode": {
+            "description": "source 保留源帧时间（默认）；constant 固定帧率；max 只限制最高帧率。仅给 value 时推导 constant。",
+            "enum": [
+              "source",
+              "constant",
+              "max"
+            ],
+            "title": "Mode",
+            "type": "string",
+            "x-default-by-value": {
+              "omitted": "source",
+              "provided": "constant"
+            }
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "帧/秒，可用 30 或 30000/1001；constant/max 必填正数，受部署 max_frame_rate 限制。source 不允许非 null 值；字符串不接受指数记法。",
+            "examples": [
+              30,
+              "30000/1001"
+            ],
+            "title": "Value"
+          }
+        },
+        "title": "FrameRate",
+        "type": "object"
+      },
       "HttpFile": {
+        "additionalProperties": false,
         "properties": {
           "kind": {
-            "type": "string",
             "const": "http_file",
-            "title": "Kind"
+            "title": "Kind",
+            "type": "string"
           },
           "url": {
-            "type": "string",
             "maxLength": 8192,
             "minLength": 1,
-            "title": "Url"
+            "title": "Url",
+            "type": "string"
           },
           "headers": {
             "additionalProperties": {
               "type": "string"
             },
-            "type": "object",
             "maxProperties": 8,
-            "title": "Headers"
+            "title": "Headers",
+            "type": "object"
           },
           "expires_at": {
             "anyOf": [
@@ -3354,46 +3828,356 @@
                 "type": "null"
               }
             ],
+            "default": null,
             "title": "Expires At"
           },
           "expected_size_bytes": {
             "anyOf": [
               {
-                "type": "integer",
-                "minimum": 0.0
+                "minimum": 0,
+                "type": "integer"
               },
               {
                 "type": "null"
               }
             ],
+            "default": null,
             "title": "Expected Size Bytes"
           },
           "expected_sha256": {
             "anyOf": [
               {
-                "type": "string",
-                "pattern": "^[0-9a-f]{64}$"
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
+            "default": null,
             "title": "Expected Sha256"
           }
         },
-        "additionalProperties": false,
-        "type": "object",
         "required": [
           "kind",
           "url"
         ],
-        "title": "HttpFile"
+        "title": "HttpFile",
+        "type": "object"
+      },
+      "ImageParams": {
+        "additionalProperties": false,
+        "description": "图片缩放/格式转换：params 省略时保持尺寸，输出 JPEG quality 90，不放大。\n\nformat 可选 jpeg（不能写 jpg）/png/webp。JPEG quality 1～95 默认90；WebP 0～100 默认85；\nPNG compression_level 0～9 默认6，不接受 quality。只改 format 会选相应默认参数。\nfit 可选 contain/cover/pad；cover/pad 需宽高。JPEG 用白色背景合成透明区域，PNG/WebP 可保留透明。\n当前仅静态 8-bit SDR；尺寸与输出限额查询 list_capabilities 或 GET /v1/capabilities。",
+        "examples": [
+          {},
+          {
+            "format": "png"
+          },
+          {
+            "format": "webp",
+            "quality": 85
+          },
+          {
+            "fit": "pad",
+            "height": 240,
+            "width": 320
+          }
+        ],
+        "properties": {
+          "width": {
+            "anyOf": [
+              {
+                "maximum": 65535,
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "目标宽度，像素；只给宽度时等比计算高度，两边都省略则保持源尺寸；受部署限额约束。",
+            "examples": [
+              1280
+            ],
+            "title": "Width"
+          },
+          "height": {
+            "anyOf": [
+              {
+                "maximum": 65535,
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "目标高度，像素；只给高度时等比计算宽度；cover/pad 必须同时指定宽高。",
+            "examples": [
+              720
+            ],
+            "title": "Height"
+          },
+          "fit": {
+            "default": "contain",
+            "description": "contain 等比装入不补边（默认）；cover 填满并裁剪；pad 等比装入并补边。cover/pad 需要宽高，视频目标框须为偶数尺寸。",
+            "enum": [
+              "contain",
+              "cover",
+              "pad"
+            ],
+            "title": "Fit",
+            "type": "string"
+          },
+          "allow_upscale": {
+            "default": false,
+            "description": "是否允许放大源画面，默认 false；无法满足目标框时可能拒绝处理。",
+            "title": "Allow Upscale",
+            "type": "boolean"
+          },
+          "background": {
+            "default": "#ffffff",
+            "description": "补边及透明转 JPEG 的背景色，#RRGGBB；图片默认白色。",
+            "examples": [
+              "#ffffff"
+            ],
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "title": "Background",
+            "type": "string"
+          },
+          "crop_x": {
+            "default": 0.5,
+            "description": "cover 水平裁剪焦点：0 左、0.5 居中（默认）、1 右；其他 fit 只能使用默认值。",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Crop X",
+            "type": "number"
+          },
+          "crop_y": {
+            "default": 0.5,
+            "description": "cover 垂直裁剪焦点：0 上、0.5 居中（默认）、1 下；其他 fit 只能使用默认值。",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Crop Y",
+            "type": "number"
+          },
+          "resampling": {
+            "default": "lanczos",
+            "description": "缩放算法：lanczos（默认）、bicubic 双三次、bilinear 双线性、nearest 最近邻；nearest 可保留像素块边界。",
+            "enum": [
+              "lanczos",
+              "bicubic",
+              "bilinear",
+              "nearest"
+            ],
+            "title": "Resampling",
+            "type": "string"
+          },
+          "format": {
+            "default": "jpeg",
+            "description": "图片输出格式：jpeg（默认；不能写 jpg）、png、webp；使用 Pillow 编码。只设置 format 默认保留尺寸，不能同时传其他格式的专属选项。",
+            "enum": [
+              "jpeg",
+              "png",
+              "webp"
+            ],
+            "title": "Format",
+            "type": "string"
+          },
+          "quality": {
+            "anyOf": [
+              {
+                "maximum": 100,
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "JPEG 1～95 默认90，WebP 0～100 默认85；PNG 请省略。适用格式下不能显式传 null。有损模式越高通常越清晰；WebP lossless 时控制压缩工作量。",
+            "examples": [
+              85,
+              90
+            ],
+            "title": "Quality",
+            "x-default-by-format": {
+              "jpeg": 90,
+              "png": null,
+              "webp": 85
+            }
+          },
+          "compression_level": {
+            "anyOf": [
+              {
+                "maximum": 9,
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "仅 PNG：压缩等级 0～9，默认6，影响工作量和体积；不是有损画质，不能传 null。",
+            "title": "Compression Level",
+            "x-default-by-format": {
+              "jpeg": null,
+              "png": 6,
+              "webp": null
+            }
+          },
+          "jpeg_subsampling": {
+            "anyOf": [
+              {
+                "enum": [
+                  0,
+                  1,
+                  2
+                ],
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "仅 JPEG：0=4:4:4、1=4:2:2、2=4:2:0（默认）；不能显式传 null。",
+            "title": "Jpeg Subsampling",
+            "x-default-by-format": {
+              "jpeg": 2,
+              "png": null,
+              "webp": null
+            }
+          },
+          "progressive": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "仅 JPEG：是否渐进式输出，默认 false；不能显式传 null。",
+            "title": "Progressive",
+            "x-default-by-format": {
+              "jpeg": false,
+              "png": null,
+              "webp": null
+            }
+          },
+          "lossless": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "仅 WebP：是否无损编码，默认 false；不能显式传 null。",
+            "title": "Lossless",
+            "x-default-by-format": {
+              "jpeg": null,
+              "png": null,
+              "webp": false
+            }
+          },
+          "method": {
+            "anyOf": [
+              {
+                "maximum": 6,
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "仅 WebP：编码工作量档位 0～6，默认4；越高通常越慢；不能显式传 null。",
+            "title": "Method",
+            "x-default-by-format": {
+              "jpeg": null,
+              "png": null,
+              "webp": 4
+            }
+          }
+        },
+        "title": "ImageParams",
+        "type": "object"
+      },
+      "IntervalSampling": {
+        "additionalProperties": false,
+        "properties": {
+          "start_ms": {
+            "default": 0,
+            "description": "开始时间，毫秒；默认 0。",
+            "examples": [
+              0,
+              1000
+            ],
+            "minimum": 0,
+            "title": "Start Ms",
+            "type": "integer"
+          },
+          "end_ms": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "结束时间，毫秒；省略/null 表示到媒体结束，必须大于 start_ms。",
+            "examples": [
+              5000
+            ],
+            "title": "End Ms"
+          },
+          "mode": {
+            "const": "interval",
+            "default": "interval",
+            "description": "在 start_ms 到 end_ms 内按间隔抽帧。",
+            "title": "Mode",
+            "type": "string"
+          },
+          "interval_ms": {
+            "description": "抽帧间隔，毫秒；从开始点生成到不超过结束点，受帧数限额约束。",
+            "examples": [
+              1000
+            ],
+            "minimum": 1,
+            "title": "Interval Ms",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "interval_ms"
+        ],
+        "title": "IntervalSampling",
+        "type": "object"
       },
       "JobCreate": {
+        "additionalProperties": false,
         "properties": {
           "inputs": {
+            "maxProperties": 4,
+            "minProperties": 1,
             "patternProperties": {
               "^[A-Za-z][A-Za-z0-9_-]{0,63}$": {
+                "discriminator": {
+                  "mapping": {
+                    "artifact": "#/components/schemas/ArtifactInput",
+                    "http_file": "#/components/schemas/HttpFile",
+                    "shared_file": "#/components/schemas/SharedFile",
+                    "uploaded_file": "#/components/schemas/UploadedFile"
+                  },
+                  "propertyName": "kind"
+                },
                 "oneOf": [
                   {
                     "$ref": "#/components/schemas/SharedFile"
@@ -3407,55 +4191,43 @@
                   {
                     "$ref": "#/components/schemas/UploadedFile"
                   }
-                ],
-                "discriminator": {
-                  "propertyName": "kind",
-                  "mapping": {
-                    "artifact": "#/components/schemas/ArtifactInput",
-                    "http_file": "#/components/schemas/HttpFile",
-                    "shared_file": "#/components/schemas/SharedFile",
-                    "uploaded_file": "#/components/schemas/UploadedFile"
-                  }
-                }
+                ]
               }
             },
-            "type": "object",
-            "maxProperties": 4,
-            "minProperties": 1,
-            "title": "Inputs"
+            "title": "Inputs",
+            "type": "object"
           },
           "steps": {
             "items": {
               "$ref": "#/components/schemas/Step"
             },
-            "type": "array",
             "maxItems": 16,
             "minItems": 1,
-            "title": "Steps"
+            "title": "Steps",
+            "type": "array"
           },
           "outputs": {
+            "maxProperties": 16,
+            "minProperties": 1,
             "patternProperties": {
               "^[A-Za-z][A-Za-z0-9_-]{0,63}$": {
                 "$ref": "#/components/schemas/StepBinding"
               }
             },
-            "type": "object",
-            "maxProperties": 16,
-            "minProperties": 1,
-            "title": "Outputs"
+            "title": "Outputs",
+            "type": "object"
           },
           "output_policy": {
             "$ref": "#/components/schemas/OutputPolicy"
           }
         },
-        "additionalProperties": false,
-        "type": "object",
         "required": [
           "inputs",
           "steps",
           "outputs"
         ],
-        "title": "JobCreate"
+        "title": "JobCreate",
+        "type": "object"
       },
       "JobResult": {
         "properties": {
@@ -3724,30 +4496,31 @@
         "title": "MembersResult"
       },
       "OutputPolicy": {
+        "additionalProperties": false,
         "properties": {
           "storage_id": {
             "anyOf": [
               {
-                "type": "string",
-                "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+                "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$",
+                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
+            "default": null,
             "title": "Storage Id"
           },
           "retention_seconds": {
-            "type": "integer",
-            "maximum": 604800.0,
-            "minimum": 1.0,
+            "default": 86400,
+            "maximum": 604800,
+            "minimum": 1,
             "title": "Retention Seconds",
-            "default": 86400
+            "type": "integer"
           }
         },
-        "additionalProperties": false,
-        "type": "object",
-        "title": "OutputPolicy"
+        "title": "OutputPolicy",
+        "type": "object"
       },
       "OutputResult": {
         "properties": {
@@ -3794,6 +4567,92 @@
         ],
         "title": "OutputResult"
       },
+      "Resize": {
+        "additionalProperties": false,
+        "properties": {
+          "width": {
+            "anyOf": [
+              {
+                "maximum": 65535,
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "目标宽度，像素；只给宽度时等比计算高度，两边都省略则保持源尺寸；受部署限额约束。",
+            "examples": [
+              1280
+            ],
+            "title": "Width"
+          },
+          "height": {
+            "anyOf": [
+              {
+                "maximum": 65535,
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "目标高度，像素；只给高度时等比计算宽度；cover/pad 必须同时指定宽高。",
+            "examples": [
+              720
+            ],
+            "title": "Height"
+          },
+          "fit": {
+            "default": "contain",
+            "description": "contain 等比装入不补边（默认）；cover 填满并裁剪；pad 等比装入并补边。cover/pad 需要宽高，视频目标框须为偶数尺寸。",
+            "enum": [
+              "contain",
+              "cover",
+              "pad"
+            ],
+            "title": "Fit",
+            "type": "string"
+          },
+          "allow_upscale": {
+            "default": false,
+            "description": "是否允许放大源画面，默认 false；无法满足目标框时可能拒绝处理。",
+            "title": "Allow Upscale",
+            "type": "boolean"
+          },
+          "background": {
+            "default": "#000000",
+            "description": "补边颜色，#RRGGBB；视频默认黑色。",
+            "examples": [
+              "#000000"
+            ],
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "title": "Background",
+            "type": "string"
+          },
+          "crop_x": {
+            "default": 0.5,
+            "description": "cover 水平裁剪焦点：0 左、0.5 居中（默认）、1 右；其他 fit 只能使用默认值。",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Crop X",
+            "type": "number"
+          },
+          "crop_y": {
+            "default": 0.5,
+            "description": "cover 垂直裁剪焦点：0 上、0.5 居中（默认）、1 下；其他 fit 只能使用默认值。",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Crop Y",
+            "type": "number"
+          }
+        },
+        "title": "Resize",
+        "type": "object"
+      },
       "RetentionRequest": {
         "properties": {
           "retention_seconds": {
@@ -3811,84 +4670,1346 @@
         "title": "RetentionRequest"
       },
       "SharedFile": {
+        "additionalProperties": false,
         "properties": {
           "kind": {
-            "type": "string",
             "const": "shared_file",
-            "title": "Kind"
+            "title": "Kind",
+            "type": "string"
           },
           "storage_id": {
-            "type": "string",
             "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$",
-            "title": "Storage Id"
+            "title": "Storage Id",
+            "type": "string"
           },
           "key": {
-            "type": "string",
             "maxLength": 1024,
             "minLength": 1,
-            "title": "Key"
+            "title": "Key",
+            "type": "string"
           },
           "expected_size_bytes": {
             "anyOf": [
               {
-                "type": "integer",
-                "minimum": 0.0
+                "minimum": 0,
+                "type": "integer"
               },
               {
                 "type": "null"
               }
             ],
+            "default": null,
             "title": "Expected Size Bytes"
           },
           "expected_sha256": {
             "anyOf": [
               {
-                "type": "string",
-                "pattern": "^[0-9a-f]{64}$"
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
+            "default": null,
             "title": "Expected Sha256"
           }
         },
-        "additionalProperties": false,
-        "type": "object",
         "required": [
           "kind",
           "storage_id",
           "key"
         ],
-        "title": "SharedFile"
+        "title": "SharedFile",
+        "type": "object"
       },
       "SourceBinding": {
+        "additionalProperties": false,
         "properties": {
           "source": {
-            "type": "string",
             "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$",
-            "title": "Source"
+            "title": "Source",
+            "type": "string"
           }
         },
-        "additionalProperties": false,
-        "type": "object",
         "required": [
           "source"
         ],
-        "title": "SourceBinding"
+        "title": "SourceBinding",
+        "type": "object"
       },
       "Step": {
+        "additionalProperties": false,
+        "oneOf": [
+          {
+            "properties": {
+              "operation": {
+                "const": "media.probe.v1",
+                "type": "string"
+              },
+              "params": {
+                "additionalProperties": false,
+                "default": {},
+                "description": "媒体探测：params 省略时返回 format 文件概况和 streams 轨道信息，不扫描帧数。\n\nsections 可选 format/streams/tags/chapters；tags 仅返回受控的 language、creation_time。\nstream_indices 可选择容器全局流索引，省略表示全部；count_frames=true 扫描统计帧数，必须包含 streams。\n输出为 JSON 报告；扫描受任务时间与资源限额约束，限额查询 list_capabilities 或 GET /v1/capabilities。",
+                "examples": [
+                  {},
+                  {
+                    "sections": [
+                      "format",
+                      "streams",
+                      "chapters"
+                    ]
+                  },
+                  {
+                    "count_frames": true,
+                    "sections": [
+                      "streams"
+                    ]
+                  }
+                ],
+                "properties": {
+                  "sections": {
+                    "default": [
+                      "format",
+                      "streams"
+                    ],
+                    "description": "报告分区：format 文件概况、streams 轨道、tags 受控标签、chapters 章节；默认 format/streams，tags 仅允许 language/creation_time。",
+                    "items": {
+                      "enum": [
+                        "format",
+                        "streams",
+                        "tags",
+                        "chapters"
+                      ],
+                      "type": "string"
+                    },
+                    "maxItems": 4,
+                    "minItems": 1,
+                    "title": "Sections",
+                    "type": "array"
+                  },
+                  "stream_indices": {
+                    "anyOf": [
+                      {
+                        "items": {
+                          "maximum": 31,
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "maxItems": 32,
+                        "type": "array"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "description": "容器全局流索引列表；默认省略/null 表示全部允许的流；未知索引报错。",
+                    "examples": [
+                      [
+                        0
+                      ]
+                    ],
+                    "title": "Stream Indices"
+                  },
+                  "count_frames": {
+                    "default": false,
+                    "description": "是否实际扫描统计帧数，默认 false；true 时 sections 必须包含 streams，计入执行时限。",
+                    "title": "Count Frames",
+                    "type": "boolean"
+                  }
+                },
+                "title": "ProbeParams",
+                "type": "object"
+              }
+            },
+            "required": [
+              "operation"
+            ],
+            "title": "media.probe.v1"
+          },
+          {
+            "properties": {
+              "operation": {
+                "const": "video.transcode.v1",
+                "type": "string"
+              },
+              "params": {
+                "additionalProperties": false,
+                "default": {},
+                "description": "视频转换：params 省略时 H.264/MP4、CRF 23、medium，保持源尺寸与帧时间，音轨转 AAC。\n\ncodec 可选 h264/hevc/vp9/av1；h264/hevc 默认 MP4/CRF23，vp9/av1 默认 WebM/CRF32/Opus。\nMP4 支持 h264/hevc/av1，WebM 支持 vp9/av1，MKV 支持四种；MP4 音轨仅 AAC/MP3，WebM 仅 Opus。\n可调整 resize、frame_rate、rate_control、audio、range；只改 codec 就推导兼容容器。\n当前仅软件编码、8-bit SDR；AV1 最小 64×64。编码可用性和限额查询 list_capabilities 或 GET /v1/capabilities。",
+                "examples": [
+                  {},
+                  {
+                    "codec": "hevc"
+                  },
+                  {
+                    "codec": "vp9"
+                  },
+                  {
+                    "rate_control": {
+                      "mode": "crf",
+                      "value": 23
+                    },
+                    "resize": {
+                      "width": 1280
+                    }
+                  }
+                ],
+                "properties": {
+                  "preset": {
+                    "anyOf": [
+                      {
+                        "const": "web_720p_v1",
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "description": "默认不选预设；web_720p_v1 是 1280×720/30 fps 快捷设置，H.264/HEVC 默认配48 kHz 双声道 AAC 128 kbps；显式参数覆盖预设。",
+                    "title": "Preset"
+                  },
+                  "container": {
+                    "description": "MP4 支持 h264/hevc/av1，MKV 支持四种视频编码，WebM 仅 vp9/av1。省略时 h264/hevc→mp4，vp9/av1→webm；仅改容器不会反推 codec。",
+                    "enum": [
+                      "mp4",
+                      "mkv",
+                      "webm"
+                    ],
+                    "title": "Container",
+                    "type": "string",
+                    "x-default-by-codec": {
+                      "av1": "webm",
+                      "h264": "mp4",
+                      "hevc": "mp4",
+                      "vp9": "webm"
+                    }
+                  },
+                  "codec": {
+                    "default": "h264",
+                    "description": "软件视频编码：h264=H.264/AVC（默认）、hevc=H.265、vp9=VP9、av1=AV1。填写公共名称，不使用 libx264 等 FFmpeg 实现名；可用性查询 capabilities。",
+                    "enum": [
+                      "h264",
+                      "hevc",
+                      "vp9",
+                      "av1"
+                    ],
+                    "title": "Codec",
+                    "type": "string"
+                  },
+                  "video_stream": {
+                    "default": 0,
+                    "description": "所选视频轨道在视频流中的序号，从 0 开始，默认第一条；不是容器全局流索引。",
+                    "maximum": 31,
+                    "minimum": 0,
+                    "title": "Video Stream",
+                    "type": "integer"
+                  },
+                  "resize": {
+                    "$ref": "#/components/schemas/Resize",
+                    "default": {},
+                    "description": "默认保留尺寸、不放大；可单独设置宽或高，cover/pad 需给偶数宽高。"
+                  },
+                  "frame_rate": {
+                    "$ref": "#/components/schemas/FrameRate",
+                    "default": {
+                      "mode": "source",
+                      "value": null
+                    },
+                    "description": "默认 source 保持源帧时间；constant 固定帧率，max 限制最高帧率。"
+                  },
+                  "rate_control": {
+                    "description": "省略整个对象时 h264/hevc 使用 CRF23，vp9/av1 使用 CRF32；也可指定 bitrate。整个对象替换，不能混用 crf 与 bitrate；AV1 不支持峰值/缓冲参数。",
+                    "discriminator": {
+                      "mapping": {
+                        "bitrate": "#/components/schemas/VideoBitrate",
+                        "crf": "#/components/schemas/CRF"
+                      },
+                      "propertyName": "mode"
+                    },
+                    "examples": [
+                      {
+                        "mode": "crf",
+                        "value": 23
+                      },
+                      {
+                        "bitrate_bps": 2000000,
+                        "mode": "bitrate"
+                      }
+                    ],
+                    "oneOf": [
+                      {
+                        "$ref": "#/components/schemas/CRF"
+                      },
+                      {
+                        "$ref": "#/components/schemas/VideoBitrate"
+                      }
+                    ],
+                    "title": "Rate Control",
+                    "x-default-by-codec": {
+                      "av1": {
+                        "mode": "crf",
+                        "value": 32
+                      },
+                      "h264": {
+                        "mode": "crf",
+                        "value": 23
+                      },
+                      "hevc": {
+                        "mode": "crf",
+                        "value": 23
+                      },
+                      "vp9": {
+                        "mode": "crf",
+                        "value": 32
+                      }
+                    }
+                  },
+                  "speed": {
+                    "default": "medium",
+                    "description": "编码速度/压缩效率取舍：fast 快、medium 均衡（默认）、slow 慢；不改变播放速度。",
+                    "enum": [
+                      "fast",
+                      "medium",
+                      "slow"
+                    ],
+                    "title": "Speed",
+                    "type": "string"
+                  },
+                  "pixel_format": {
+                    "const": "yuv420p",
+                    "default": "yuv420p",
+                    "description": "当前仅支持 8-bit SDR yuv420p，不支持 10-bit/HDR 或硬件编码参数。",
+                    "title": "Pixel Format",
+                    "type": "string"
+                  },
+                  "audio": {
+                    "$ref": "#/components/schemas/AudioEncoding",
+                    "description": "视频音轨：encode（默认）、copy、drop；无源音轨时输出无音轨视频。MP4 默认 AAC、仅兼容 AAC/MP3；WebM 默认且仅兼容 Opus；MKV 默认 AAC、兼容五种编码。",
+                    "x-default-by-container": {
+                      "mkv": {
+                        "audio_stream": 0,
+                        "channel_layout": null,
+                        "channels": "auto",
+                        "codec": "aac",
+                        "compression_level": null,
+                        "mode": "encode",
+                        "rate_control": {
+                          "mode": "auto"
+                        },
+                        "sample_format": null,
+                        "sample_rate": "auto"
+                      },
+                      "mp4": {
+                        "audio_stream": 0,
+                        "channel_layout": null,
+                        "channels": "auto",
+                        "codec": "aac",
+                        "compression_level": null,
+                        "mode": "encode",
+                        "rate_control": {
+                          "mode": "auto"
+                        },
+                        "sample_format": null,
+                        "sample_rate": "auto"
+                      },
+                      "webm": {
+                        "audio_stream": 0,
+                        "channel_layout": null,
+                        "channels": "auto",
+                        "codec": "opus",
+                        "compression_level": null,
+                        "mode": "encode",
+                        "rate_control": {
+                          "mode": "auto"
+                        },
+                        "sample_format": null,
+                        "sample_rate": "auto"
+                      }
+                    }
+                  },
+                  "range": {
+                    "$ref": "#/components/schemas/TimeRange",
+                    "default": {
+                      "start_ms": 0,
+                      "end_ms": null
+                    },
+                    "description": "截取时间范围，毫秒；默认处理完整视频；audio.mode=copy 不支持裁剪。"
+                  }
+                },
+                "title": "VideoParams",
+                "type": "object"
+              }
+            },
+            "required": [
+              "operation"
+            ],
+            "title": "video.transcode.v1"
+          },
+          {
+            "properties": {
+              "operation": {
+                "const": "audio.transcode.v1",
+                "type": "string"
+              },
+              "params": {
+                "additionalProperties": false,
+                "default": {},
+                "description": "音频转换/音轨提取：params 省略时输出 AAC/M4A，采样率、声道和码率为 auto。\n\ncodec 可选 aac/mp3/opus/flac/pcm，默认容器依次为 m4a/mp3/ogg/flac/wav；mka 支持全部五种。\n只改 codec 即推导容器，只改 container 不会推导 codec。Opus 固定 48 kHz；MP3 仅单/双声道。\nmode=copy 默认 mka，不能同时调整编码参数、使用预设或裁剪；源编码与容器仍需兼容。\n编码可用性和部署限额查询 HTTP GET /v1/capabilities 或 MCP list_capabilities。",
+                "examples": [
+                  {},
+                  {
+                    "codec": "mp3"
+                  },
+                  {
+                    "channels": 1,
+                    "codec": "pcm",
+                    "sample_rate": 16000
+                  },
+                  {
+                    "mode": "copy"
+                  }
+                ],
+                "properties": {
+                  "mode": {
+                    "default": "encode",
+                    "description": "encode 重新编码（默认）；copy 复制源音轨，禁止设置编码、采样率、声道、质量或裁剪。仅视频内音轨另支持 drop 去掉音轨；copy 仍须源编码与目标容器兼容。",
+                    "enum": [
+                      "encode",
+                      "copy"
+                    ],
+                    "title": "Mode",
+                    "type": "string"
+                  },
+                  "audio_stream": {
+                    "default": 0,
+                    "description": "所选音轨在音频流中的序号，从 0 开始；默认第一条音轨，不是容器全局流索引。",
+                    "maximum": 31,
+                    "minimum": 0,
+                    "title": "Audio Stream",
+                    "type": "integer"
+                  },
+                  "codec": {
+                    "anyOf": [
+                      {
+                        "enum": [
+                          "aac",
+                          "mp3",
+                          "opus",
+                          "flac",
+                          "pcm"
+                        ],
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "encode 默认 aac；mp3/opus 为其他有损编码，flac 无损压缩，pcm 未压缩。copy/drop 请省略。视频 WebM 音轨默认 opus；支持范围还需查 list_capabilities。",
+                    "title": "Codec",
+                    "x-default-by-mode": {
+                      "copy": null,
+                      "encode": "aac"
+                    }
+                  },
+                  "sample_rate": {
+                    "anyOf": [
+                      {
+                        "maximum": 384000,
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      {
+                        "enum": [
+                          "auto",
+                          "source"
+                        ],
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "采样率，Hz。auto 默认优先源值，不兼容则回落到 48000；source 严格保持。可传 44100/48000 等兼容整数；Opus 仅 48000，MP3/AAC 需符合能力接口的采样率表。copy/drop 省略。",
+                    "examples": [
+                      "auto",
+                      "source",
+                      44100,
+                      48000
+                    ],
+                    "title": "Sample Rate",
+                    "x-default-by-mode": {
+                      "copy": null,
+                      "encode": "auto"
+                    }
+                  },
+                  "channels": {
+                    "anyOf": [
+                      {
+                        "maximum": 8,
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      {
+                        "enum": [
+                          "auto",
+                          "source"
+                        ],
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "声道数：auto 默认优先源值，不兼容则回落到双声道；source 严格保持；整数为 1～8。MP3 仅 1/2，Opus 仅 1/2/3/6/8；指定 channel_layout 时按布局推导。copy/drop 省略。",
+                    "examples": [
+                      "auto",
+                      "source",
+                      1,
+                      2
+                    ],
+                    "title": "Channels",
+                    "x-default-by-mode": {
+                      "copy": null,
+                      "encode": "auto"
+                    }
+                  },
+                  "channel_layout": {
+                    "anyOf": [
+                      {
+                        "enum": [
+                          "mono",
+                          "stereo",
+                          "2.1",
+                          "3.0",
+                          "4.0",
+                          "5.1",
+                          "7.1"
+                        ],
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "description": "声道布局，省略时由源与声道数推导。mono=1、stereo=2、2.1/3.0=3、4.0=4、5.1=6、7.1=8；显式 channels 必须一致。Opus 不支持 2.1/4.0。copy/drop 省略。",
+                    "title": "Channel Layout"
+                  },
+                  "sample_format": {
+                    "anyOf": [
+                      {
+                        "enum": [
+                          "s16",
+                          "s24",
+                          "f32"
+                        ],
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "仅 PCM：s16 为 16-bit 整数（默认），s24 为 24-bit 整数，f32 为 32-bit 浮点。其他编码及 copy/drop 请省略。",
+                    "title": "Sample Format",
+                    "x-default-by-codec": {
+                      "pcm": "s16"
+                    }
+                  },
+                  "rate_control": {
+                    "anyOf": [
+                      {
+                        "discriminator": {
+                          "mapping": {
+                            "auto": "#/components/schemas/AudioAutoBitrate",
+                            "bitrate": "#/components/schemas/AudioBitrate",
+                            "quality": "#/components/schemas/AudioQuality"
+                          },
+                          "propertyName": "mode"
+                        },
+                        "oneOf": [
+                          {
+                            "$ref": "#/components/schemas/AudioBitrate"
+                          },
+                          {
+                            "$ref": "#/components/schemas/AudioQuality"
+                          },
+                          {
+                            "$ref": "#/components/schemas/AudioAutoBitrate"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "AAC/MP3/Opus 默认 {mode:auto}，可改 bitrate；AAC/MP3 还可用 quality。FLAC/PCM 和 copy/drop 请省略；整个对象替换默认策略。",
+                    "examples": [
+                      {
+                        "mode": "auto"
+                      },
+                      {
+                        "bitrate_bps": 128000,
+                        "mode": "bitrate"
+                      }
+                    ],
+                    "title": "Rate Control",
+                    "x-default-by-codec": {
+                      "aac": {
+                        "mode": "auto"
+                      },
+                      "flac": null,
+                      "mp3": {
+                        "mode": "auto"
+                      },
+                      "opus": {
+                        "mode": "auto"
+                      },
+                      "pcm": null
+                    }
+                  },
+                  "compression_level": {
+                    "anyOf": [
+                      {
+                        "maximum": 12,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "仅 FLAC：压缩等级 0～12，默认 5，影响编码工作量和体积；当前输出固定 16-bit。其他编码及 copy/drop 请省略。",
+                    "title": "Compression Level",
+                    "x-default-by-codec": {
+                      "flac": 5
+                    }
+                  },
+                  "preset": {
+                    "anyOf": [
+                      {
+                        "enum": [
+                          "aac_stereo_128k_v1",
+                          "wav_mono_16k_v1"
+                        ],
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "description": "可选捷径，默认不用预设。aac_stereo_128k_v1 为 AAC/48 kHz/双声道/128 kbps；wav_mono_16k_v1 为 PCM s16/16 kHz/单声道；显式设置覆盖预设，copy 禁用。",
+                    "title": "Preset"
+                  },
+                  "container": {
+                    "description": "省略时按 codec 推导：aac→m4a、mp3→mp3、opus→ogg、flac→flac、pcm→wav；mka 兼容全部五种。mode=copy 默认 mka。仅改容器不会反向推导编码。",
+                    "enum": [
+                      "m4a",
+                      "mp3",
+                      "ogg",
+                      "flac",
+                      "wav",
+                      "mka"
+                    ],
+                    "title": "Container",
+                    "type": "string",
+                    "x-default-by-codec": {
+                      "aac": "m4a",
+                      "flac": "flac",
+                      "mp3": "mp3",
+                      "opus": "ogg",
+                      "pcm": "wav"
+                    }
+                  },
+                  "range": {
+                    "$ref": "#/components/schemas/TimeRange",
+                    "default": {
+                      "start_ms": 0,
+                      "end_ms": null
+                    },
+                    "description": "截取时间范围，毫秒；默认处理完整音轨；copy 不支持裁剪。"
+                  }
+                },
+                "title": "AudioParams",
+                "type": "object"
+              }
+            },
+            "required": [
+              "operation"
+            ],
+            "title": "audio.transcode.v1"
+          },
+          {
+            "properties": {
+              "operation": {
+                "const": "video.extract_audio.v1",
+                "type": "string"
+              },
+              "params": {
+                "additionalProperties": false,
+                "default": {},
+                "description": "音频转换/音轨提取：params 省略时输出 AAC/M4A，采样率、声道和码率为 auto。\n\ncodec 可选 aac/mp3/opus/flac/pcm，默认容器依次为 m4a/mp3/ogg/flac/wav；mka 支持全部五种。\n只改 codec 即推导容器，只改 container 不会推导 codec。Opus 固定 48 kHz；MP3 仅单/双声道。\nmode=copy 默认 mka，不能同时调整编码参数、使用预设或裁剪；源编码与容器仍需兼容。\n编码可用性和部署限额查询 HTTP GET /v1/capabilities 或 MCP list_capabilities。",
+                "examples": [
+                  {},
+                  {
+                    "codec": "mp3"
+                  },
+                  {
+                    "channels": 1,
+                    "codec": "pcm",
+                    "sample_rate": 16000
+                  },
+                  {
+                    "mode": "copy"
+                  }
+                ],
+                "properties": {
+                  "mode": {
+                    "default": "encode",
+                    "description": "encode 重新编码（默认）；copy 复制源音轨，禁止设置编码、采样率、声道、质量或裁剪。仅视频内音轨另支持 drop 去掉音轨；copy 仍须源编码与目标容器兼容。",
+                    "enum": [
+                      "encode",
+                      "copy"
+                    ],
+                    "title": "Mode",
+                    "type": "string"
+                  },
+                  "audio_stream": {
+                    "default": 0,
+                    "description": "所选音轨在音频流中的序号，从 0 开始；默认第一条音轨，不是容器全局流索引。",
+                    "maximum": 31,
+                    "minimum": 0,
+                    "title": "Audio Stream",
+                    "type": "integer"
+                  },
+                  "codec": {
+                    "anyOf": [
+                      {
+                        "enum": [
+                          "aac",
+                          "mp3",
+                          "opus",
+                          "flac",
+                          "pcm"
+                        ],
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "encode 默认 aac；mp3/opus 为其他有损编码，flac 无损压缩，pcm 未压缩。copy/drop 请省略。视频 WebM 音轨默认 opus；支持范围还需查 list_capabilities。",
+                    "title": "Codec",
+                    "x-default-by-mode": {
+                      "copy": null,
+                      "encode": "aac"
+                    }
+                  },
+                  "sample_rate": {
+                    "anyOf": [
+                      {
+                        "maximum": 384000,
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      {
+                        "enum": [
+                          "auto",
+                          "source"
+                        ],
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "采样率，Hz。auto 默认优先源值，不兼容则回落到 48000；source 严格保持。可传 44100/48000 等兼容整数；Opus 仅 48000，MP3/AAC 需符合能力接口的采样率表。copy/drop 省略。",
+                    "examples": [
+                      "auto",
+                      "source",
+                      44100,
+                      48000
+                    ],
+                    "title": "Sample Rate",
+                    "x-default-by-mode": {
+                      "copy": null,
+                      "encode": "auto"
+                    }
+                  },
+                  "channels": {
+                    "anyOf": [
+                      {
+                        "maximum": 8,
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      {
+                        "enum": [
+                          "auto",
+                          "source"
+                        ],
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "声道数：auto 默认优先源值，不兼容则回落到双声道；source 严格保持；整数为 1～8。MP3 仅 1/2，Opus 仅 1/2/3/6/8；指定 channel_layout 时按布局推导。copy/drop 省略。",
+                    "examples": [
+                      "auto",
+                      "source",
+                      1,
+                      2
+                    ],
+                    "title": "Channels",
+                    "x-default-by-mode": {
+                      "copy": null,
+                      "encode": "auto"
+                    }
+                  },
+                  "channel_layout": {
+                    "anyOf": [
+                      {
+                        "enum": [
+                          "mono",
+                          "stereo",
+                          "2.1",
+                          "3.0",
+                          "4.0",
+                          "5.1",
+                          "7.1"
+                        ],
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "description": "声道布局，省略时由源与声道数推导。mono=1、stereo=2、2.1/3.0=3、4.0=4、5.1=6、7.1=8；显式 channels 必须一致。Opus 不支持 2.1/4.0。copy/drop 省略。",
+                    "title": "Channel Layout"
+                  },
+                  "sample_format": {
+                    "anyOf": [
+                      {
+                        "enum": [
+                          "s16",
+                          "s24",
+                          "f32"
+                        ],
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "仅 PCM：s16 为 16-bit 整数（默认），s24 为 24-bit 整数，f32 为 32-bit 浮点。其他编码及 copy/drop 请省略。",
+                    "title": "Sample Format",
+                    "x-default-by-codec": {
+                      "pcm": "s16"
+                    }
+                  },
+                  "rate_control": {
+                    "anyOf": [
+                      {
+                        "discriminator": {
+                          "mapping": {
+                            "auto": "#/components/schemas/AudioAutoBitrate",
+                            "bitrate": "#/components/schemas/AudioBitrate",
+                            "quality": "#/components/schemas/AudioQuality"
+                          },
+                          "propertyName": "mode"
+                        },
+                        "oneOf": [
+                          {
+                            "$ref": "#/components/schemas/AudioBitrate"
+                          },
+                          {
+                            "$ref": "#/components/schemas/AudioQuality"
+                          },
+                          {
+                            "$ref": "#/components/schemas/AudioAutoBitrate"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "AAC/MP3/Opus 默认 {mode:auto}，可改 bitrate；AAC/MP3 还可用 quality。FLAC/PCM 和 copy/drop 请省略；整个对象替换默认策略。",
+                    "examples": [
+                      {
+                        "mode": "auto"
+                      },
+                      {
+                        "bitrate_bps": 128000,
+                        "mode": "bitrate"
+                      }
+                    ],
+                    "title": "Rate Control",
+                    "x-default-by-codec": {
+                      "aac": {
+                        "mode": "auto"
+                      },
+                      "flac": null,
+                      "mp3": {
+                        "mode": "auto"
+                      },
+                      "opus": {
+                        "mode": "auto"
+                      },
+                      "pcm": null
+                    }
+                  },
+                  "compression_level": {
+                    "anyOf": [
+                      {
+                        "maximum": 12,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "仅 FLAC：压缩等级 0～12，默认 5，影响编码工作量和体积；当前输出固定 16-bit。其他编码及 copy/drop 请省略。",
+                    "title": "Compression Level",
+                    "x-default-by-codec": {
+                      "flac": 5
+                    }
+                  },
+                  "preset": {
+                    "anyOf": [
+                      {
+                        "enum": [
+                          "aac_stereo_128k_v1",
+                          "wav_mono_16k_v1"
+                        ],
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "description": "可选捷径，默认不用预设。aac_stereo_128k_v1 为 AAC/48 kHz/双声道/128 kbps；wav_mono_16k_v1 为 PCM s16/16 kHz/单声道；显式设置覆盖预设，copy 禁用。",
+                    "title": "Preset"
+                  },
+                  "container": {
+                    "description": "省略时按 codec 推导：aac→m4a、mp3→mp3、opus→ogg、flac→flac、pcm→wav；mka 兼容全部五种。mode=copy 默认 mka。仅改容器不会反向推导编码。",
+                    "enum": [
+                      "m4a",
+                      "mp3",
+                      "ogg",
+                      "flac",
+                      "wav",
+                      "mka"
+                    ],
+                    "title": "Container",
+                    "type": "string",
+                    "x-default-by-codec": {
+                      "aac": "m4a",
+                      "flac": "flac",
+                      "mp3": "mp3",
+                      "opus": "ogg",
+                      "pcm": "wav"
+                    }
+                  },
+                  "range": {
+                    "$ref": "#/components/schemas/TimeRange",
+                    "default": {
+                      "start_ms": 0,
+                      "end_ms": null
+                    },
+                    "description": "截取时间范围，毫秒；默认处理完整音轨；copy 不支持裁剪。"
+                  }
+                },
+                "title": "AudioParams",
+                "type": "object"
+              }
+            },
+            "required": [
+              "operation"
+            ],
+            "title": "video.extract_audio.v1"
+          },
+          {
+            "properties": {
+              "operation": {
+                "const": "video.extract_frames.v1",
+                "type": "string"
+              },
+              "params": {
+                "additionalProperties": false,
+                "default": {},
+                "description": "视频抽帧：params 省略时取 0ms 首帧，保留尺寸，输出 JPEG quality90 集合。\n\nsampling.mode 可选 timestamps 指定毫秒列表、interval 按间隔、count 均匀取指定数量。\nframe_selection 可选 next（默认）/previous/nearest；image 复用完整图片参数，format 为 jpeg/png/webp，\n默认质量分别 JPEG90/WebP85，PNG 压缩等级6。越界逐项报错，不补齐失败帧。\n抽帧数量、尺寸和输出限额查询 list_capabilities 或 GET /v1/capabilities。",
+                "examples": [
+                  {},
+                  {
+                    "image": {
+                      "format": "webp",
+                      "width": 320
+                    },
+                    "sampling": {
+                      "count": 3,
+                      "mode": "count"
+                    }
+                  },
+                  {
+                    "sampling": {
+                      "mode": "timestamps",
+                      "timestamps_ms": [
+                        0,
+                        1000
+                      ]
+                    }
+                  }
+                ],
+                "properties": {
+                  "video_stream": {
+                    "default": 0,
+                    "description": "所选视频轨道在视频流中的序号，从 0 开始，默认第一条；不是容器全局流索引。",
+                    "maximum": 31,
+                    "minimum": 0,
+                    "title": "Video Stream",
+                    "type": "integer"
+                  },
+                  "sampling": {
+                    "default": {
+                      "mode": "timestamps",
+                      "timestamps_ms": [
+                        0
+                      ]
+                    },
+                    "description": "timestamps 指定时间点，interval 按间隔，count 按数量均匀取样；默认取 0ms 首帧。各模式互斥，范围以首张可解码帧归零，省略结束点表示最后可解码帧。",
+                    "discriminator": {
+                      "mapping": {
+                        "count": "#/components/schemas/CountSampling",
+                        "interval": "#/components/schemas/IntervalSampling",
+                        "timestamps": "#/components/schemas/TimestampSampling"
+                      },
+                      "propertyName": "mode"
+                    },
+                    "oneOf": [
+                      {
+                        "$ref": "#/components/schemas/TimestampSampling"
+                      },
+                      {
+                        "$ref": "#/components/schemas/IntervalSampling"
+                      },
+                      {
+                        "$ref": "#/components/schemas/CountSampling"
+                      }
+                    ],
+                    "title": "Sampling"
+                  },
+                  "frame_selection": {
+                    "default": "next",
+                    "description": "next 选不早于目标点的帧（默认）；previous 不晚于；nearest 最近，平局选之前。",
+                    "enum": [
+                      "next",
+                      "previous",
+                      "nearest"
+                    ],
+                    "title": "Frame Selection",
+                    "type": "string"
+                  },
+                  "image": {
+                    "$ref": "#/components/schemas/ImageParams",
+                    "default": {},
+                    "description": "复用图片转换参数；默认保持尺寸、JPEG quality90；可改 png/webp 或宽高、质量。"
+                  }
+                },
+                "title": "FramesParams",
+                "type": "object"
+              }
+            },
+            "required": [
+              "operation"
+            ],
+            "title": "video.extract_frames.v1"
+          },
+          {
+            "properties": {
+              "operation": {
+                "const": "image.resize.v1",
+                "type": "string"
+              },
+              "params": {
+                "additionalProperties": false,
+                "default": {},
+                "description": "图片缩放/格式转换：params 省略时保持尺寸，输出 JPEG quality 90，不放大。\n\nformat 可选 jpeg（不能写 jpg）/png/webp。JPEG quality 1～95 默认90；WebP 0～100 默认85；\nPNG compression_level 0～9 默认6，不接受 quality。只改 format 会选相应默认参数。\nfit 可选 contain/cover/pad；cover/pad 需宽高。JPEG 用白色背景合成透明区域，PNG/WebP 可保留透明。\n当前仅静态 8-bit SDR；尺寸与输出限额查询 list_capabilities 或 GET /v1/capabilities。",
+                "examples": [
+                  {},
+                  {
+                    "format": "png"
+                  },
+                  {
+                    "format": "webp",
+                    "quality": 85
+                  },
+                  {
+                    "fit": "pad",
+                    "height": 240,
+                    "width": 320
+                  }
+                ],
+                "properties": {
+                  "width": {
+                    "anyOf": [
+                      {
+                        "maximum": 65535,
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "description": "目标宽度，像素；只给宽度时等比计算高度，两边都省略则保持源尺寸；受部署限额约束。",
+                    "examples": [
+                      1280
+                    ],
+                    "title": "Width"
+                  },
+                  "height": {
+                    "anyOf": [
+                      {
+                        "maximum": 65535,
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "description": "目标高度，像素；只给高度时等比计算宽度；cover/pad 必须同时指定宽高。",
+                    "examples": [
+                      720
+                    ],
+                    "title": "Height"
+                  },
+                  "fit": {
+                    "default": "contain",
+                    "description": "contain 等比装入不补边（默认）；cover 填满并裁剪；pad 等比装入并补边。cover/pad 需要宽高，视频目标框须为偶数尺寸。",
+                    "enum": [
+                      "contain",
+                      "cover",
+                      "pad"
+                    ],
+                    "title": "Fit",
+                    "type": "string"
+                  },
+                  "allow_upscale": {
+                    "default": false,
+                    "description": "是否允许放大源画面，默认 false；无法满足目标框时可能拒绝处理。",
+                    "title": "Allow Upscale",
+                    "type": "boolean"
+                  },
+                  "background": {
+                    "default": "#ffffff",
+                    "description": "补边及透明转 JPEG 的背景色，#RRGGBB；图片默认白色。",
+                    "examples": [
+                      "#ffffff"
+                    ],
+                    "pattern": "^#[0-9a-fA-F]{6}$",
+                    "title": "Background",
+                    "type": "string"
+                  },
+                  "crop_x": {
+                    "default": 0.5,
+                    "description": "cover 水平裁剪焦点：0 左、0.5 居中（默认）、1 右；其他 fit 只能使用默认值。",
+                    "maximum": 1,
+                    "minimum": 0,
+                    "title": "Crop X",
+                    "type": "number"
+                  },
+                  "crop_y": {
+                    "default": 0.5,
+                    "description": "cover 垂直裁剪焦点：0 上、0.5 居中（默认）、1 下；其他 fit 只能使用默认值。",
+                    "maximum": 1,
+                    "minimum": 0,
+                    "title": "Crop Y",
+                    "type": "number"
+                  },
+                  "resampling": {
+                    "default": "lanczos",
+                    "description": "缩放算法：lanczos（默认）、bicubic 双三次、bilinear 双线性、nearest 最近邻；nearest 可保留像素块边界。",
+                    "enum": [
+                      "lanczos",
+                      "bicubic",
+                      "bilinear",
+                      "nearest"
+                    ],
+                    "title": "Resampling",
+                    "type": "string"
+                  },
+                  "format": {
+                    "default": "jpeg",
+                    "description": "图片输出格式：jpeg（默认；不能写 jpg）、png、webp；使用 Pillow 编码。只设置 format 默认保留尺寸，不能同时传其他格式的专属选项。",
+                    "enum": [
+                      "jpeg",
+                      "png",
+                      "webp"
+                    ],
+                    "title": "Format",
+                    "type": "string"
+                  },
+                  "quality": {
+                    "anyOf": [
+                      {
+                        "maximum": 100,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "JPEG 1～95 默认90，WebP 0～100 默认85；PNG 请省略。适用格式下不能显式传 null。有损模式越高通常越清晰；WebP lossless 时控制压缩工作量。",
+                    "examples": [
+                      85,
+                      90
+                    ],
+                    "title": "Quality",
+                    "x-default-by-format": {
+                      "jpeg": 90,
+                      "png": null,
+                      "webp": 85
+                    }
+                  },
+                  "compression_level": {
+                    "anyOf": [
+                      {
+                        "maximum": 9,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "仅 PNG：压缩等级 0～9，默认6，影响工作量和体积；不是有损画质，不能传 null。",
+                    "title": "Compression Level",
+                    "x-default-by-format": {
+                      "jpeg": null,
+                      "png": 6,
+                      "webp": null
+                    }
+                  },
+                  "jpeg_subsampling": {
+                    "anyOf": [
+                      {
+                        "enum": [
+                          0,
+                          1,
+                          2
+                        ],
+                        "type": "integer"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "仅 JPEG：0=4:4:4、1=4:2:2、2=4:2:0（默认）；不能显式传 null。",
+                    "title": "Jpeg Subsampling",
+                    "x-default-by-format": {
+                      "jpeg": 2,
+                      "png": null,
+                      "webp": null
+                    }
+                  },
+                  "progressive": {
+                    "anyOf": [
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "仅 JPEG：是否渐进式输出，默认 false；不能显式传 null。",
+                    "title": "Progressive",
+                    "x-default-by-format": {
+                      "jpeg": false,
+                      "png": null,
+                      "webp": null
+                    }
+                  },
+                  "lossless": {
+                    "anyOf": [
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "仅 WebP：是否无损编码，默认 false；不能显式传 null。",
+                    "title": "Lossless",
+                    "x-default-by-format": {
+                      "jpeg": null,
+                      "png": null,
+                      "webp": false
+                    }
+                  },
+                  "method": {
+                    "anyOf": [
+                      {
+                        "maximum": 6,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "仅 WebP：编码工作量档位 0～6，默认4；越高通常越慢；不能显式传 null。",
+                    "title": "Method",
+                    "x-default-by-format": {
+                      "jpeg": null,
+                      "png": null,
+                      "webp": 4
+                    }
+                  }
+                },
+                "title": "ImageParams",
+                "type": "object"
+              }
+            },
+            "required": [
+              "operation"
+            ],
+            "title": "image.resize.v1"
+          }
+        ],
         "properties": {
           "id": {
-            "type": "string",
             "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$",
-            "title": "Id"
+            "title": "Id",
+            "type": "string"
           },
           "operation": {
-            "type": "string",
-            "title": "Operation"
+            "description": "媒体操作标识；决定输入端口和 params 的模型，见 oneOf 分支。",
+            "enum": [
+              "media.probe.v1",
+              "video.transcode.v1",
+              "audio.transcode.v1",
+              "video.extract_audio.v1",
+              "video.extract_frames.v1",
+              "image.resize.v1"
+            ],
+            "title": "Operation",
+            "type": "string"
           },
           "inputs": {
+            "maxProperties": 1,
+            "minProperties": 1,
             "patternProperties": {
               "^[A-Za-z][A-Za-z0-9_-]{0,63}$": {
                 "anyOf": [
@@ -3901,46 +6022,45 @@
                 ]
               }
             },
-            "type": "object",
-            "maxProperties": 1,
-            "minProperties": 1,
-            "title": "Inputs"
+            "title": "Inputs",
+            "type": "object"
           },
           "params": {
             "additionalProperties": true,
-            "type": "object",
-            "title": "Params"
+            "default": {},
+            "description": "可省略，使用该操作的默认参数；完整字段、可选值及条件默认见对应 operation 分支。",
+            "title": "Params",
+            "type": "object"
           }
         },
-        "additionalProperties": false,
-        "type": "object",
         "required": [
           "id",
           "operation",
           "inputs"
         ],
-        "title": "Step"
+        "title": "Step",
+        "type": "object"
       },
       "StepBinding": {
+        "additionalProperties": false,
         "properties": {
           "step": {
-            "type": "string",
             "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$",
-            "title": "Step"
+            "title": "Step",
+            "type": "string"
           },
           "output": {
-            "type": "string",
             "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$",
-            "title": "Output"
+            "title": "Output",
+            "type": "string"
           }
         },
-        "additionalProperties": false,
-        "type": "object",
         "required": [
           "step",
           "output"
         ],
-        "title": "StepBinding"
+        "title": "StepBinding",
+        "type": "object"
       },
       "StepResult": {
         "properties": {
@@ -4003,26 +6123,155 @@
         ],
         "title": "StepResult"
       },
-      "UploadedFile": {
+      "TimeRange": {
+        "additionalProperties": false,
         "properties": {
-          "kind": {
-            "type": "string",
-            "const": "uploaded_file",
-            "title": "Kind"
+          "start_ms": {
+            "default": 0,
+            "description": "开始时间，毫秒；默认 0。",
+            "examples": [
+              0,
+              1000
+            ],
+            "minimum": 0,
+            "title": "Start Ms",
+            "type": "integer"
           },
-          "file_id": {
-            "type": "string",
-            "pattern": "^file_[a-f0-9]{32}$",
-            "title": "File Id"
+          "end_ms": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "结束时间，毫秒；省略/null 表示到媒体结束，必须大于 start_ms。",
+            "examples": [
+              5000
+            ],
+            "title": "End Ms"
           }
         },
+        "title": "TimeRange",
+        "type": "object"
+      },
+      "TimestampSampling": {
         "additionalProperties": false,
-        "type": "object",
+        "properties": {
+          "mode": {
+            "const": "timestamps",
+            "default": "timestamps",
+            "description": "按指定时间点逐项抽帧。",
+            "title": "Mode",
+            "type": "string"
+          },
+          "timestamps_ms": {
+            "description": "时间点列表，毫秒；视频首张可解码帧为 0；保留顺序与重复项，越界逐项报错。总数受部署 max_frame_count 限制。",
+            "examples": [
+              [
+                0,
+                1000,
+                2000
+              ]
+            ],
+            "items": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "minItems": 1,
+            "title": "Timestamps Ms",
+            "type": "array"
+          }
+        },
+        "required": [
+          "timestamps_ms"
+        ],
+        "title": "TimestampSampling",
+        "type": "object"
+      },
+      "UploadedFile": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "uploaded_file",
+            "title": "Kind",
+            "type": "string"
+          },
+          "file_id": {
+            "pattern": "^file_[a-f0-9]{32}$",
+            "title": "File Id",
+            "type": "string"
+          }
+        },
         "required": [
           "kind",
           "file_id"
         ],
-        "title": "UploadedFile"
+        "title": "UploadedFile",
+        "type": "object"
+      },
+      "VideoBitrate": {
+        "additionalProperties": false,
+        "properties": {
+          "mode": {
+            "const": "bitrate",
+            "default": "bitrate",
+            "description": "按目标码率编码，与 crf 模式互斥。",
+            "title": "Mode",
+            "type": "string"
+          },
+          "bitrate_bps": {
+            "description": "目标视频码率，bit/s；例如 2 Mbps 写 2000000。",
+            "examples": [
+              2000000
+            ],
+            "exclusiveMinimum": 0,
+            "title": "Bitrate Bps",
+            "type": "integer"
+          },
+          "maxrate_bps": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "峰值码率，bit/s；与 buffer_size_bits 成对提供，不低于目标码率；AV1 不支持。",
+            "examples": [
+              3000000
+            ],
+            "title": "Maxrate Bps"
+          },
+          "buffer_size_bits": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "码率缓冲区大小，bit；与 maxrate_bps 成对提供，AV1 不支持。",
+            "examples": [
+              6000000
+            ],
+            "title": "Buffer Size Bits"
+          }
+        },
+        "required": [
+          "bitrate_bps"
+        ],
+        "title": "VideoBitrate",
+        "type": "object"
       }
     },
     "securitySchemes": {

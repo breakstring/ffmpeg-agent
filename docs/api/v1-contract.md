@@ -60,6 +60,8 @@ HTTP 输入一旦完成获取和校验，后续步骤及恢复使用固定副本
 
 `upload` 仅在该入口有效，`POST /v1/jobs` 和 MCP 普通任务仍使用四种持久引用。请求内文件可与已有 `uploaded_file`、共享文件、HTTP 来源及产物引用混用。文件头、JSON 元数据、part 数、实际文件字节、整个请求和接收时限分别有限额；不能把整个 multipart 请求读入内存。
 
+OpenAPI 将 `job` 描述为 JSON 字符串，使用 `contentMediaType: application/json` 与 `contentSchema` 给出其内容模型。该模型包含 `kind: upload` 占位输入，并复用普通任务按 `operation` 关联的完整步骤参数 schema；客户端应将任务对象序列化为这个 part 的内容。
+
 此入口共用独立上传的托管文件底座。上传完成后将占位绑定为生成的 `file_id`，原子完成幂等判定、任务接受与全部输入引用取得；成功首次返回 `202` 和 `job_id`，同请求重放返回 `200` 和原任务。同键请求的规范化元数据与文件内容摘要不一致返回 `409`。重复传输只确认原任务，不能重复执行媒体操作。
 
 请求只等待完整上传和持久接受，不等待媒体处理。任务未被接受时，尚未完整上传的文件在关闭句柄后进入回收；已完整上传的文件继续按上传 TTL 有界保留，允许同提交键重试复用，届满定向回收。若任务已接受但响应丢失，重试返回原任务，文件继续受该任务保护。断连、事务取消、接受前后崩溃及 recovery/GC 竞争均须有对应证据，不能用 API 返回状态代替实际文件停止与关闭证明。
@@ -71,6 +73,8 @@ HTTP 输入一旦完成获取和校验，后续步骤及恢复使用固定副本
 服务只交付 `/mcp` 的 Streamable HTTP，不提供 stdio 或本地路径桥接。MCP 与 FastAPI 同进程运行，直接调用现有任务、文件、产物和租约服务，共用单 SQLite 连接、调度器与 Worker。
 
 六个语义媒体工具直接使用相同的通用参数：`probe_media`、`transcode_video`、`transcode_audio`、`extract_audio`、`extract_frames`、`resize_image`。`params` 可省略，省略时采用各自默认值；没有额外版本选择字段。媒体工具接受后立即返回结构化 `job_id`，实际结果由查询获得。其余 13 个工具覆盖能力查询、任务图提交/查询/取消、托管输入元数据/release、产物元数据/成员/保留/release 和租约。全部 19 个工具的 schema 以 `tools/list` 为准。
+
+六个媒体工具的描述包含默认行为、主要可选值与组合约束，`inputSchema` 的 `params` 给出字段说明、枚举、范围、单位、示例和默认规则。HTTP OpenAPI、能力接口与 MCP 使用同一模型；AI 可直接从 `tools/list` 选择参数。HTTP 任务和 MCP `submit_job.definition` 的步骤 schema 使用 `oneOf` 按 `operation` 关联相应参数模型，不只暴露一个无字段说明的对象。
 
 | 工具 | 合同 |
 | --- | --- |
@@ -146,7 +150,9 @@ MCP 调用 `transcode_video` 只需：
 
 音频采样率和声道默认 `auto`：优先保留输入值，不兼容时选择目标编码支持的值。自动采样率遇到未知或不兼容源值时回落到 48000 Hz，自动声道遇到未知、超范围或不适用于 MP3/Opus 的源值时回落到双声道。`source` 表示严格保持，无法满足就失败；数字也严格校验。通用码率为 `{"mode":"auto"}`，按实际输出声道计算首选值后再限制到编码器合法范围：AAC 为 64000 × 声道数，MP3 为 96000 × min(声道数, 2)，Opus 单声道 64000、双声道 96000、多声道 64000 × 声道数 bps。显式 `bitrate` 不因不兼容而静默调整。MP3 采样率对应的合法码率与 AAC 上限见[参数合同](../design/media-parameters.md)。
 
-`GET /v1/capabilities` 和 MCP `list_capabilities` 返回相同的 `media_parameters`，包括可用编码器、容器兼容和实际限制；六个操作的 `params_schema` 和 `default_params` 位于 `operations` 各条目。`default_params` 是省略参数时实际采用的规范化默认值，例如 JPEG quality 90；客户端应读取它，不根据 schema 的中间默认值推测实际设置。部署 `max_frame_count` 默认 100、可调整，超出抽帧请求数量返回 `OUTPUT_LIMIT`，不静默截断。`max_frame_rate` 默认 240 fps，只限制显式 `constant`/`max`，`source` 模式保留源帧时间节奏。
+schema 的 `default` 表示字段的普通默认，需结合预设、父对象及字段说明理解；条件默认使用 `x-default-by-codec`、`x-default-by-format`、`x-default-by-mode`、`x-default-by-container` 或 `x-default-by-value`。其中视频 `audio` 的 `x-default-by-container` 给出各容器对应的完整规范化音频默认。客户端不应机械填充全部默认值，也不应把省略字段替换为显式 `null`；只提交需要改变的字段，按该字段的规则处理 `null`。
+
+`GET /v1/capabilities` 和 MCP `list_capabilities` 返回相同的 `media_parameters`，包括可用编码器、容器兼容和实际限制；六个操作的 `description`、`params_schema` 和 `default_params` 位于 `operations` 各条目。schema 枚举为已适配范围，具体部署仍须检查 `media_parameters`。`default_params` 是整个 `params` 省略且未选择预设时的规范化默认值，例如 JPEG quality 90，不是适用于其他编码或格式的请求模板。部署 `max_frame_count` 默认 100、可调整，超出抽帧请求数量返回 `OUTPUT_LIMIT`，不静默截断。`max_frame_rate` 默认 240 fps，只限制显式 `constant`/`max`，`source` 模式保留源帧时间节奏。
 
 任务 `steps[].effective_params` 保存接受时的安全规范化参数；产物 `media.effective_params` 保存结合输入解析后的参数。音频目标码率在 `resolved.rate_control`，视频内音轨在 `resolved.audio.rate_control`；目标值不保证等于 AAC 成品平均码率。产物 `media.streams[].frame_rate` 为容器标称值，尤其 WebM `max` 模式不能据此推断实际帧间隔；帧率策略见 `media.effective_params.frame_rate`，实际节奏用解码帧时间戳验证。
 

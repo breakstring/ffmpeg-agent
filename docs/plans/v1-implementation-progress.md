@@ -52,6 +52,10 @@ P0～P12 既有交付证据保留；P13～P17 通用媒体参数及简单默认�
 
 2026-10-15 补充面向调用方的[英文参数参考](../usage/parameters.md)与[中文参数参考](../usage/parameters.zh-CN.md)，两份 README 增加编码、格式及常用枚举简表。说明服务适配范围与运行引擎能力的交集、Docker 与宿主机的区别、编码/容器兼容规则及实时能力查询。10 个 JSON 示例双语一致并通过共享参数模型校验；两份参考各 12 行编码/容器兼容数据与实现一致；README 的 8 个代码块保持双语一致且未变动，四份说明的 30 个本地链接有效，`git diff --check` 通过。本次只补文档，不变更参数合同、默认值或运行代码，也不将模型校验计作新的媒体执行验收。
 
+2026-10-15 进一步补齐接口自描述：六个 MCP 媒体工具直接说明默认输出、可选编码/格式及组合约束，共享参数 schema 提供字段说明、单位、范围、示例和条件默认。JPEG/WebP 质量、按编码推导容器等条件使用 `x-default-by-*`，不再用 `default: null` 冒充省略后的实际默认；仍要求结合预设和父对象理解。HTTP 普通任务及 MCP `submit_job` 的步骤按 `operation` 提供对应 `params` schema，multipart 的 `job` JSON 内容模型保留上传占位输入并复用同一组步骤。OpenAPI 保留共享 schema 中有意义的 null 值，避免框架序列化造成两端条件默认不同。请求接受、参数归一化和媒体执行逻辑未变；接口描述参与既有合同摘要，摘要随文档元数据更新。
+
+本次本机验证：Ruff 通过，Pyright **0 errors / 0 warnings**，完整 pytest **501 passed in 58.17s**。新增[参数发现单测](../../tests/unit/test_parameter_discovery.py)及[真实 TCP 发现检查](../../tests/integration/test_parameter_service.py)覆盖有效示例、条件默认与实际归一化一致、六能力在 HTTP/MCP/任务图/multipart 的字段级 schema 一致、引用可解析及发现查询不创建任务。8 份机器合同重新导出，其中 [OpenAPI](../api/v1-openapi.json)、[JobCreate](../api/JobCreate.json) 和[操作合同](../api/media-operations.json)更新；四份说明的 32 个本地链接有效、原代码示例保持不变，diff 检查通过。本次未重建容器或重跑容器故障/跨宿主机验收，原有环境范围与待办保持。
+
 ## P13～P17 通用参数证据
 
 先完善[参数合同](../design/media-parameters.md)及 cfKanban CFK-794～CFK-800，再实施共享参数与六类能力。按新项目的使用目标，六个现有 `.v1` 操作直接支持扩展参数；MCP 仍是 19 个工具，其中六个媒体工具一一对应六个媒体操作，不增加额外参数版本选择。

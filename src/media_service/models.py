@@ -3,7 +3,16 @@ import json
 from datetime import datetime
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    GetJsonSchemaHandler,
+    field_validator,
+    model_validator,
+)
+from pydantic.json_schema import JsonSchemaValue
+from pydantic_core import CoreSchema
 
 from media_service.parameters import (
     AudioParams,
@@ -11,6 +20,7 @@ from media_service.parameters import (
     ImageParams,
     ProbeParams,
     VideoParams,
+    parameter_description,
 )
 
 Name = Annotated[str, Field(pattern=r"^[A-Za-z][A-Za-z0-9_-]{0,63}$")]
@@ -120,9 +130,28 @@ OPERATIONS: dict[str, tuple[str, str, type[BaseModel], str]] = {
 
 class Step(StrictModel):
     id: Name
-    operation: str
+    operation: str = Field(description="媒体操作标识；决定输入端口和 params 的模型，见 oneOf 分支。",
+        json_schema_extra={"enum": list(OPERATIONS)})
     inputs: dict[Name, SourceBinding | StepBinding] = Field(min_length=1, max_length=1)
-    params: dict = Field(default_factory=dict)
+    params: dict = Field(default_factory=dict,
+        description="可省略，使用该操作的默认参数；完整字段、可选值及条件默认见对应 operation 分支。",
+        json_schema_extra={"default": {}})
+
+    @classmethod
+    def __get_pydantic_json_schema__(cls, core_schema: CoreSchema,
+                                     handler: GetJsonSchemaHandler) -> JsonSchemaValue:
+        schema = handler(core_schema)
+        # 使用同一生成器登记引用，避免拼接独立 schema 后产生无法解析的 $defs。
+        schema["oneOf"] = [
+            {"title": operation, "properties": {
+                "operation": {"const": operation, "type": "string"},
+                "params": handler(params.__pydantic_core_schema__) | {
+                    "description": parameter_description(params), "default": {},
+                },
+            }, "required": ["operation"]}
+            for operation, (_, _, params, _) in OPERATIONS.items()
+        ]
+        return schema
 
     @model_validator(mode="after")
     def operation_contract(self):
@@ -305,6 +334,7 @@ class MembersResult(StrictModel):
 def capabilities() -> dict:
     return {
         name: {
+            "description": parameter_description(spec[2]),
             "input_ports": [spec[0]],
             "input_kind": "file",
             "output_port": spec[1],

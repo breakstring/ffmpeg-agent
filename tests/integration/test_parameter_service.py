@@ -6,6 +6,7 @@ import httpx
 from PIL import Image
 from test_mcp_service import finished, remote_session, serve
 
+from media_service.models import OPERATIONS, JobCreate
 from media_service.service import Service
 
 MEDIA_TOOLS = (
@@ -37,6 +38,97 @@ def assert_safe_parameters(value, private_paths):
             assert_safe_parameters(child, private_paths)
     elif isinstance(value, str):
         assert all(str(path) not in value for path in private_paths)
+
+
+def resolved_schema(schema, document):
+    if isinstance(schema, list):
+        return [resolved_schema(item, document) for item in schema]
+    if not isinstance(schema, dict):
+        # discriminator.mapping 使用引用字符串，需要消除各协议不同的引用前缀。
+        if isinstance(schema, str) and schema.startswith("#/"):
+            return schema.rsplit("/", 1)[-1]
+        return schema
+    if "$ref" in schema:
+        referenced = document
+        assert schema["$ref"].startswith("#/"), schema["$ref"]
+        for part in schema["$ref"][2:].split("/"):
+            referenced = referenced[part.replace("~1", "/").replace("~0", "~")]
+        schema = referenced | {key: value for key, value in schema.items() if key != "$ref"}
+    return {key: resolved_schema(value, document) for key, value in schema.items() if key != "$defs"}
+
+
+def parameter_contract(schema):
+    return {key: value for key, value in schema.items() if key not in {"title", "description", "default"}}
+
+
+def operation_parameter_schemas(definition):
+    step = definition["properties"]["steps"]["items"]
+    assert "params" not in step.get("required", [])
+    branches = step["oneOf"]
+    result = {}
+    for branch in branches:
+        assert "params" not in branch.get("required", [])
+        properties = branch["properties"]
+        result[properties["operation"]["const"]] = properties["params"]
+    assert len(branches) == len(result) == 6
+    assert set(result) == set(OPERATIONS)
+    return result
+
+
+async def test_http_and_remote_mcp_discovery_share_parameter_documentation(settings):
+    settings.service_token = None
+    service = Service(settings)
+    async with serve(service) as base, remote_session(base, {}) as session:
+        async with httpx.AsyncClient(base_url=base) as client:
+            response = await client.get("/openapi.json")
+            assert response.status_code == 200
+            openapi = response.json()
+            response = await client.get("/v1/capabilities")
+            assert response.status_code == 200
+            capabilities = response.json()
+        tools = {tool.name: tool for tool in (await session.list_tools()).tools}
+        mcp_capabilities = await session.call_tool("list_capabilities", {})
+        assert not mcp_capabilities.is_error
+        assert mcp_capabilities.structured_content["operations"] == capabilities["operations"]
+        body = openapi["paths"]["/v1/jobs"]["post"]["requestBody"]["content"]["application/json"]
+        http_operations = operation_parameter_schemas(resolved_schema(body["schema"], openapi))
+        upload_body = openapi["paths"]["/v1/jobs/upload"]["post"]["requestBody"]["content"]
+        upload_job = upload_body["multipart/form-data"]["schema"]["properties"]["job"]
+        assert upload_job["contentMediaType"] == "application/json"
+        upload_definition = resolved_schema(upload_job["contentSchema"], openapi)
+        upload_operations = operation_parameter_schemas(upload_definition)
+        inputs = upload_definition["properties"]["inputs"]["additionalProperties"]["anyOf"]
+        assert any(item.get("properties", {}).get("kind", {}).get("const") == "upload" for item in inputs)
+        assert upload_job["examples"]
+        for encoded in upload_job["examples"]:
+            example = json.loads(encoded)
+            upload_count = 0
+            for name, source in example["inputs"].items():
+                if source["kind"] == "upload":
+                    assert source["part"] == name
+                    example["inputs"][name] = {"kind": "uploaded_file", "file_id": "file_" + "0" * 32}
+                    upload_count += 1
+            assert upload_count
+            JobCreate.model_validate(example)
+        submit = tools["submit_job"].input_schema
+        mcp_operations = operation_parameter_schemas(
+            resolved_schema(submit["properties"]["definition"], submit)
+        )
+        for name, operation, _, _, _ in MEDIA_TOOLS:
+            operation += ".v1"
+            contract = capabilities["operations"][operation]
+            documented = contract["params_schema"]
+            expected = parameter_contract(resolved_schema(documented, documented))
+            tool = tools[name]
+            assert contract["description"] in tool.description
+            assert "params" not in tool.input_schema["required"]
+            actual = resolved_schema(tool.input_schema["properties"]["params"], tool.input_schema)
+            assert parameter_contract(actual) == expected
+            assert parameter_contract(http_operations[operation]) == expected
+            assert parameter_contract(upload_operations[operation]) == expected
+            assert parameter_contract(mcp_operations[operation]) == expected
+            assert contract["default_params"] == OPERATIONS[operation][2]().model_dump()
+        assert await service.db.one("SELECT COUNT(*) AS count FROM jobs") == {"count": 0}
 
 
 async def test_http_upload_and_mcp_resize_share_parameters_and_download(settings):
