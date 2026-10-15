@@ -159,6 +159,25 @@ python3 examples/http-workflow.py \
 
 同一个参数文件也适用于 MCP 客户端。编写自己的请求时，将这个对象放入 HTTP 步骤的 `params` 或 MCP 工具的 `params`。
 
+### 编码、格式有哪些可选值
+
+下面是服务已经适配的参数值；字符串使用小写。`codec` 是编码方式，`container` 是封装格式，图片则使用 `format`。
+
+| 参数 | 可用值 |
+| --- | --- |
+| 视频 `codec` | `h264`（默认）、`hevc`、`vp9`、`av1` |
+| 视频 `container` | `mp4`、`mkv`、`webm` |
+| 音频 `codec` | `aac`（默认）、`mp3`、`opus`、`flac`、`pcm` |
+| 音频 `container` | `m4a`、`mp3`、`ogg`、`flac`、`wav`、`mka` |
+| 图片 `format` | `jpeg`（默认，不能写成 `jpg`）、`png`、`webp` |
+| 视频 `speed` | `fast`、`medium`（默认）、`slow`，控制编码速度与压缩效率 |
+| 视频 `resize.fit`／图片 `fit` | `contain`（默认，等比装入）、`cover`（裁剪填满）、`pad`（补边） |
+| 视频 `frame_rate.mode` | `source`（默认）、`constant`、`max` |
+
+常见组合是 H.264 + MP4、HEVC + MP4、VP9/AV1 + WebM、AAC + M4A、MP3 + MP3、Opus + Ogg、PCM + WAV。只改 `codec` 就会推导兼容的默认容器；显式填写时必须匹配，例如 H.264 + WebM 会被拒绝。
+
+实际可用范围是“服务已适配 ∩ 运行环境支持”，还受组合和部署限额约束。Docker 使用**容器内**的 FFmpeg/Pillow，宿主机另装编码器不会增加服务能力；当前只使用软件编码。具体部署可通过下方能力接口查询。完整兼容表、非数字参数含义及 10 组可直接使用的 JSON 参数见[媒体参数参考](docs/usage/parameters.zh-CN.md)。
+
 预设是可选快捷设置：`{"preset":"web_720p_v1"}` 选择 720p/30 fps 和双声道 AAC；`aac_stereo_128k_v1` 选择 AAC 128 kbps/48 kHz/双声道；`wav_mono_16k_v1` 选择 16 kHz 单声道 PCM。显式参数覆盖选定预设。未选预设时视频保留源尺寸和时间节奏。音频 `auto` 优先保持源采样率／声道，不兼容时自动调整；`source` 要求严格保持。音频复制模式保留原编码，不能同时调整编码参数或裁剪。
 
 通过 `GET /v1/capabilities` 或 MCP `list_capabilities` 获取可用编码器、schema、默认值和限制。任务的 `steps[].effective_params` 展示接受的设置，产物的 `media.effective_params` 展示解析后的输出设置。编码、尺寸、帧率、码率、采样率和质量的完整控制见[参数合同](docs/design/media-parameters.md)。

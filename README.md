@@ -159,6 +159,25 @@ python3 examples/http-workflow.py \
 
 The same file works with the MCP client. In your own requests, put this object in the HTTP step's `params` or the MCP tool's `params`.
 
+### Available codecs, formats and common values
+
+These values are supported by the service's parameter contract; use lowercase strings. `codec` selects the encoding, `container` selects the file container, and images use `format`.
+
+| Parameter | Values |
+| --- | --- |
+| Video `codec` | `h264` (default), `hevc`, `vp9`, `av1` |
+| Video `container` | `mp4`, `mkv`, `webm` |
+| Audio `codec` | `aac` (default), `mp3`, `opus`, `flac`, `pcm` |
+| Audio `container` | `m4a`, `mp3`, `ogg`, `flac`, `wav`, `mka` |
+| Image `format` | `jpeg` (default; not `jpg`), `png`, `webp` |
+| Video `speed` | `fast`, `medium` (default), `slow`; encoding speed and compression efficiency |
+| Video `resize.fit` / image `fit` | `contain` (default, fit inside), `cover` (crop to fill), `pad` (add borders) |
+| Video `frame_rate.mode` | `source` (default), `constant`, `max` |
+
+Common combinations are H.264 + MP4, HEVC + MP4, VP9/AV1 + WebM, AAC + M4A, MP3 + MP3, Opus + Ogg, and PCM + WAV. Changing only `codec` selects a compatible default container. Explicit combinations must match; H.264 + WebM, for example, is rejected.
+
+Actual availability is the intersection of service support and runtime support, subject to combination rules and deployment limits. Docker uses FFmpeg/Pillow **inside the container**; installing codecs on the host does not add service capabilities. The current implementation uses software encoding. Query the capabilities endpoint below for your deployment. See the [media parameter reference](docs/usage/parameters.md) for complete compatibility tables, enum meanings and 10 ready-to-use JSON parameter examples.
+
 Presets are optional shortcuts: `{"preset":"web_720p_v1"}` selects 720p/30 fps with stereo AAC; `aac_stereo_128k_v1` selects AAC 128 kbps/48 kHz/stereo; `wav_mono_16k_v1` selects 16 kHz mono PCM. Explicit settings override the selected preset. Without a preset, video preserves source dimensions and timing. Audio `auto` prefers source sample rate/channels and falls back to compatible values; `source` requires exact preservation. Audio copy mode preserves the original encoding and cannot be combined with encoding settings or trimming.
 
 Query `GET /v1/capabilities` or MCP `list_capabilities` for available encoders, schemas, defaults and limits. Accepted settings appear in task `steps[].effective_params`; resolved output settings appear in artifact `media.effective_params`. Full codec, size, frame-rate, bitrate, sample-rate and quality controls are documented in the [parameter contract](docs/design/media-parameters.md).
