@@ -4,14 +4,14 @@
 
 Process media from applications or remote AI agents through HTTP and MCP. Upload a file, submit an asynchronous task, and download the result. Shared volumes are optional for clients; you can combine them with HTTP transfers.
 
-| What you can do | Operation |
+| Capability | What you can do |
 | --- | --- |
-| Inspect media, select report sections and optionally count frames | `media.probe.v1` |
-| Convert video with defaults or select encoding, size, frame rate and quality | `video.transcode.v1` |
-| Convert audio with defaults or select codec, sample rate, channels and bitrate | `audio.transcode.v1` |
-| Extract and convert a selected audio track, or copy its original encoding | `video.extract_audio.v1` |
-| Extract frames by timestamps, interval or count, with image size and quality controls | `video.extract_frames.v1` |
-| Resize, crop, pad and convert static JPEG, PNG and WebP images | `image.resize.v1` |
+| Media inspection | Inspect media, select report sections and optionally count frames |
+| Video conversion | Convert video with defaults or select encoding, size, frame rate and quality |
+| Audio conversion | Convert audio with defaults or select codec, sample rate, channels and bitrate |
+| Audio extraction | Extract and convert a selected audio track, or copy its original encoding |
+| Frame extraction | Extract frames by timestamps, interval or count, with image size and quality controls |
+| Image processing | Resize, crop, pad and convert static JPEG, PNG and WebP images |
 
 Tasks can chain operations, reuse inputs and return multiple outputs. Start with the defaults by omitting `params`, then add only the settings you need. HTTP and MCP accept the same parameters. Query `GET /v1/capabilities` for available encoders, parameter schemas and limits.
 
