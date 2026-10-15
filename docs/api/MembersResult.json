@@ -111,6 +111,19 @@
             }
           ],
           "default": null
+        },
+        "media": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Media"
         }
       },
       "required": [

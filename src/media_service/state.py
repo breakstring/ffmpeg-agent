@@ -127,7 +127,9 @@ class State:
                             raise ServiceError("UNSUPPORTED_MEDIA")
                 artifacts.add(source.artifact_id)
             public = {
-                "steps": [{"id": s.id, "operation": s.operation} for s in request.steps],
+                "steps": [{"id": s.id, "operation": s.operation,
+                           "effective_params": s.params}
+                          for s in request.steps],
                 "outputs": {
                     name: binding.model_dump() for name, binding in request.outputs.items()
                 },
@@ -195,18 +197,21 @@ class State:
             return job, steps
 
         job, steps = await self.db.run(read)
+        public = json.loads(job["public_definition"])
+        effective = {step["id"]: step.get("effective_params") for step in public["steps"]}
         results = [
             {
                 "id": s["id"],
                 "status": s["status"],
                 "artifact_id": s["artifact_id"],
                 "error": json.loads(s["error"]) if s["error"] else None,
+                "effective_params": effective.get(s["id"]),
             }
             for s in steps
         ]
         by_id = {s["id"]: s for s in results}
         outputs = {}
-        for name, binding in json.loads(job["public_definition"])["outputs"].items():
+        for name, binding in public["outputs"].items():
             step = by_id[binding["step"]]
             outputs[name] = binding | {key: step[key] for key in ("status", "artifact_id", "error")}
         return {

@@ -6,14 +6,14 @@
 
 | 你可以做什么 | 操作 |
 | --- | --- |
-| 探测媒体信息，下载 JSON 报告 | `media.probe.v1` |
-| 将视频转为适合网页播放的 MP4 / H.264，最高 720p、30 fps | `video.transcode.v1` |
-| 将音频转为 AAC 双声道或 16 kHz 单声道 WAV | `audio.transcode.v1` |
-| 从视频中提取指定音轨并转换格式 | `video.extract_audio.v1` |
-| 按指定时间抽取 JPEG 或 PNG 视频帧 | `video.extract_frames.v1` |
-| 缩放、转换静态 JPEG、PNG、WebP 图片 | `image.resize.v1` |
+| 探测媒体信息、选择报告内容，可选扫描统计帧数 | `media.probe.v1` |
+| 直接转换视频，或自定义编码、尺寸、帧率和质量 | `video.transcode.v1` |
+| 直接转换音频，或自定义编码、采样率、声道和码率 | `audio.transcode.v1` |
+| 提取并转换指定音轨，或保留原编码复制音轨 | `video.extract_audio.v1` |
+| 按时间点、间隔或数量抽帧，并调整图片尺寸和质量 | `video.extract_frames.v1` |
+| 缩放、裁剪、补边和转换静态 JPEG、PNG、WebP 图片 | `image.resize.v1` |
 
-任务可以串联操作、复用输入并返回多个输出。通过 `GET /v1/capabilities` 查询运行中服务的预设与限制。
+任务可以串联操作、复用输入并返回多个输出。省略 `params` 即可使用默认处理，再按需补充参数；HTTP 和 MCP 接受相同参数。通过 `GET /v1/capabilities` 查询可用编码器、参数 schema 和限制。
 
 ## 使用 Docker Compose 启动
 
@@ -49,7 +49,7 @@ curl --fail http://127.0.0.1:8080/health/ready
 
 ## 上传、处理和下载
 
-下面的 Python 3 标准库示例以分块方式上传和下载，不将整个视频读入内存。它会转换 `sample.mp4`，等待任务完成，再验证结果长度与 SHA-256。运行期间保持输入文件不变。
+下面的 Python 3 标准库示例以分块方式上传和下载，不将整个视频读入内存。它会将 `sample.mp4` 转为 H.264/MP4，保留源尺寸和帧时间节奏，等待任务完成，再验证结果长度与 SHA-256。运行期间保持输入文件不变。
 
 将代码保存为 `example.py`，准备好 `sample.mp4`，执行：
 
@@ -121,7 +121,6 @@ job = api("POST", "/v1/jobs", {
     "steps": [{
         "id": "encode", "operation": "video.transcode.v1",
         "inputs": {"video": {"source": "source"}},
-        "params": {"preset": "web_720p_v1"},
     }],
     "outputs": {"video": {"step": "encode", "output": "video"}},
 }, {"Idempotency-Key": "readme-video-" + source_digest})
@@ -178,7 +177,6 @@ job = {
     "steps": [{
         "id": "encode", "operation": "video.transcode.v1",
         "inputs": {"video": {"source": "source"}},
-        "params": {"preset": "web_720p_v1"},
     }],
     "outputs": {"video": {"step": "encode", "output": "video"}},
 }
@@ -206,7 +204,6 @@ with Path("sample.mp4").open("rb") as stream, httpx.Client(timeout=300) as clien
 ```json
 {
   "source": {"kind": "uploaded_file", "file_id": "<file_id returned by HTTP upload>"},
-  "params": {"preset": "web_720p_v1"},
   "idempotency_key": "readme-mcp-video-001"
 }
 ```
@@ -216,6 +213,34 @@ with Path("sample.mp4").open("rb") as stream, httpx.Client(timeout=300) as clien
 六个媒体工具为 `probe_media`、`transcode_video`、`transcode_audio`、`extract_audio`、`extract_frames` 和 `resize_image`。其他工具提供能力查询、任务图、取消、输入释放、产物和租约管理。参数见 [MCP 合同](docs/api/v1-contract.md#远程-mcp)。
 
 文件字节通过 HTTP 传输：**上传 → `file_id` → MCP 处理与查询 → `artifact_id` → 下载**。MCP 也接受下表的其他输入类型。仅提供远程 MCP，服务不能读取客户端电脑上的文件路径。
+
+## 按需调整媒体参数
+
+六个工具都可以省略 `params`。视频默认转为 H.264/MP4、CRF 23，保留源尺寸和帧时间节奏；音频默认 AAC，采样率和声道优先保持源值，必要时选择兼容值。图片默认保留尺寸、转为 JPEG quality 90；抽帧默认取首帧；探测默认返回格式和轨道信息。
+
+需要自定义时，只传希望改变的值。例如，使用以下参数调用 `transcode_video`：等比装入 1920×1080、不放大，采用 CRF 20，并将音轨转为 44.1 kHz 单声道 AAC：
+
+```json
+{
+  "source": {"kind": "uploaded_file", "file_id": "<file_id returned by HTTP upload>"},
+  "params": {
+    "resize": {"width": 1920, "height": 1080},
+    "rate_control": {"mode": "crf", "value": 20},
+    "audio": {"sample_rate": 44100, "channels": 1}
+  },
+  "idempotency_key": "readme-mcp-custom-video-001"
+}
+```
+
+使用 HTTP 时，将同一 `params` 对象放入 `POST /v1/jobs` 或 multipart `job` 的 `video.transcode.v1` 步骤。每个工具只有一套参数合同，不需要额外选择版本。
+
+预设是可选快捷设置。`{"preset":"web_720p_v1"}` 选择 720p/30 fps 和双声道 AAC；`aac_stereo_128k_v1` 选择 AAC 128 kbps/48 kHz/双声道；`wav_mono_16k_v1` 选择 16 kHz 单声道 PCM。显式参数可以覆盖选定预设。未选预设时保留源尺寸和时间节奏；需要固定帧率可传 `frame_rate: {"mode":"constant","value":"30000/1001"}`。
+
+音频采样率和声道的 `auto` 会优先保持源值，不兼容时选兼容值；必须严格保持时传 `source`，不支持就明确失败。自动码率按编码和实际输出声道计算，显式码率严格校验。音频 `mode: "copy"` 保留所选音轨编码，不能同时要求重采样、质量调整或裁剪。JPEG/WebP 使用各自的质量参数，PNG 使用 `compression_level`。
+
+通过任务的 `steps[].effective_params` 和产物的 `media.effective_params` 查看接受时及解析后的设置。音频解析码率位于 `resolved.rate_control`（视频内音轨位于 `resolved.audio.rate_control`）；它是目标值，AAC 成品平均码率可能不同。`media.streams[].frame_rate` 是容器标称帧率，尤其 WebM 不能据此推断实际帧间隔；验证实际时间节奏需结合有效帧率策略与解码帧时间戳。
+
+可用软件编码取决于运行镜像。例如，Opus 输出 48 kHz，当前 AV1 编码器要求至少 64×64 像素。六类能力的完整参数、默认值、兼容组合及抽帧/图片控制见[参数合同](docs/design/media-parameters.md)。
 
 ## 选择输入和使用结果
 
@@ -247,7 +272,7 @@ HTTP 来源默认禁止，配置规则后才能获取。共享输入只读借用
 
 每个服务实例独占自己的状态和工作卷。默认一个逻辑 Worker，可配置为 1～4 个；增加前按实际负载和资源测试。不要让多个容器同时访问同一状态目录。
 
-当前预设不支持 HDR、10 bit 视频、非方形 SAR、动画或多页图片、HLS 处理及任意 FFmpeg 命令。支持的媒体语义和错误边界见 [API 合同](docs/api/v1-contract.md)。
+当前处理范围不包含 HDR、10 bit 视频、硬件加速、非方形 SAR、动画或多页图片、HLS 处理及任意 FFmpeg 命令。支持的媒体语义和错误边界见 [API 合同](docs/api/v1-contract.md)。
 
 - [部署与共享卷示例](deploy/README.md)
 - [HTTP API 合同](docs/api/v1-contract.md)和 [OpenAPI](docs/api/v1-openapi.json)

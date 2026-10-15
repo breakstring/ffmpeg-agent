@@ -5,6 +5,14 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from media_service.parameters import (
+    AudioParams,
+    FramesParams,
+    ImageParams,
+    ProbeParams,
+    VideoParams,
+)
+
 Name = Annotated[str, Field(pattern=r"^[A-Za-z][A-Za-z0-9_-]{0,63}$")]
 Sha256 = Annotated[str, Field(pattern=r"^[0-9a-f]{64}$")]
 
@@ -99,37 +107,8 @@ class StepBinding(StrictModel):
     output: Name
 
 
-class ProbeParams(StrictModel):
-    pass
-
-
-class VideoParams(StrictModel):
-    preset: Literal["web_720p_v1"] = "web_720p_v1"
-
-
-class AudioParams(StrictModel):
-    preset: Literal["aac_stereo_128k_v1", "wav_mono_16k_v1"] = "aac_stereo_128k_v1"
-    audio_stream: int = Field(default=0, ge=0, le=15)
-
-
-class FramesParams(StrictModel):
-    timestamps_ms: list[Annotated[int, Field(ge=0, le=86400000)]] = Field(
-        min_length=1, max_length=100
-    )
-    format: Literal["jpeg", "png"] = "jpeg"
-
-
-class ImageParams(StrictModel):
-    width: int = Field(ge=1, le=8192)
-    height: int = Field(ge=1, le=8192)
-    fit: Literal["contain", "cover"] = "contain"
-    allow_upscale: bool = False
-    format: Literal["jpeg", "png", "webp"] = "jpeg"
-    background: str = Field(default="#ffffff", pattern=r"^#[0-9a-fA-F]{6}$")
-
-
 # 操作版本固定端口与参数，不接受引擎命令透传。
-OPERATIONS: dict[str, tuple[str, str, type[StrictModel], str]] = {
+OPERATIONS: dict[str, tuple[str, str, type[BaseModel], str]] = {
     "media.probe.v1": ("media", "report", ProbeParams, "json"),
     "video.transcode.v1": ("video", "video", VideoParams, "video"),
     "audio.transcode.v1": ("audio", "audio", AudioParams, "audio"),
@@ -260,6 +239,7 @@ class StepResult(StrictModel):
     status: Literal["pending", "running", "succeeded", "partial", "failed", "skipped", "canceled"]
     artifact_id: str | None = None
     error: ErrorResult | None = None
+    effective_params: dict | None = None
 
 
 class OutputResult(StrictModel):
@@ -314,6 +294,7 @@ class MemberResult(StrictModel):
     size_bytes: int | None = None
     sha256: str | None = None
     error: ErrorResult | None = None
+    media: dict | None = None
 
 
 class MembersResult(StrictModel):
@@ -329,6 +310,7 @@ def capabilities() -> dict:
             "output_port": spec[1],
             "output_type": spec[3],
             "accepts_partial": False,
+            "default_params": spec[2]().model_dump(),
             "params_schema": spec[2].model_json_schema(),
         }
         for name, spec in OPERATIONS.items()

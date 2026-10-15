@@ -125,7 +125,12 @@ async def test_health_auth_and_caller_isolation(settings):
         assert unauthorized.headers["www-authenticate"] == "Bearer"
         capabilities = await client.get("/v1/capabilities")
         assert capabilities.status_code == 200
-        assert len(capabilities.json()["operations"]) == 6
+        operations = capabilities.json()["operations"]
+        assert len(operations) == 6
+        assert {name.rsplit(".", 1)[0] for name in operations} == {
+            "media.probe", "video.transcode", "audio.transcode", "video.extract_audio",
+            "video.extract_frames", "image.resize",
+        }
         assert capabilities.json()["limits"]["api_processes"] == 1
         created = await submit(client)
         job_id = created.json()["job_id"]
@@ -345,7 +350,7 @@ async def publish_result(service, *, collection=False):
                 "id": "frames",
                 "operation": "video.extract_frames.v1",
                 "inputs": {"video": {"source": "main"}},
-                "params": {"timestamps_ms": [0, 100]},
+            "params": {"sampling": {"mode": "timestamps", "timestamps_ms": [0, 100]}},
             }
         ]
         body["outputs"] = {"frames": {"step": "frames", "output": "frames"}}

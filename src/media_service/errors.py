@@ -41,7 +41,7 @@ MESSAGES = {
     "INVALID_MEDIA": "无法解析媒体或媒体已损坏",
     "UNSUPPORTED_MEDIA": "媒体类型或特性不受支持",
     "NO_AUDIO_TRACK": "不存在所选音轨",
-    "TIMESTAMP_OUT_OF_RANGE": "未找到不早于请求点的可解码帧",
+    "TIMESTAMP_OUT_OF_RANGE": "请求时间超出可处理的媒体范围",
     "INVALID_TIMELINE": "媒体时间戳缺失或非单调",
     "TASK_TIMEOUT": "已超过任务总时限",
     "EXECUTION_INTERRUPTED": "执行已中断且无法安全恢复",

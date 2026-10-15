@@ -3,7 +3,6 @@ import hashlib
 import json
 import os
 import re
-import sys
 import time
 from bisect import bisect_left
 from dataclasses import dataclass
@@ -17,9 +16,15 @@ from PIL import features
 from media_service.config import Settings
 from media_service.errors import ServiceError
 from media_service.executor import Executor
-from media_service.files import file_job, fsync_directory, safe_open
+from media_service.files import safe_open
 from media_service.image_worker import MODES, SAVE_OPTIONS
-from media_service.models import OPERATIONS, capabilities
+from media_service.models import OPERATIONS, JobCreate, capabilities
+from media_service.parameters import (
+    AUDIO_ENCODERS,
+    MUXERS,
+    VIDEO_ENCODERS,
+    available_parameters,
+)
 from media_service.products import Product
 from media_service.state import encode
 
@@ -70,7 +75,8 @@ PIXEL_FORMATS = {
 }
 MEDIA_RULES = {
     "frame_time_origin": "first_decodable_pts",
-    "frame_selection": "first_greater_or_equal",
+    "frame_selection_default": "next",
+    "frame_selection_modes": ["next", "previous", "nearest"],
     "response_rounding": "half_up_milliseconds",
     "timeline": "strictly_increasing_pts",
     "video_pixel_formats": sorted(PIXEL_FORMATS),
@@ -82,13 +88,25 @@ MEDIA_RULES = {
     "unspecified_sar": "assume_square",
     "image_modes": sorted(MODES),
     "image_icc": "valid_rgb_to_srgb",
-    "image_output": SAVE_OPTIONS,
-    "image_resampling": "lanczos",
-    "image_crop": "center",
+    "image_output_defaults": SAVE_OPTIONS,
+    "image_resampling_default": "lanczos",
+    "image_crop_default": "center",
     "image_size_rounding": "nearest_even",
     "image_metadata": "remove",
     "image_pixel_limit": "source_and_actual_output",
 }
+
+
+def capability_document(service) -> dict:
+    base = service.settings.public_base_url.rstrip("/")
+    return {
+        "operations": capabilities(), "limits": service.settings.public_limits(),
+        "engine": service.engine, "presets": PRESETS, "media_rules": MEDIA_RULES,
+        "input_formats": FORMATS.split(","),
+        "media_parameters": available_parameters(service.engine),
+        "file_transfer": {"upload": f"{base}/v1/files", "upload_and_submit": f"{base}/v1/jobs/upload",
+                          "transport": "http", "authentication": "same_service_token"},
+    }
 
 
 def input_args(fd: int) -> list[str]:
@@ -158,6 +176,7 @@ class MediaEngine:
     def __init__(self, settings: Settings, executor: Executor):
         self.settings = settings
         self.executor = executor
+        self.runtime_capabilities: dict | None = None
 
     async def inspect(self) -> dict:
         if not pillow_version.startswith("12."):
@@ -176,6 +195,8 @@ class MediaEngine:
             versions.append(version)
         if versions[0] != versions[1]:
             raise ServiceError("ENGINE_INCOMPATIBLE")
+        encoders: set[str] = set()
+        muxers: set[str] = set()
         for flag, required in [
             ("-encoders", {"libx264", "aac", "pcm_s16le", "mjpeg", "png"}),
             (
@@ -189,6 +210,10 @@ class MediaEngine:
                 cancel=asyncio.Event(),
             )
             text = result.stdout.decode(errors="replace")
+            if flag == "-encoders":
+                encoders = {parts[1] for line in text.splitlines()
+                            if len(parts := line.split()) >= 2 and len(parts[0]) == 6
+                            and parts[0][0] in "VAS" and parts[1] != "="}
             if result.returncode or any(not re.search(rf"\b{name}\b", text) for name in required):
                 raise ServiceError("ENGINE_INCOMPATIBLE")
         for flag, required in [
@@ -202,6 +227,8 @@ class MediaEngine:
             )
             if result.returncode or not required.issubset(_table_names(result.stdout)):
                 raise ServiceError("ENGINE_INCOMPATIBLE")
+            if flag == "-muxers":
+                muxers = _table_names(result.stdout)
         result = await self.executor.run(
             [self.settings.ffmpeg_path, "-hide_banner", "-protocols"],
             deadline=time.time() + 20,
@@ -214,14 +241,54 @@ class MediaEngine:
         ):
             raise ServiceError("ENGINE_INCOMPATIBLE")
         frozen = {"operations": capabilities(), "presets": PRESETS, "media_rules": MEDIA_RULES}
-        return {
+        engine = {
             "ffmpeg": versions[0],
             "ffprobe": versions[1],
             "pillow": pillow_version,
             "image_version": self.settings.image_version,
             "contract_sha256": hashlib.sha256(encode(frozen).encode()).hexdigest(),
             "presets_sha256": hashlib.sha256(encode(PRESETS).encode()).hexdigest(),
+            "available_encoders": sorted(encoders & (set(VIDEO_ENCODERS.values())
+                | set(AUDIO_ENCODERS.values()) | {"pcm_s24le", "pcm_f32le"})),
+            "available_muxers": sorted(muxers & set(MUXERS.values())),
+            "implementation_sha256": hashlib.sha256(b"".join(
+                (Path(__file__).parent / name).read_bytes() for name in
+                ("parameters.py", "av.py", "visual.py", "image_worker.py")
+            )).hexdigest(),
         }
+        self.runtime_capabilities = engine
+        return engine
+
+    def validate_parameters(self, operation: str, params: dict, engine: dict):
+        encoders = set(engine.get("available_encoders", []))
+        muxers = set(engine.get("available_muxers", []))
+        if "container" in params and MUXERS[params["container"]] not in muxers:
+            raise ServiceError("UNSUPPORTED_OPERATION")
+        if operation == "video.transcode.v1":
+            if VIDEO_ENCODERS[params["codec"]] not in encoders:
+                raise ServiceError("UNSUPPORTED_OPERATION")
+            rate = params["frame_rate"]
+            if rate["mode"] != "source" and Fraction(rate["value"]) > self.settings.max_frame_rate:
+                raise ServiceError("UNSUPPORTED_OPERATION")
+            audio = params["audio"]
+        else:
+            audio = params if operation in ("audio.transcode.v1", "video.extract_audio.v1") else None
+        if audio and audio["mode"] == "encode":
+            encoder = AUDIO_ENCODERS[audio["codec"]]
+            if audio["codec"] == "pcm":
+                encoder = {"s16": "pcm_s16le", "s24": "pcm_s24le", "f32": "pcm_f32le"}[audio["sample_format"]]
+            if encoder not in encoders:
+                raise ServiceError("UNSUPPORTED_OPERATION")
+        if operation == "video.extract_frames.v1":
+            sampling = params["sampling"]
+            count = (len(sampling["timestamps_ms"]) if sampling["mode"] == "timestamps"
+                     else sampling.get("count"))
+            if count is not None and count > self.settings.max_frame_count:
+                raise ServiceError("OUTPUT_LIMIT")
+
+    def validate_request(self, request: JobCreate, engine: dict):
+        for step in request.steps:
+            self.validate_parameters(step.operation, step.params, engine)
 
     async def probe(self, fd: int, deadline: float, cancel: asyncio.Event) -> dict:
         os.lseek(fd, 0, os.SEEK_SET)
@@ -377,125 +444,6 @@ class MediaEngine:
             raise ServiceError("INVALID_MEDIA")
         return result.stderr
 
-    async def _transcode_video(
-        self, report: dict, fd: int, output_dir: Path, deadline: float, cancel: asyncio.Event
-    ) -> Product:
-        video = self._video(report)
-        name = "video.mp4"
-        maps = ["-map", f"0:{video['index']}"]
-        audio = next((stream for stream in report["streams"] if stream["type"] == "audio"), None)
-        if audio is not None:
-            maps += ["-map", f"0:{audio['index']}"]
-        await self._ffmpeg(
-            fd,
-            [
-                *maps,
-                "-map_metadata",
-                "-1",
-                "-map_chapters",
-                "-1",
-                "-vf",
-                VIDEO_FILTER,
-                "-c:v",
-                "libx264",
-                "-preset",
-                "medium",
-                "-crf",
-                "23",
-                "-pix_fmt",
-                "yuv420p",
-                "-fps_mode",
-                "cfr",
-                "-c:a",
-                "aac",
-                "-b:a",
-                "128k",
-                "-ar",
-                "48000",
-                "-ac",
-                "2",
-                "-movflags",
-                "+faststart",
-                str(output_dir / name),
-            ],
-            output_dir,
-            deadline,
-            cancel,
-        )
-        output = await self._output_probe(output_dir, name, deadline, cancel)
-        stream = self._video(output)
-        if (
-            stream["codec"] != "h264"
-            or stream["pixel_format"] != "yuv420p"
-            or stream["frame_rate"] != "30/1"
-            or stream["width"] > 1280
-            or stream["height"] > 720
-            or stream["width"] % 2
-            or stream["height"] % 2
-        ):
-            raise ServiceError("INVALID_MEDIA")
-        if audio is not None:
-            encoded = next((s for s in output["streams"] if s["type"] == "audio"), {})
-            if (encoded.get("codec"), encoded.get("sample_rate"), encoded.get("channels")) != (
-                "aac",
-                48000,
-                2,
-            ):
-                raise ServiceError("INVALID_MEDIA")
-        return Product(
-            "file", output | {"content_type": "video/mp4", "preset": "web_720p_v1"}, [name]
-        )
-
-    async def _transcode_audio(
-        self,
-        report: dict,
-        params: dict,
-        fd: int,
-        output_dir: Path,
-        deadline: float,
-        cancel: asyncio.Event,
-    ) -> Product:
-        streams = [s for s in report["streams"] if s["type"] == "audio"]
-        if params["audio_stream"] >= len(streams):
-            raise ServiceError("NO_AUDIO_TRACK")
-        preset = PRESETS[params["preset"]]
-        name = "audio." + preset["container"]
-        options = [
-            "-map",
-            f"0:{streams[params['audio_stream']]['index']}",
-            "-map_metadata",
-            "-1",
-            "-map_chapters",
-            "-1",
-            "-vn",
-            "-c:a",
-            preset["codec"],
-            "-ar",
-            str(preset["sample_rate"]),
-            "-ac",
-            str(preset["channels"]),
-        ]
-        if "bitrate" in preset:
-            options += ["-b:a", preset["bitrate"], "-movflags", "+faststart"]
-        await self._ffmpeg(fd, [*options, str(output_dir / name)], output_dir, deadline, cancel)
-        output = await self._output_probe(output_dir, name, deadline, cancel)
-        stream = next((s for s in output["streams"] if s["type"] == "audio"), {})
-        if (stream.get("codec"), stream.get("sample_rate"), stream.get("channels")) != (
-            preset["codec"],
-            preset["sample_rate"],
-            preset["channels"],
-        ):
-            raise ServiceError("INVALID_MEDIA")
-        return Product(
-            "file",
-            output
-            | {
-                "content_type": "audio/mp4" if preset["container"] == "m4a" else "audio/wav",
-                "preset": params["preset"],
-            },
-            [name],
-        )
-
     async def _timeline(
         self, fd: int, index: int, deadline: float, cancel: asyncio.Event
     ) -> FrameTimeline:
@@ -530,127 +478,6 @@ class MediaEngine:
             raise ServiceError("INPUT_TOO_LARGE")
         return timeline
 
-    async def _frames(
-        self,
-        report: dict,
-        params: dict,
-        fd: int,
-        output_dir: Path,
-        deadline: float,
-        cancel: asyncio.Event,
-    ) -> Product:
-        video = self._video(report)
-        timeline = await self._timeline(fd, video["index"], deadline, cancel)
-        items, files = [], []
-        for index, requested in enumerate(params["timestamps_ms"]):
-            item = {
-                "index": index,
-                "requested_time_ms": requested,
-                "actual_time_ms": None,
-                "member_key": None,
-                "error": None,
-            }
-            selected = timeline.first_at(requested)
-            if selected is None:
-                item["error"] = ServiceError("TIMESTAMP_OUT_OF_RANGE").public()
-                items.append(item)
-                continue
-            name = f"frame_{index:03d}." + ("jpg" if params["format"] == "jpeg" else "png")
-            ticks = timeline.pts[selected] - timeline.pts[0]
-            try:
-                log = await self._ffmpeg(
-                    fd,
-                    [
-                        "-map",
-                        f"0:{video['index']}",
-                        "-map_metadata",
-                        "-1",
-                        "-vf",
-                        f"settb={timeline.time_base.numerator}/{timeline.time_base.denominator},setpts=PTS-STARTPTS,select='eq(pts,{ticks})',showinfo",
-                        "-frames:v",
-                        "1",
-                        "-fps_mode",
-                        "passthrough",
-                        "-c:v",
-                        "mjpeg" if params["format"] == "jpeg" else "png",
-                        "-q:v",
-                        "2",
-                        str(output_dir / name),
-                    ],
-                    output_dir,
-                    deadline,
-                    cancel,
-                    info=True,
-                )
-                actual_pts = re.search(rb"\bn:\s*0\s+pts:\s*(-?\d+)\s+pts_time:", log)
-                actual_base = re.search(rb"config in time_base:\s*(\d+/\d+)", log)
-                if actual_pts is None or actual_base is None:
-                    raise ServiceError("INVALID_TIMELINE")
-                actual = int(actual_pts.group(1)) * Fraction(actual_base.group(1).decode())
-                if actual != timeline.times[selected] or actual < Fraction(requested, 1000):
-                    raise ServiceError("INVALID_TIMELINE")
-                await self._output_probe(output_dir, name, deadline, cancel)
-                files.append(name)
-                item.update({"member_key": name, "actual_time_ms": fraction_milliseconds(actual)})
-            except ServiceError as error:
-                if error.code not in {"INVALID_MEDIA", "INVALID_TIMELINE"}:
-                    raise
-                item["error"] = error.public()
-                await file_job(lambda event, name=name: (output_dir / name).unlink(missing_ok=True))
-            items.append(item)
-        if not files:
-            raise ServiceError("TIMESTAMP_OUT_OF_RANGE", details={"items": items})
-        return Product(
-            "collection",
-            {
-                "type": "image",
-                "format": params["format"],
-                "content_type": "image/jpeg" if params["format"] == "jpeg" else "image/png",
-                "time_origin": "first_decodable_pts",
-            },
-            files,
-            items,
-            "succeeded" if len(files) == len(items) else "partial",
-        )
-
-    async def _resize_image(
-        self, params: dict, fd: int, output_dir: Path, deadline: float, cancel: asyncio.Event
-    ) -> Product:
-        name = "image." + ("jpg" if params["format"] == "jpeg" else params["format"])
-        os.lseek(fd, 0, os.SEEK_SET)
-        result = await self.executor.run(
-            [
-                sys.executable,
-                "-m",
-                "media_service.image_worker",
-                str(fd),
-                str(output_dir / name),
-                encode(params),
-                str(self.settings.max_pixels),
-            ],
-            pass_fds=(fd,),
-            deadline=deadline,
-            cancel=cancel,
-            monitor_dir=output_dir,
-            env={
-                "PYTHONPATH": str(_MODULE_ROOT),
-                "PYTHONDONTWRITEBYTECODE": "1",
-                "PYTHONUNBUFFERED": "1",
-                "PATH": os.defpath,
-                "LANG": "C.UTF-8",
-            },
-        )
-        try:
-            report = json.loads(result.stdout)
-        except ValueError:
-            raise ServiceError("INVALID_MEDIA") from None
-        if result.returncode:
-            code = report.get("error", "INVALID_MEDIA")
-            raise ServiceError(code, retryable=code == "DISK_FULL")
-        if "media" not in report:
-            raise ServiceError("INVALID_MEDIA")
-        return Product("file", report["media"], [name])
-
     async def run(
         self,
         operation: str,
@@ -663,29 +490,20 @@ class MediaEngine:
         if operation not in OPERATIONS:
             raise ServiceError("UNSUPPORTED_OPERATION")
         params = OPERATIONS[operation][2].model_validate(params).model_dump()
+        from media_service.av import run_audio, run_video
+        from media_service.visual import run_frames, run_image, run_probe
+
+        engine = self.runtime_capabilities or await self.inspect()
+        self.validate_parameters(operation, params, engine)
         if operation == "image.resize.v1":
-            return await self._resize_image(params, fd, output_dir, deadline, cancel)
+            return await run_image(self, params, fd, output_dir, deadline, cancel)
         report = await self.probe(fd, deadline, cancel)
+        args = (self, params, report, fd, output_dir, deadline, cancel)
         if operation == "video.transcode.v1":
-            return await self._transcode_video(report, fd, output_dir, deadline, cancel)
+            return await run_video(*args)
+        if operation in ("audio.transcode.v1", "video.extract_audio.v1"):
+            return await run_audio(*args, extract=operation == "video.extract_audio.v1")
+        visual_args = (self, report, params, fd, output_dir, deadline, cancel)
         if operation == "video.extract_frames.v1":
-            return await self._frames(report, params, fd, output_dir, deadline, cancel)
-        if operation in {"audio.transcode.v1", "video.extract_audio.v1"}:
-            if operation == "video.extract_audio.v1":
-                self._video(report)
-            elif report["type"] != "audio":
-                raise ServiceError("UNSUPPORTED_MEDIA")
-            return await self._transcode_audio(report, params, fd, output_dir, deadline, cancel)
-
-        def write(event):
-            path = output_dir / "report.json"
-            with path.open("xb") as handle:
-                handle.write(encode(report).encode())
-                handle.flush()
-                os.fsync(handle.fileno())
-            fsync_directory(output_dir, event)
-
-        await file_job(write)
-        return Product(
-            "file", {"type": "json", "content_type": "application/json"}, ["report.json"]
-        )
+            return await run_frames(*visual_args)
+        return await run_probe(*visual_args)

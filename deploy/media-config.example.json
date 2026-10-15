@@ -16,6 +16,8 @@
   "worker_concurrency": 1,
   "ffmpeg_threads": 2,
   "ffmpeg_filter_threads": 1,
+  "max_frame_count": 100,
+  "max_frame_rate": 240,
   "public_base_url": "http://localhost:8080",
   "runtime_mode": "container",
   "engine_series": "7.1"

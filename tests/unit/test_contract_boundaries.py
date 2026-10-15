@@ -54,7 +54,7 @@ def test_self_dependency_is_rejected_after_all_sources_are_used():
 
 
 @pytest.mark.parametrize(("operation", "input_port", "output", "params"), [
-    ("video.extract_frames.v1", "video", "frames", {"timestamps_ms": [0]}),
+    ("video.extract_frames.v1", "video", "frames", {"sampling": {"mode": "timestamps", "timestamps_ms": [0]}}),
     ("media.probe.v1", "media", "report", {}),
     ("audio.transcode.v1", "audio", "audio", {}),
 ])
@@ -121,12 +121,12 @@ def test_input_size_requires_nonnegative_integer(invalid):
         JobCreate.model_validate(value)
 
 
-@pytest.mark.parametrize("invalid", [True, "100", 100.1, -1, 86400001])
-def test_frame_timestamps_require_bounded_integer_milliseconds(invalid):
+@pytest.mark.parametrize("invalid", [True, "100", 100.1, -1])
+def test_frame_timestamps_require_nonnegative_integer_milliseconds(invalid):
     value = probe_request()
     value["steps"] = [{
         "id": "frames", "operation": "video.extract_frames.v1",
-        "inputs": {"video": {"source": "main"}}, "params": {"timestamps_ms": [invalid]},
+        "inputs": {"video": {"source": "main"}}, "params": {"sampling": {"mode": "timestamps", "timestamps_ms": [invalid]}},
     }]
     value["outputs"] = {"frames": {"step": "frames", "output": "frames"}}
     with pytest.raises(ValidationError):

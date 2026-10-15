@@ -1,11 +1,12 @@
 # ffmpeg-agent 项目约定
 
-适用全仓，确认日期：2026-10-13。
+适用全仓，确认日期：2026-10-15。
 
 - 实施合同是 `docs/design/media-service-v1.md`、`docs/design/technology-selection-v1.md` 和 `docs/plans/v1-implementation-plan.md`。按 P0 → P1 → P2 → P3 → P4/P5 → P6 → P7 → P8 → P9 → P10/P11 → P12 推进；保留 P0～P7 既有证据，P8～P12 补齐两种 HTTP 上传、统一可选 Token 和远程 MCP。中间里程碑不代表首版完成。
 - 执行跟踪采用 cfKanban KZ / ffmpeg-agent，机器关联在 `.cfkanban-scope.json`；沿用该工具，不接入 Linear。阶段证据和未验证条件记录于 `docs/plans/v1-implementation-progress.md`，不另建 Markdown backlog 或历史任务库。项目治理、执行工具同步和合同调整按项目管理治理技能处理；日常编码直接推进。
 - Python 3.14、FastAPI、单进程、单私有 SQLite/aiosqlite 连接；逻辑 Worker 默认 1、允许 1～4。禁止 Uvicorn 多进程/reload、独立数据库、消息队列、分布式 Worker。
 - 公共模型、数据库与状态转换由主代理统一负责；并行工作必须划定文件所有权。契约变更先核对所有调用方；不要静默改动版本化预设。
+- 参数化增量合同为 `docs/design/media-parameters.md`，按 P13～P17 推进。新项目统一六个 `.v1` 操作，HTTP/MCP 复用同一模型，params 可省略；通用默认优先保留源特征，具名预设作为可选捷径，公开有效参数；10-bit/HDR、硬件加速保留后续 backlog。
 - 所有数据库访问通过统一事务入口，取消后确认回滚完成；事务内不做媒体、文件或网络 I/O。
 - 取消以进程组停止/reap、文件工作完成和句柄关闭为准。执行租约到期不证明进程停止。发布检查点、清单与产物绑定不可变。
 - 接受和引用资格使用事务开始后的当前时间。恢复时已完整提交的步骤直接收尾，不消耗新的执行尝试；尚未发布结果跨过总时限只能撤销，不能导致正常恢复永久不就绪。

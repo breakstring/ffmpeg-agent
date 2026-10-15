@@ -1,0 +1,3091 @@
+{
+  "image_id": "sha256:7eeda466adad958b13d4b91a980c9254fcd590b642c879c436c6f009da648a06",
+  "created_at": "2026-10-15T09:27:20.604337+00:00",
+  "modes": [
+    {
+      "token_enabled": true,
+      "checks": [
+        "nonroot_readonly_exact_image_without_shared_input",
+        "verified_raw_http_uploads",
+        "remote_mcp_discovery_and_http_capability_parity",
+        "six_media_tools_over_real_tcp_http_and_mcp",
+        "job_and_artifact_effective_parameter_parity",
+        "mcp_idempotency_replay",
+        "all_files_and_collection_members_head_range_size_sha_download",
+        "downloaded_media_decoded_and_properties_verified",
+        "all_six_tools_accept_omitted_mcp_params_and_empty_http_params",
+        "adaptive_defaults_preserve_video_timestamps_audio_properties_and_image_size",
+        "project_fixtures_remain_unchanged",
+        "only_owned_resources_removed"
+      ],
+      "cases": [
+        {
+          "tool": "probe_media",
+          "operation": "media.probe.v1",
+          "default_parameters": false,
+          "effective_params": {
+            "count_frames": true,
+            "sections": [
+              "chapters",
+              "format",
+              "streams",
+              "tags"
+            ],
+            "stream_indices": [
+              0
+            ]
+          },
+          "results": [
+            {
+              "transport": "http",
+              "job_id": "job_7fcb0b9f5bdc42c686e0cce2c055527f",
+              "artifact_id": "art_9fb0a4ba55104b0aa814521a535af788",
+              "effective_params": {
+                "count_frames": true,
+                "resolved": {
+                  "stream_indices": [
+                    0
+                  ]
+                },
+                "sections": [
+                  "chapters",
+                  "format",
+                  "streams",
+                  "tags"
+                ],
+                "stream_indices": [
+                  0
+                ]
+              },
+              "files": [
+                {
+                  "size_bytes": 509,
+                  "sha256": "b92421077233ed502c6767fc139edbdfc978dabb00cdd69154e9b716656d76ed",
+                  "actual": {
+                    "type": "json",
+                    "decoded_frame_count": 24
+                  }
+                }
+              ]
+            },
+            {
+              "transport": "mcp",
+              "job_id": "job_893f8a175e4c47a8b97636e4af9f5fcd",
+              "artifact_id": "art_214f29741bf64248a4acafe66b413de8",
+              "effective_params": {
+                "count_frames": true,
+                "resolved": {
+                  "stream_indices": [
+                    0
+                  ]
+                },
+                "sections": [
+                  "chapters",
+                  "format",
+                  "streams",
+                  "tags"
+                ],
+                "stream_indices": [
+                  0
+                ]
+              },
+              "files": [
+                {
+                  "size_bytes": 509,
+                  "sha256": "b92421077233ed502c6767fc139edbdfc978dabb00cdd69154e9b716656d76ed",
+                  "actual": {
+                    "type": "json",
+                    "decoded_frame_count": 24
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tool": "probe_media",
+          "operation": "media.probe.v1",
+          "default_parameters": true,
+          "effective_params": {
+            "count_frames": false,
+            "sections": [
+              "format",
+              "streams"
+            ],
+            "stream_indices": null
+          },
+          "results": [
+            {
+              "transport": "http",
+              "job_id": "job_95852685c1f24dc785a898427933b174",
+              "artifact_id": "art_7fee74af6db64f3d9a5d48613c27802a",
+              "effective_params": {
+                "count_frames": false,
+                "resolved": {
+                  "stream_indices": [
+                    0,
+                    1
+                  ]
+                },
+                "sections": [
+                  "format",
+                  "streams"
+                ],
+                "stream_indices": null
+              },
+              "files": [
+                {
+                  "size_bytes": 734,
+                  "sha256": "194d879612f150a0f5f0a7557adb12cb531077c2f4c36db8897cad9d29676ca4",
+                  "actual": {
+                    "type": "json",
+                    "stream_count": 2
+                  }
+                }
+              ]
+            },
+            {
+              "transport": "mcp",
+              "job_id": "job_3e4bfae8a1a346c79e452b921b51fcb1",
+              "artifact_id": "art_786470d850f84d978aaa0d2e3f4aea3a",
+              "effective_params": {
+                "count_frames": false,
+                "resolved": {
+                  "stream_indices": [
+                    0,
+                    1
+                  ]
+                },
+                "sections": [
+                  "format",
+                  "streams"
+                ],
+                "stream_indices": null
+              },
+              "files": [
+                {
+                  "size_bytes": 734,
+                  "sha256": "194d879612f150a0f5f0a7557adb12cb531077c2f4c36db8897cad9d29676ca4",
+                  "actual": {
+                    "type": "json",
+                    "stream_count": 2
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tool": "transcode_video",
+          "operation": "video.transcode.v1",
+          "default_parameters": false,
+          "effective_params": {
+            "audio": {
+              "audio_stream": 0,
+              "channel_layout": null,
+              "channels": null,
+              "codec": null,
+              "compression_level": null,
+              "mode": "drop",
+              "rate_control": null,
+              "sample_format": null,
+              "sample_rate": null
+            },
+            "codec": "hevc",
+            "container": "mp4",
+            "frame_rate": {
+              "mode": "constant",
+              "value": "12/1"
+            },
+            "pixel_format": "yuv420p",
+            "preset": null,
+            "range": {
+              "end_ms": 1000,
+              "start_ms": 0
+            },
+            "rate_control": {
+              "mode": "crf",
+              "value": 29.0
+            },
+            "resize": {
+              "allow_upscale": false,
+              "background": "#000000",
+              "crop_x": 0.5,
+              "crop_y": 0.5,
+              "fit": "contain",
+              "height": null,
+              "width": 320
+            },
+            "speed": "fast",
+            "video_stream": 0
+          },
+          "results": [
+            {
+              "transport": "http",
+              "job_id": "job_1f02ce78f82746a6929407c9937aabec",
+              "artifact_id": "art_93a75d096e9546ec8b3782dd4ce8719d",
+              "effective_params": {
+                "audio": {
+                  "audio_stream": 0,
+                  "channel_layout": null,
+                  "channels": null,
+                  "codec": null,
+                  "compression_level": null,
+                  "mode": "drop",
+                  "rate_control": null,
+                  "sample_format": null,
+                  "sample_rate": null
+                },
+                "codec": "hevc",
+                "container": "mp4",
+                "frame_rate": {
+                  "mode": "constant",
+                  "value": "12/1"
+                },
+                "pixel_format": "yuv420p",
+                "preset": null,
+                "range": {
+                  "end_ms": 1000,
+                  "start_ms": 0
+                },
+                "rate_control": {
+                  "mode": "crf",
+                  "value": 29.0
+                },
+                "resize": {
+                  "allow_upscale": false,
+                  "background": "#000000",
+                  "crop_x": 0.5,
+                  "crop_y": 0.5,
+                  "fit": "contain",
+                  "height": null,
+                  "width": 320
+                },
+                "resolved": {
+                  "audio": null,
+                  "height": 180,
+                  "width": 320
+                },
+                "speed": "fast",
+                "video_stream": 0
+              },
+              "files": [
+                {
+                  "size_bytes": 12265,
+                  "sha256": "7037b875dc0689156961f406a1af962f495a23799f97e8cf0817143ffc6b5337",
+                  "actual": {
+                    "codec": "hevc",
+                    "width": 320,
+                    "height": 180,
+                    "frame_rate": "12/1"
+                  }
+                }
+              ]
+            },
+            {
+              "transport": "mcp",
+              "job_id": "job_db13ea2845474a1da6539c7c0521c300",
+              "artifact_id": "art_60be64da3e3448eb981c0ea5b7742901",
+              "effective_params": {
+                "audio": {
+                  "audio_stream": 0,
+                  "channel_layout": null,
+                  "channels": null,
+                  "codec": null,
+                  "compression_level": null,
+                  "mode": "drop",
+                  "rate_control": null,
+                  "sample_format": null,
+                  "sample_rate": null
+                },
+                "codec": "hevc",
+                "container": "mp4",
+                "frame_rate": {
+                  "mode": "constant",
+                  "value": "12/1"
+                },
+                "pixel_format": "yuv420p",
+                "preset": null,
+                "range": {
+                  "end_ms": 1000,
+                  "start_ms": 0
+                },
+                "rate_control": {
+                  "mode": "crf",
+                  "value": 29.0
+                },
+                "resize": {
+                  "allow_upscale": false,
+                  "background": "#000000",
+                  "crop_x": 0.5,
+                  "crop_y": 0.5,
+                  "fit": "contain",
+                  "height": null,
+                  "width": 320
+                },
+                "resolved": {
+                  "audio": null,
+                  "height": 180,
+                  "width": 320
+                },
+                "speed": "fast",
+                "video_stream": 0
+              },
+              "files": [
+                {
+                  "size_bytes": 12265,
+                  "sha256": "7037b875dc0689156961f406a1af962f495a23799f97e8cf0817143ffc6b5337",
+                  "actual": {
+                    "codec": "hevc",
+                    "width": 320,
+                    "height": 180,
+                    "frame_rate": "12/1"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tool": "transcode_video",
+          "operation": "video.transcode.v1",
+          "default_parameters": true,
+          "effective_params": {
+            "audio": {
+              "audio_stream": 0,
+              "channel_layout": null,
+              "channels": "auto",
+              "codec": "aac",
+              "compression_level": null,
+              "mode": "encode",
+              "rate_control": {
+                "mode": "auto"
+              },
+              "sample_format": null,
+              "sample_rate": "auto"
+            },
+            "codec": "h264",
+            "container": "mp4",
+            "frame_rate": {
+              "mode": "source",
+              "value": null
+            },
+            "pixel_format": "yuv420p",
+            "preset": null,
+            "range": {
+              "end_ms": null,
+              "start_ms": 0
+            },
+            "rate_control": {
+              "mode": "crf",
+              "value": 23.0
+            },
+            "resize": {
+              "allow_upscale": false,
+              "background": "#000000",
+              "crop_x": 0.5,
+              "crop_y": 0.5,
+              "fit": "contain",
+              "height": null,
+              "width": null
+            },
+            "speed": "medium",
+            "video_stream": 0
+          },
+          "results": [
+            {
+              "transport": "http",
+              "job_id": "job_4b6ba344d6154dd3b9e1f7850acfac3f",
+              "artifact_id": "art_ec25c62ef0c14a728ebbb85c39b05c03",
+              "effective_params": {
+                "audio": {
+                  "audio_stream": 0,
+                  "channel_layout": null,
+                  "channels": "auto",
+                  "codec": "aac",
+                  "compression_level": null,
+                  "mode": "encode",
+                  "rate_control": {
+                    "mode": "auto"
+                  },
+                  "sample_format": null,
+                  "sample_rate": "auto"
+                },
+                "codec": "h264",
+                "container": "mp4",
+                "frame_rate": {
+                  "mode": "source",
+                  "value": null
+                },
+                "pixel_format": "yuv420p",
+                "preset": null,
+                "range": {
+                  "end_ms": null,
+                  "start_ms": 0
+                },
+                "rate_control": {
+                  "mode": "crf",
+                  "value": 23.0
+                },
+                "resize": {
+                  "allow_upscale": false,
+                  "background": "#000000",
+                  "crop_x": 0.5,
+                  "crop_y": 0.5,
+                  "fit": "contain",
+                  "height": null,
+                  "width": null
+                },
+                "resolved": {
+                  "audio": {
+                    "channels": 1,
+                    "codec": "aac",
+                    "rate_control": {
+                      "bitrate_bps": 64000,
+                      "mode": "bitrate"
+                    },
+                    "sample_rate": 44100
+                  },
+                  "height": 360,
+                  "width": 640
+                },
+                "speed": "medium",
+                "video_stream": 0
+              },
+              "files": [
+                {
+                  "size_bytes": 70857,
+                  "sha256": "73e376ca73c779ec6a3dc47cfd3dc6fc8d34ce0cb8be3cf309bf67d3fcc8f24e",
+                  "actual": {
+                    "codec": "h264",
+                    "width": 640,
+                    "height": 360,
+                    "source_timestamps_preserved": true,
+                    "decoded_frame_count": 24,
+                    "audio_sample_rate": 44100,
+                    "audio_channels": 1
+                  }
+                }
+              ]
+            },
+            {
+              "transport": "mcp",
+              "job_id": "job_beaa9981555942c084cf648c132a2263",
+              "artifact_id": "art_23d32618f42d4b3585eae6494d1a08f6",
+              "effective_params": {
+                "audio": {
+                  "audio_stream": 0,
+                  "channel_layout": null,
+                  "channels": "auto",
+                  "codec": "aac",
+                  "compression_level": null,
+                  "mode": "encode",
+                  "rate_control": {
+                    "mode": "auto"
+                  },
+                  "sample_format": null,
+                  "sample_rate": "auto"
+                },
+                "codec": "h264",
+                "container": "mp4",
+                "frame_rate": {
+                  "mode": "source",
+                  "value": null
+                },
+                "pixel_format": "yuv420p",
+                "preset": null,
+                "range": {
+                  "end_ms": null,
+                  "start_ms": 0
+                },
+                "rate_control": {
+                  "mode": "crf",
+                  "value": 23.0
+                },
+                "resize": {
+                  "allow_upscale": false,
+                  "background": "#000000",
+                  "crop_x": 0.5,
+                  "crop_y": 0.5,
+                  "fit": "contain",
+                  "height": null,
+                  "width": null
+                },
+                "resolved": {
+                  "audio": {
+                    "channels": 1,
+                    "codec": "aac",
+                    "rate_control": {
+                      "bitrate_bps": 64000,
+                      "mode": "bitrate"
+                    },
+                    "sample_rate": 44100
+                  },
+                  "height": 360,
+                  "width": 640
+                },
+                "speed": "medium",
+                "video_stream": 0
+              },
+              "files": [
+                {
+                  "size_bytes": 70857,
+                  "sha256": "73e376ca73c779ec6a3dc47cfd3dc6fc8d34ce0cb8be3cf309bf67d3fcc8f24e",
+                  "actual": {
+                    "codec": "h264",
+                    "width": 640,
+                    "height": 360,
+                    "source_timestamps_preserved": true,
+                    "decoded_frame_count": 24,
+                    "audio_sample_rate": 44100,
+                    "audio_channels": 1
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tool": "transcode_audio",
+          "operation": "audio.transcode.v1",
+          "default_parameters": false,
+          "effective_params": {
+            "audio_stream": 0,
+            "channel_layout": null,
+            "channels": 1,
+            "codec": "opus",
+            "compression_level": null,
+            "container": "ogg",
+            "mode": "encode",
+            "preset": null,
+            "range": {
+              "end_ms": 1000,
+              "start_ms": 0
+            },
+            "rate_control": {
+              "bitrate_bps": 64000,
+              "mode": "bitrate"
+            },
+            "sample_format": null,
+            "sample_rate": 48000
+          },
+          "results": [
+            {
+              "transport": "http",
+              "job_id": "job_2bc63efb850d4d8c817ed922e67bb70e",
+              "artifact_id": "art_b989ac8915b848d886afc2e73b02053a",
+              "effective_params": {
+                "audio_stream": 0,
+                "channel_layout": null,
+                "channels": 1,
+                "codec": "opus",
+                "compression_level": null,
+                "container": "ogg",
+                "mode": "encode",
+                "preset": null,
+                "range": {
+                  "end_ms": 1000,
+                  "start_ms": 0
+                },
+                "rate_control": {
+                  "bitrate_bps": 64000,
+                  "mode": "bitrate"
+                },
+                "resolved": {
+                  "channel_layout": "mono",
+                  "channels": 1,
+                  "codec": "opus",
+                  "rate_control": {
+                    "bitrate_bps": 64000,
+                    "mode": "bitrate"
+                  },
+                  "sample_rate": 48000
+                },
+                "sample_format": null,
+                "sample_rate": 48000
+              },
+              "files": [
+                {
+                  "size_bytes": 9730,
+                  "sha256": "43d5df11c730e56451311e39367126dacf89fe7d8e1b1c6a59c3dff4fa1f2d60",
+                  "actual": {
+                    "codec": "opus",
+                    "sample_rate": 48000,
+                    "channels": 1
+                  }
+                }
+              ]
+            },
+            {
+              "transport": "mcp",
+              "job_id": "job_1aa2a972a0994f6483bb4c5dcd2a0f7b",
+              "artifact_id": "art_e98663e32e9b47f2b3d72fc2c0c86629",
+              "effective_params": {
+                "audio_stream": 0,
+                "channel_layout": null,
+                "channels": 1,
+                "codec": "opus",
+                "compression_level": null,
+                "container": "ogg",
+                "mode": "encode",
+                "preset": null,
+                "range": {
+                  "end_ms": 1000,
+                  "start_ms": 0
+                },
+                "rate_control": {
+                  "bitrate_bps": 64000,
+                  "mode": "bitrate"
+                },
+                "resolved": {
+                  "channel_layout": "mono",
+                  "channels": 1,
+                  "codec": "opus",
+                  "rate_control": {
+                    "bitrate_bps": 64000,
+                    "mode": "bitrate"
+                  },
+                  "sample_rate": 48000
+                },
+                "sample_format": null,
+                "sample_rate": 48000
+              },
+              "files": [
+                {
+                  "size_bytes": 9730,
+                  "sha256": "a5dddd62becac940aa9a490b882f828c570842ad54712809eb974be4796815f4",
+                  "actual": {
+                    "codec": "opus",
+                    "sample_rate": 48000,
+                    "channels": 1
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tool": "transcode_audio",
+          "operation": "audio.transcode.v1",
+          "default_parameters": true,
+          "effective_params": {
+            "audio_stream": 0,
+            "channel_layout": null,
+            "channels": "auto",
+            "codec": "aac",
+            "compression_level": null,
+            "container": "m4a",
+            "mode": "encode",
+            "preset": null,
+            "range": {
+              "end_ms": null,
+              "start_ms": 0
+            },
+            "rate_control": {
+              "mode": "auto"
+            },
+            "sample_format": null,
+            "sample_rate": "auto"
+          },
+          "results": [
+            {
+              "transport": "http",
+              "job_id": "job_0d642374231c4fbea17b40a261aead1c",
+              "artifact_id": "art_ee840a1ca8ee4b73a344a3f67d35a42a",
+              "effective_params": {
+                "audio_stream": 0,
+                "channel_layout": null,
+                "channels": "auto",
+                "codec": "aac",
+                "compression_level": null,
+                "container": "m4a",
+                "mode": "encode",
+                "preset": null,
+                "range": {
+                  "end_ms": null,
+                  "start_ms": 0
+                },
+                "rate_control": {
+                  "mode": "auto"
+                },
+                "resolved": {
+                  "channels": 1,
+                  "codec": "aac",
+                  "rate_control": {
+                    "bitrate_bps": 64000,
+                    "mode": "bitrate"
+                  },
+                  "sample_rate": 22050
+                },
+                "sample_format": null,
+                "sample_rate": "auto"
+              },
+              "files": [
+                {
+                  "size_bytes": 65464,
+                  "sha256": "650b7b85e5db520faea9fd5b9b697799a4ecfa89516abe852bf4f45a8617e92d",
+                  "actual": {
+                    "codec": "aac",
+                    "sample_rate": 22050,
+                    "channels": 1
+                  }
+                }
+              ]
+            },
+            {
+              "transport": "mcp",
+              "job_id": "job_ae31362237144cbbae42279fc599f2b1",
+              "artifact_id": "art_4daa59d5a51448bd820c253398b564f4",
+              "effective_params": {
+                "audio_stream": 0,
+                "channel_layout": null,
+                "channels": "auto",
+                "codec": "aac",
+                "compression_level": null,
+                "container": "m4a",
+                "mode": "encode",
+                "preset": null,
+                "range": {
+                  "end_ms": null,
+                  "start_ms": 0
+                },
+                "rate_control": {
+                  "mode": "auto"
+                },
+                "resolved": {
+                  "channels": 1,
+                  "codec": "aac",
+                  "rate_control": {
+                    "bitrate_bps": 64000,
+                    "mode": "bitrate"
+                  },
+                  "sample_rate": 22050
+                },
+                "sample_format": null,
+                "sample_rate": "auto"
+              },
+              "files": [
+                {
+                  "size_bytes": 65464,
+                  "sha256": "650b7b85e5db520faea9fd5b9b697799a4ecfa89516abe852bf4f45a8617e92d",
+                  "actual": {
+                    "codec": "aac",
+                    "sample_rate": 22050,
+                    "channels": 1
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tool": "extract_audio",
+          "operation": "video.extract_audio.v1",
+          "default_parameters": false,
+          "effective_params": {
+            "audio_stream": 0,
+            "channel_layout": null,
+            "channels": null,
+            "codec": null,
+            "compression_level": null,
+            "container": "m4a",
+            "mode": "copy",
+            "preset": null,
+            "range": {
+              "end_ms": null,
+              "start_ms": 0
+            },
+            "rate_control": null,
+            "sample_format": null,
+            "sample_rate": null
+          },
+          "results": [
+            {
+              "transport": "http",
+              "job_id": "job_d265afeb1eb6466983c7a2f2d395307a",
+              "artifact_id": "art_4e84bf04df484bad9501ebc96def7e34",
+              "effective_params": {
+                "audio_stream": 0,
+                "channel_layout": null,
+                "channels": null,
+                "codec": null,
+                "compression_level": null,
+                "container": "m4a",
+                "mode": "copy",
+                "preset": null,
+                "range": {
+                  "end_ms": null,
+                  "start_ms": 0
+                },
+                "rate_control": null,
+                "resolved": {
+                  "channels": 1,
+                  "codec": "aac",
+                  "sample_rate": 44100
+                },
+                "sample_format": null,
+                "sample_rate": null
+              },
+              "files": [
+                {
+                  "size_bytes": 13456,
+                  "sha256": "99530072b932cb73345f2facb772bbfd73d8e93e8012f5631672802e12fde9d7",
+                  "actual": {
+                    "codec": "aac",
+                    "sample_rate": 44100,
+                    "channels": 1
+                  }
+                }
+              ]
+            },
+            {
+              "transport": "mcp",
+              "job_id": "job_8b63831f5c094cd1b5a4fa7a0525d3b8",
+              "artifact_id": "art_164f9905a1ab43e991594057bca00fd9",
+              "effective_params": {
+                "audio_stream": 0,
+                "channel_layout": null,
+                "channels": null,
+                "codec": null,
+                "compression_level": null,
+                "container": "m4a",
+                "mode": "copy",
+                "preset": null,
+                "range": {
+                  "end_ms": null,
+                  "start_ms": 0
+                },
+                "rate_control": null,
+                "resolved": {
+                  "channels": 1,
+                  "codec": "aac",
+                  "sample_rate": 44100
+                },
+                "sample_format": null,
+                "sample_rate": null
+              },
+              "files": [
+                {
+                  "size_bytes": 13456,
+                  "sha256": "99530072b932cb73345f2facb772bbfd73d8e93e8012f5631672802e12fde9d7",
+                  "actual": {
+                    "codec": "aac",
+                    "sample_rate": 44100,
+                    "channels": 1
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tool": "extract_audio",
+          "operation": "video.extract_audio.v1",
+          "default_parameters": true,
+          "effective_params": {
+            "audio_stream": 0,
+            "channel_layout": null,
+            "channels": "auto",
+            "codec": "aac",
+            "compression_level": null,
+            "container": "m4a",
+            "mode": "encode",
+            "preset": null,
+            "range": {
+              "end_ms": null,
+              "start_ms": 0
+            },
+            "rate_control": {
+              "mode": "auto"
+            },
+            "sample_format": null,
+            "sample_rate": "auto"
+          },
+          "results": [
+            {
+              "transport": "http",
+              "job_id": "job_0613ac6c35904f10aa2a004396e537ca",
+              "artifact_id": "art_dcaf11a8c0ea4f20ab281674175fdc83",
+              "effective_params": {
+                "audio_stream": 0,
+                "channel_layout": null,
+                "channels": "auto",
+                "codec": "aac",
+                "compression_level": null,
+                "container": "m4a",
+                "mode": "encode",
+                "preset": null,
+                "range": {
+                  "end_ms": null,
+                  "start_ms": 0
+                },
+                "rate_control": {
+                  "mode": "auto"
+                },
+                "resolved": {
+                  "channels": 1,
+                  "codec": "aac",
+                  "rate_control": {
+                    "bitrate_bps": 64000,
+                    "mode": "bitrate"
+                  },
+                  "sample_rate": 44100
+                },
+                "sample_format": null,
+                "sample_rate": "auto"
+              },
+              "files": [
+                {
+                  "size_bytes": 9640,
+                  "sha256": "a37f1a7aff8695464ba6ac37183fa0f74984b6ad70143105971c8b096007ceeb",
+                  "actual": {
+                    "codec": "aac",
+                    "sample_rate": 44100,
+                    "channels": 1
+                  }
+                }
+              ]
+            },
+            {
+              "transport": "mcp",
+              "job_id": "job_f017879f170241318d2859be59dc91c6",
+              "artifact_id": "art_51789f4e6c8d439dba08e8a171950d91",
+              "effective_params": {
+                "audio_stream": 0,
+                "channel_layout": null,
+                "channels": "auto",
+                "codec": "aac",
+                "compression_level": null,
+                "container": "m4a",
+                "mode": "encode",
+                "preset": null,
+                "range": {
+                  "end_ms": null,
+                  "start_ms": 0
+                },
+                "rate_control": {
+                  "mode": "auto"
+                },
+                "resolved": {
+                  "channels": 1,
+                  "codec": "aac",
+                  "rate_control": {
+                    "bitrate_bps": 64000,
+                    "mode": "bitrate"
+                  },
+                  "sample_rate": 44100
+                },
+                "sample_format": null,
+                "sample_rate": "auto"
+              },
+              "files": [
+                {
+                  "size_bytes": 9640,
+                  "sha256": "a37f1a7aff8695464ba6ac37183fa0f74984b6ad70143105971c8b096007ceeb",
+                  "actual": {
+                    "codec": "aac",
+                    "sample_rate": 44100,
+                    "channels": 1
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tool": "extract_frames",
+          "operation": "video.extract_frames.v1",
+          "default_parameters": false,
+          "effective_params": {
+            "frame_selection": "nearest",
+            "image": {
+              "allow_upscale": false,
+              "background": "#ffffff",
+              "compression_level": 9,
+              "crop_x": 0.5,
+              "crop_y": 0.5,
+              "fit": "contain",
+              "format": "png",
+              "height": null,
+              "jpeg_subsampling": null,
+              "lossless": null,
+              "method": null,
+              "progressive": null,
+              "quality": null,
+              "resampling": "lanczos",
+              "width": 80
+            },
+            "sampling": {
+              "count": 3,
+              "end_ms": 900,
+              "mode": "count",
+              "start_ms": 0
+            },
+            "video_stream": 0
+          },
+          "results": [
+            {
+              "transport": "http",
+              "job_id": "job_ede25f17aac14c1f8abc2a06b505fe18",
+              "artifact_id": "art_f486afc1aeb849cd8e57e21622ca6cc6",
+              "effective_params": {
+                "frame_selection": "nearest",
+                "image": {
+                  "allow_upscale": false,
+                  "background": "#ffffff",
+                  "compression_level": 9,
+                  "crop_x": 0.5,
+                  "crop_y": 0.5,
+                  "fit": "contain",
+                  "format": "png",
+                  "height": null,
+                  "jpeg_subsampling": null,
+                  "lossless": null,
+                  "method": null,
+                  "progressive": null,
+                  "quality": null,
+                  "resampling": "lanczos",
+                  "width": 80
+                },
+                "resolved": {
+                  "requested_frame_count": 3,
+                  "successful_frame_count": 3,
+                  "video_stream_index": 0
+                },
+                "sampling": {
+                  "count": 3,
+                  "end_ms": 900,
+                  "mode": "count",
+                  "start_ms": 0
+                },
+                "video_stream": 0
+              },
+              "files": [
+                {
+                  "size_bytes": 2647,
+                  "sha256": "c944bccc1e599e08b150cfb7fe2c17486e2766732eebd69912550764806c984b",
+                  "actual": {
+                    "format": "PNG",
+                    "width": 80,
+                    "height": 45
+                  },
+                  "requested_time_ms": 0,
+                  "actual_time_ms": 0
+                },
+                {
+                  "size_bytes": 3045,
+                  "sha256": "7586952fbf4446ab63bcb6fdd28f90a659c403248a78214de6a71b8908393e91",
+                  "actual": {
+                    "format": "PNG",
+                    "width": 80,
+                    "height": 45
+                  },
+                  "requested_time_ms": 450,
+                  "actual_time_ms": 458
+                },
+                {
+                  "size_bytes": 2953,
+                  "sha256": "1d70c3586844cda03fc7a5d09c160a57e44bfff2826395644bfca0a09f28e31b",
+                  "actual": {
+                    "format": "PNG",
+                    "width": 80,
+                    "height": 45
+                  },
+                  "requested_time_ms": 900,
+                  "actual_time_ms": 917
+                }
+              ]
+            },
+            {
+              "transport": "mcp",
+              "job_id": "job_db57524958c642d8a62ec14ad86f818b",
+              "artifact_id": "art_7d6f4132e1c5440d89b1994c881e93ec",
+              "effective_params": {
+                "frame_selection": "nearest",
+                "image": {
+                  "allow_upscale": false,
+                  "background": "#ffffff",
+                  "compression_level": 9,
+                  "crop_x": 0.5,
+                  "crop_y": 0.5,
+                  "fit": "contain",
+                  "format": "png",
+                  "height": null,
+                  "jpeg_subsampling": null,
+                  "lossless": null,
+                  "method": null,
+                  "progressive": null,
+                  "quality": null,
+                  "resampling": "lanczos",
+                  "width": 80
+                },
+                "resolved": {
+                  "requested_frame_count": 3,
+                  "successful_frame_count": 3,
+                  "video_stream_index": 0
+                },
+                "sampling": {
+                  "count": 3,
+                  "end_ms": 900,
+                  "mode": "count",
+                  "start_ms": 0
+                },
+                "video_stream": 0
+              },
+              "files": [
+                {
+                  "size_bytes": 2647,
+                  "sha256": "c944bccc1e599e08b150cfb7fe2c17486e2766732eebd69912550764806c984b",
+                  "actual": {
+                    "format": "PNG",
+                    "width": 80,
+                    "height": 45
+                  },
+                  "requested_time_ms": 0,
+                  "actual_time_ms": 0
+                },
+                {
+                  "size_bytes": 3045,
+                  "sha256": "7586952fbf4446ab63bcb6fdd28f90a659c403248a78214de6a71b8908393e91",
+                  "actual": {
+                    "format": "PNG",
+                    "width": 80,
+                    "height": 45
+                  },
+                  "requested_time_ms": 450,
+                  "actual_time_ms": 458
+                },
+                {
+                  "size_bytes": 2953,
+                  "sha256": "1d70c3586844cda03fc7a5d09c160a57e44bfff2826395644bfca0a09f28e31b",
+                  "actual": {
+                    "format": "PNG",
+                    "width": 80,
+                    "height": 45
+                  },
+                  "requested_time_ms": 900,
+                  "actual_time_ms": 917
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tool": "extract_frames",
+          "operation": "video.extract_frames.v1",
+          "default_parameters": true,
+          "effective_params": {
+            "frame_selection": "next",
+            "image": {
+              "allow_upscale": false,
+              "background": "#ffffff",
+              "compression_level": null,
+              "crop_x": 0.5,
+              "crop_y": 0.5,
+              "fit": "contain",
+              "format": "jpeg",
+              "height": null,
+              "jpeg_subsampling": 2,
+              "lossless": null,
+              "method": null,
+              "progressive": false,
+              "quality": 90,
+              "resampling": "lanczos",
+              "width": null
+            },
+            "sampling": {
+              "mode": "timestamps",
+              "timestamps_ms": [
+                0
+              ]
+            },
+            "video_stream": 0
+          },
+          "results": [
+            {
+              "transport": "http",
+              "job_id": "job_e8857fdf496c437bbebc9d5bf23efdf9",
+              "artifact_id": "art_8db97f76b2b7489992b8b402fade23eb",
+              "effective_params": {
+                "frame_selection": "next",
+                "image": {
+                  "allow_upscale": false,
+                  "background": "#ffffff",
+                  "compression_level": null,
+                  "crop_x": 0.5,
+                  "crop_y": 0.5,
+                  "fit": "contain",
+                  "format": "jpeg",
+                  "height": null,
+                  "jpeg_subsampling": 2,
+                  "lossless": null,
+                  "method": null,
+                  "progressive": false,
+                  "quality": 90,
+                  "resampling": "lanczos",
+                  "width": null
+                },
+                "resolved": {
+                  "requested_frame_count": 1,
+                  "successful_frame_count": 1,
+                  "video_stream_index": 0
+                },
+                "sampling": {
+                  "mode": "timestamps",
+                  "timestamps_ms": [
+                    0
+                  ]
+                },
+                "video_stream": 0
+              },
+              "files": [
+                {
+                  "size_bytes": 22355,
+                  "sha256": "2c6dd5941ccd8f047ef7e5f98123b923c7a0e60f5811904ef3fa2034361e1629",
+                  "actual": {
+                    "format": "JPEG",
+                    "width": 640,
+                    "height": 360,
+                    "quality": 90
+                  },
+                  "requested_time_ms": 0,
+                  "actual_time_ms": 0
+                }
+              ]
+            },
+            {
+              "transport": "mcp",
+              "job_id": "job_4c6aaab7e32c43f5b0b9f3170b779092",
+              "artifact_id": "art_dfb6a391f56d44068ae5fda27f8388fa",
+              "effective_params": {
+                "frame_selection": "next",
+                "image": {
+                  "allow_upscale": false,
+                  "background": "#ffffff",
+                  "compression_level": null,
+                  "crop_x": 0.5,
+                  "crop_y": 0.5,
+                  "fit": "contain",
+                  "format": "jpeg",
+                  "height": null,
+                  "jpeg_subsampling": 2,
+                  "lossless": null,
+                  "method": null,
+                  "progressive": false,
+                  "quality": 90,
+                  "resampling": "lanczos",
+                  "width": null
+                },
+                "resolved": {
+                  "requested_frame_count": 1,
+                  "successful_frame_count": 1,
+                  "video_stream_index": 0
+                },
+                "sampling": {
+                  "mode": "timestamps",
+                  "timestamps_ms": [
+                    0
+                  ]
+                },
+                "video_stream": 0
+              },
+              "files": [
+                {
+                  "size_bytes": 22355,
+                  "sha256": "2c6dd5941ccd8f047ef7e5f98123b923c7a0e60f5811904ef3fa2034361e1629",
+                  "actual": {
+                    "format": "JPEG",
+                    "width": 640,
+                    "height": 360,
+                    "quality": 90
+                  },
+                  "requested_time_ms": 0,
+                  "actual_time_ms": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tool": "resize_image",
+          "operation": "image.resize.v1",
+          "default_parameters": false,
+          "effective_params": {
+            "allow_upscale": false,
+            "background": "#ffffff",
+            "compression_level": null,
+            "crop_x": 0.5,
+            "crop_y": 0.25,
+            "fit": "cover",
+            "format": "webp",
+            "height": 80,
+            "jpeg_subsampling": null,
+            "lossless": false,
+            "method": 5,
+            "progressive": null,
+            "quality": 70,
+            "resampling": "lanczos",
+            "width": 80
+          },
+          "results": [
+            {
+              "transport": "http",
+              "job_id": "job_2a7d44a999a94e6bbcfa99ef0a161bed",
+              "artifact_id": "art_72e944502cf94753a3edc44f0f98d178",
+              "effective_params": {
+                "allow_upscale": false,
+                "background": "#ffffff",
+                "compression_level": null,
+                "crop_x": 0.5,
+                "crop_y": 0.25,
+                "fit": "cover",
+                "format": "webp",
+                "height": 80,
+                "jpeg_subsampling": null,
+                "lossless": false,
+                "method": 5,
+                "progressive": null,
+                "quality": 70,
+                "resampling": "lanczos",
+                "resolved": {
+                  "color_space": "srgb",
+                  "format": "webp",
+                  "height": 80,
+                  "lossless": false,
+                  "method": 5,
+                  "quality": 70,
+                  "width": 80
+                },
+                "width": 80
+              },
+              "files": [
+                {
+                  "size_bytes": 1242,
+                  "sha256": "fc66b4ca59d8fbce6466a1b0b88edd3d2a42cc16f3c4e994b1bf93c8c5d29526",
+                  "actual": {
+                    "format": "WEBP",
+                    "width": 80,
+                    "height": 80
+                  }
+                }
+              ]
+            },
+            {
+              "transport": "mcp",
+              "job_id": "job_37878d175eb546d7b7d9a1a5d0eeea46",
+              "artifact_id": "art_542b587b57ca4020b9741320149eb17b",
+              "effective_params": {
+                "allow_upscale": false,
+                "background": "#ffffff",
+                "compression_level": null,
+                "crop_x": 0.5,
+                "crop_y": 0.25,
+                "fit": "cover",
+                "format": "webp",
+                "height": 80,
+                "jpeg_subsampling": null,
+                "lossless": false,
+                "method": 5,
+                "progressive": null,
+                "quality": 70,
+                "resampling": "lanczos",
+                "resolved": {
+                  "color_space": "srgb",
+                  "format": "webp",
+                  "height": 80,
+                  "lossless": false,
+                  "method": 5,
+                  "quality": 70,
+                  "width": 80
+                },
+                "width": 80
+              },
+              "files": [
+                {
+                  "size_bytes": 1242,
+                  "sha256": "fc66b4ca59d8fbce6466a1b0b88edd3d2a42cc16f3c4e994b1bf93c8c5d29526",
+                  "actual": {
+                    "format": "WEBP",
+                    "width": 80,
+                    "height": 80
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tool": "resize_image",
+          "operation": "image.resize.v1",
+          "default_parameters": true,
+          "effective_params": {
+            "allow_upscale": false,
+            "background": "#ffffff",
+            "compression_level": null,
+            "crop_x": 0.5,
+            "crop_y": 0.5,
+            "fit": "contain",
+            "format": "jpeg",
+            "height": null,
+            "jpeg_subsampling": 2,
+            "lossless": null,
+            "method": null,
+            "progressive": false,
+            "quality": 90,
+            "resampling": "lanczos",
+            "width": null
+          },
+          "results": [
+            {
+              "transport": "http",
+              "job_id": "job_ddb8dda2ddd842d98424855b5bd34768",
+              "artifact_id": "art_5a94f6afbcf84c8c9b824e87e8d7b9a9",
+              "effective_params": {
+                "allow_upscale": false,
+                "background": "#ffffff",
+                "compression_level": null,
+                "crop_x": 0.5,
+                "crop_y": 0.5,
+                "fit": "contain",
+                "format": "jpeg",
+                "height": null,
+                "jpeg_subsampling": 2,
+                "lossless": null,
+                "method": null,
+                "progressive": false,
+                "quality": 90,
+                "resampling": "lanczos",
+                "resolved": {
+                  "color_space": "srgb",
+                  "format": "jpeg",
+                  "height": 1706,
+                  "jpeg_subsampling": 2,
+                  "progressive": false,
+                  "quality": 90,
+                  "width": 1279
+                },
+                "width": null
+              },
+              "files": [
+                {
+                  "size_bytes": 147036,
+                  "sha256": "3960ba10dcc9be26b85287b4263cac2ab51dcdeb497f6532f28d983787c9eceb",
+                  "actual": {
+                    "format": "JPEG",
+                    "width": 1279,
+                    "height": 1706,
+                    "quality": 90
+                  }
+                }
+              ]
+            },
+            {
+              "transport": "mcp",
+              "job_id": "job_a64ce21ea4a143acbfa55c6bb45dfb20",
+              "artifact_id": "art_cc3b916905ed4ab5b13aea59fc29172b",
+              "effective_params": {
+                "allow_upscale": false,
+                "background": "#ffffff",
+                "compression_level": null,
+                "crop_x": 0.5,
+                "crop_y": 0.5,
+                "fit": "contain",
+                "format": "jpeg",
+                "height": null,
+                "jpeg_subsampling": 2,
+                "lossless": null,
+                "method": null,
+                "progressive": false,
+                "quality": 90,
+                "resampling": "lanczos",
+                "resolved": {
+                  "color_space": "srgb",
+                  "format": "jpeg",
+                  "height": 1706,
+                  "jpeg_subsampling": 2,
+                  "progressive": false,
+                  "quality": 90,
+                  "width": 1279
+                },
+                "width": null
+              },
+              "files": [
+                {
+                  "size_bytes": 147036,
+                  "sha256": "3960ba10dcc9be26b85287b4263cac2ab51dcdeb497f6532f28d983787c9eceb",
+                  "actual": {
+                    "format": "JPEG",
+                    "width": 1279,
+                    "height": 1706,
+                    "quality": 90
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "resource_owner_id": "c1e8d20027f24294a9e3f31e47c31ee3",
+      "engine": {
+        "ffmpeg": "7.1.5-0+deb13u1",
+        "ffprobe": "7.1.5-0+deb13u1",
+        "image_version": "parameters-local",
+        "implementation_sha256": "2cb5e45a4c7f6e928bf1dc5bc43987529f8a352760c62a72afba3824c9c333d8"
+      },
+      "cleanup": {
+        "containers_remaining": 0,
+        "volumes_remaining": 0
+      }
+    },
+    {
+      "token_enabled": false,
+      "checks": [
+        "nonroot_readonly_exact_image_without_shared_input",
+        "verified_raw_http_uploads",
+        "remote_mcp_discovery_and_http_capability_parity",
+        "six_media_tools_over_real_tcp_http_and_mcp",
+        "job_and_artifact_effective_parameter_parity",
+        "mcp_idempotency_replay",
+        "all_files_and_collection_members_head_range_size_sha_download",
+        "downloaded_media_decoded_and_properties_verified",
+        "all_six_tools_accept_omitted_mcp_params_and_empty_http_params",
+        "adaptive_defaults_preserve_video_timestamps_audio_properties_and_image_size",
+        "project_fixtures_remain_unchanged",
+        "only_owned_resources_removed"
+      ],
+      "cases": [
+        {
+          "tool": "probe_media",
+          "operation": "media.probe.v1",
+          "default_parameters": false,
+          "effective_params": {
+            "count_frames": true,
+            "sections": [
+              "chapters",
+              "format",
+              "streams",
+              "tags"
+            ],
+            "stream_indices": [
+              0
+            ]
+          },
+          "results": [
+            {
+              "transport": "http",
+              "job_id": "job_62993f452f804a97bc6094e49f2fdba6",
+              "artifact_id": "art_dfbedfed63b34e4696b3049b5dc195be",
+              "effective_params": {
+                "count_frames": true,
+                "resolved": {
+                  "stream_indices": [
+                    0
+                  ]
+                },
+                "sections": [
+                  "chapters",
+                  "format",
+                  "streams",
+                  "tags"
+                ],
+                "stream_indices": [
+                  0
+                ]
+              },
+              "files": [
+                {
+                  "size_bytes": 509,
+                  "sha256": "b92421077233ed502c6767fc139edbdfc978dabb00cdd69154e9b716656d76ed",
+                  "actual": {
+                    "type": "json",
+                    "decoded_frame_count": 24
+                  }
+                }
+              ]
+            },
+            {
+              "transport": "mcp",
+              "job_id": "job_a8575fde05514f998f1772e90d1979cd",
+              "artifact_id": "art_e63c8668d3f54fc785d8424d76e5a06c",
+              "effective_params": {
+                "count_frames": true,
+                "resolved": {
+                  "stream_indices": [
+                    0
+                  ]
+                },
+                "sections": [
+                  "chapters",
+                  "format",
+                  "streams",
+                  "tags"
+                ],
+                "stream_indices": [
+                  0
+                ]
+              },
+              "files": [
+                {
+                  "size_bytes": 509,
+                  "sha256": "b92421077233ed502c6767fc139edbdfc978dabb00cdd69154e9b716656d76ed",
+                  "actual": {
+                    "type": "json",
+                    "decoded_frame_count": 24
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tool": "probe_media",
+          "operation": "media.probe.v1",
+          "default_parameters": true,
+          "effective_params": {
+            "count_frames": false,
+            "sections": [
+              "format",
+              "streams"
+            ],
+            "stream_indices": null
+          },
+          "results": [
+            {
+              "transport": "http",
+              "job_id": "job_dba4572a2aff4dbb952e2b93514a2998",
+              "artifact_id": "art_9d3ec578be874393906aed5001b205f3",
+              "effective_params": {
+                "count_frames": false,
+                "resolved": {
+                  "stream_indices": [
+                    0,
+                    1
+                  ]
+                },
+                "sections": [
+                  "format",
+                  "streams"
+                ],
+                "stream_indices": null
+              },
+              "files": [
+                {
+                  "size_bytes": 734,
+                  "sha256": "194d879612f150a0f5f0a7557adb12cb531077c2f4c36db8897cad9d29676ca4",
+                  "actual": {
+                    "type": "json",
+                    "stream_count": 2
+                  }
+                }
+              ]
+            },
+            {
+              "transport": "mcp",
+              "job_id": "job_7a10890e395849d9a79e3c3e5b90b2a6",
+              "artifact_id": "art_76f32facb4f44937b1871f5eaf5b3a16",
+              "effective_params": {
+                "count_frames": false,
+                "resolved": {
+                  "stream_indices": [
+                    0,
+                    1
+                  ]
+                },
+                "sections": [
+                  "format",
+                  "streams"
+                ],
+                "stream_indices": null
+              },
+              "files": [
+                {
+                  "size_bytes": 734,
+                  "sha256": "194d879612f150a0f5f0a7557adb12cb531077c2f4c36db8897cad9d29676ca4",
+                  "actual": {
+                    "type": "json",
+                    "stream_count": 2
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tool": "transcode_video",
+          "operation": "video.transcode.v1",
+          "default_parameters": false,
+          "effective_params": {
+            "audio": {
+              "audio_stream": 0,
+              "channel_layout": null,
+              "channels": null,
+              "codec": null,
+              "compression_level": null,
+              "mode": "drop",
+              "rate_control": null,
+              "sample_format": null,
+              "sample_rate": null
+            },
+            "codec": "hevc",
+            "container": "mp4",
+            "frame_rate": {
+              "mode": "constant",
+              "value": "12/1"
+            },
+            "pixel_format": "yuv420p",
+            "preset": null,
+            "range": {
+              "end_ms": 1000,
+              "start_ms": 0
+            },
+            "rate_control": {
+              "mode": "crf",
+              "value": 29.0
+            },
+            "resize": {
+              "allow_upscale": false,
+              "background": "#000000",
+              "crop_x": 0.5,
+              "crop_y": 0.5,
+              "fit": "contain",
+              "height": null,
+              "width": 320
+            },
+            "speed": "fast",
+            "video_stream": 0
+          },
+          "results": [
+            {
+              "transport": "http",
+              "job_id": "job_b669a955e79146778d4971c2eaa10ad3",
+              "artifact_id": "art_fb88db526efc42c088002d1f55d201a5",
+              "effective_params": {
+                "audio": {
+                  "audio_stream": 0,
+                  "channel_layout": null,
+                  "channels": null,
+                  "codec": null,
+                  "compression_level": null,
+                  "mode": "drop",
+                  "rate_control": null,
+                  "sample_format": null,
+                  "sample_rate": null
+                },
+                "codec": "hevc",
+                "container": "mp4",
+                "frame_rate": {
+                  "mode": "constant",
+                  "value": "12/1"
+                },
+                "pixel_format": "yuv420p",
+                "preset": null,
+                "range": {
+                  "end_ms": 1000,
+                  "start_ms": 0
+                },
+                "rate_control": {
+                  "mode": "crf",
+                  "value": 29.0
+                },
+                "resize": {
+                  "allow_upscale": false,
+                  "background": "#000000",
+                  "crop_x": 0.5,
+                  "crop_y": 0.5,
+                  "fit": "contain",
+                  "height": null,
+                  "width": 320
+                },
+                "resolved": {
+                  "audio": null,
+                  "height": 180,
+                  "width": 320
+                },
+                "speed": "fast",
+                "video_stream": 0
+              },
+              "files": [
+                {
+                  "size_bytes": 12265,
+                  "sha256": "7037b875dc0689156961f406a1af962f495a23799f97e8cf0817143ffc6b5337",
+                  "actual": {
+                    "codec": "hevc",
+                    "width": 320,
+                    "height": 180,
+                    "frame_rate": "12/1"
+                  }
+                }
+              ]
+            },
+            {
+              "transport": "mcp",
+              "job_id": "job_c2020c58a050423aa24918f52fdb4351",
+              "artifact_id": "art_d04d38571cc14ca59ca1b6807566035e",
+              "effective_params": {
+                "audio": {
+                  "audio_stream": 0,
+                  "channel_layout": null,
+                  "channels": null,
+                  "codec": null,
+                  "compression_level": null,
+                  "mode": "drop",
+                  "rate_control": null,
+                  "sample_format": null,
+                  "sample_rate": null
+                },
+                "codec": "hevc",
+                "container": "mp4",
+                "frame_rate": {
+                  "mode": "constant",
+                  "value": "12/1"
+                },
+                "pixel_format": "yuv420p",
+                "preset": null,
+                "range": {
+                  "end_ms": 1000,
+                  "start_ms": 0
+                },
+                "rate_control": {
+                  "mode": "crf",
+                  "value": 29.0
+                },
+                "resize": {
+                  "allow_upscale": false,
+                  "background": "#000000",
+                  "crop_x": 0.5,
+                  "crop_y": 0.5,
+                  "fit": "contain",
+                  "height": null,
+                  "width": 320
+                },
+                "resolved": {
+                  "audio": null,
+                  "height": 180,
+                  "width": 320
+                },
+                "speed": "fast",
+                "video_stream": 0
+              },
+              "files": [
+                {
+                  "size_bytes": 12265,
+                  "sha256": "7037b875dc0689156961f406a1af962f495a23799f97e8cf0817143ffc6b5337",
+                  "actual": {
+                    "codec": "hevc",
+                    "width": 320,
+                    "height": 180,
+                    "frame_rate": "12/1"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tool": "transcode_video",
+          "operation": "video.transcode.v1",
+          "default_parameters": true,
+          "effective_params": {
+            "audio": {
+              "audio_stream": 0,
+              "channel_layout": null,
+              "channels": "auto",
+              "codec": "aac",
+              "compression_level": null,
+              "mode": "encode",
+              "rate_control": {
+                "mode": "auto"
+              },
+              "sample_format": null,
+              "sample_rate": "auto"
+            },
+            "codec": "h264",
+            "container": "mp4",
+            "frame_rate": {
+              "mode": "source",
+              "value": null
+            },
+            "pixel_format": "yuv420p",
+            "preset": null,
+            "range": {
+              "end_ms": null,
+              "start_ms": 0
+            },
+            "rate_control": {
+              "mode": "crf",
+              "value": 23.0
+            },
+            "resize": {
+              "allow_upscale": false,
+              "background": "#000000",
+              "crop_x": 0.5,
+              "crop_y": 0.5,
+              "fit": "contain",
+              "height": null,
+              "width": null
+            },
+            "speed": "medium",
+            "video_stream": 0
+          },
+          "results": [
+            {
+              "transport": "http",
+              "job_id": "job_439661304f1044a583e33f5c0b2c091f",
+              "artifact_id": "art_adf95b6ac283410b909f60649dea8bc1",
+              "effective_params": {
+                "audio": {
+                  "audio_stream": 0,
+                  "channel_layout": null,
+                  "channels": "auto",
+                  "codec": "aac",
+                  "compression_level": null,
+                  "mode": "encode",
+                  "rate_control": {
+                    "mode": "auto"
+                  },
+                  "sample_format": null,
+                  "sample_rate": "auto"
+                },
+                "codec": "h264",
+                "container": "mp4",
+                "frame_rate": {
+                  "mode": "source",
+                  "value": null
+                },
+                "pixel_format": "yuv420p",
+                "preset": null,
+                "range": {
+                  "end_ms": null,
+                  "start_ms": 0
+                },
+                "rate_control": {
+                  "mode": "crf",
+                  "value": 23.0
+                },
+                "resize": {
+                  "allow_upscale": false,
+                  "background": "#000000",
+                  "crop_x": 0.5,
+                  "crop_y": 0.5,
+                  "fit": "contain",
+                  "height": null,
+                  "width": null
+                },
+                "resolved": {
+                  "audio": {
+                    "channels": 1,
+                    "codec": "aac",
+                    "rate_control": {
+                      "bitrate_bps": 64000,
+                      "mode": "bitrate"
+                    },
+                    "sample_rate": 44100
+                  },
+                  "height": 360,
+                  "width": 640
+                },
+                "speed": "medium",
+                "video_stream": 0
+              },
+              "files": [
+                {
+                  "size_bytes": 70857,
+                  "sha256": "73e376ca73c779ec6a3dc47cfd3dc6fc8d34ce0cb8be3cf309bf67d3fcc8f24e",
+                  "actual": {
+                    "codec": "h264",
+                    "width": 640,
+                    "height": 360,
+                    "source_timestamps_preserved": true,
+                    "decoded_frame_count": 24,
+                    "audio_sample_rate": 44100,
+                    "audio_channels": 1
+                  }
+                }
+              ]
+            },
+            {
+              "transport": "mcp",
+              "job_id": "job_08e39b08976b4d9eb3c1b938a9ebb3da",
+              "artifact_id": "art_a8d721bf449a41fab8084e78ddb7ad38",
+              "effective_params": {
+                "audio": {
+                  "audio_stream": 0,
+                  "channel_layout": null,
+                  "channels": "auto",
+                  "codec": "aac",
+                  "compression_level": null,
+                  "mode": "encode",
+                  "rate_control": {
+                    "mode": "auto"
+                  },
+                  "sample_format": null,
+                  "sample_rate": "auto"
+                },
+                "codec": "h264",
+                "container": "mp4",
+                "frame_rate": {
+                  "mode": "source",
+                  "value": null
+                },
+                "pixel_format": "yuv420p",
+                "preset": null,
+                "range": {
+                  "end_ms": null,
+                  "start_ms": 0
+                },
+                "rate_control": {
+                  "mode": "crf",
+                  "value": 23.0
+                },
+                "resize": {
+                  "allow_upscale": false,
+                  "background": "#000000",
+                  "crop_x": 0.5,
+                  "crop_y": 0.5,
+                  "fit": "contain",
+                  "height": null,
+                  "width": null
+                },
+                "resolved": {
+                  "audio": {
+                    "channels": 1,
+                    "codec": "aac",
+                    "rate_control": {
+                      "bitrate_bps": 64000,
+                      "mode": "bitrate"
+                    },
+                    "sample_rate": 44100
+                  },
+                  "height": 360,
+                  "width": 640
+                },
+                "speed": "medium",
+                "video_stream": 0
+              },
+              "files": [
+                {
+                  "size_bytes": 70857,
+                  "sha256": "73e376ca73c779ec6a3dc47cfd3dc6fc8d34ce0cb8be3cf309bf67d3fcc8f24e",
+                  "actual": {
+                    "codec": "h264",
+                    "width": 640,
+                    "height": 360,
+                    "source_timestamps_preserved": true,
+                    "decoded_frame_count": 24,
+                    "audio_sample_rate": 44100,
+                    "audio_channels": 1
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tool": "transcode_audio",
+          "operation": "audio.transcode.v1",
+          "default_parameters": false,
+          "effective_params": {
+            "audio_stream": 0,
+            "channel_layout": null,
+            "channels": 1,
+            "codec": "opus",
+            "compression_level": null,
+            "container": "ogg",
+            "mode": "encode",
+            "preset": null,
+            "range": {
+              "end_ms": 1000,
+              "start_ms": 0
+            },
+            "rate_control": {
+              "bitrate_bps": 64000,
+              "mode": "bitrate"
+            },
+            "sample_format": null,
+            "sample_rate": 48000
+          },
+          "results": [
+            {
+              "transport": "http",
+              "job_id": "job_75a6bf58ceff42b1bc0bce978cfcca6f",
+              "artifact_id": "art_2df9dacf5f6f4f4a83309b0e941b1624",
+              "effective_params": {
+                "audio_stream": 0,
+                "channel_layout": null,
+                "channels": 1,
+                "codec": "opus",
+                "compression_level": null,
+                "container": "ogg",
+                "mode": "encode",
+                "preset": null,
+                "range": {
+                  "end_ms": 1000,
+                  "start_ms": 0
+                },
+                "rate_control": {
+                  "bitrate_bps": 64000,
+                  "mode": "bitrate"
+                },
+                "resolved": {
+                  "channel_layout": "mono",
+                  "channels": 1,
+                  "codec": "opus",
+                  "rate_control": {
+                    "bitrate_bps": 64000,
+                    "mode": "bitrate"
+                  },
+                  "sample_rate": 48000
+                },
+                "sample_format": null,
+                "sample_rate": 48000
+              },
+              "files": [
+                {
+                  "size_bytes": 9730,
+                  "sha256": "7793e1e974d8c38da1c513a1464711ea34dceb3327d5e72cb827446b836250a3",
+                  "actual": {
+                    "codec": "opus",
+                    "sample_rate": 48000,
+                    "channels": 1
+                  }
+                }
+              ]
+            },
+            {
+              "transport": "mcp",
+              "job_id": "job_3e6a2bca9f1c40ee8324c786cb7d531f",
+              "artifact_id": "art_b51b33de413f4f7584713d07e3e53cc3",
+              "effective_params": {
+                "audio_stream": 0,
+                "channel_layout": null,
+                "channels": 1,
+                "codec": "opus",
+                "compression_level": null,
+                "container": "ogg",
+                "mode": "encode",
+                "preset": null,
+                "range": {
+                  "end_ms": 1000,
+                  "start_ms": 0
+                },
+                "rate_control": {
+                  "bitrate_bps": 64000,
+                  "mode": "bitrate"
+                },
+                "resolved": {
+                  "channel_layout": "mono",
+                  "channels": 1,
+                  "codec": "opus",
+                  "rate_control": {
+                    "bitrate_bps": 64000,
+                    "mode": "bitrate"
+                  },
+                  "sample_rate": 48000
+                },
+                "sample_format": null,
+                "sample_rate": 48000
+              },
+              "files": [
+                {
+                  "size_bytes": 9730,
+                  "sha256": "f874062598b4dbbf59b4d96380313f292da4eb172488f2ee3b7bdc3408f36b01",
+                  "actual": {
+                    "codec": "opus",
+                    "sample_rate": 48000,
+                    "channels": 1
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tool": "transcode_audio",
+          "operation": "audio.transcode.v1",
+          "default_parameters": true,
+          "effective_params": {
+            "audio_stream": 0,
+            "channel_layout": null,
+            "channels": "auto",
+            "codec": "aac",
+            "compression_level": null,
+            "container": "m4a",
+            "mode": "encode",
+            "preset": null,
+            "range": {
+              "end_ms": null,
+              "start_ms": 0
+            },
+            "rate_control": {
+              "mode": "auto"
+            },
+            "sample_format": null,
+            "sample_rate": "auto"
+          },
+          "results": [
+            {
+              "transport": "http",
+              "job_id": "job_03d22bbfd6d441f7bcac0e8c477e590b",
+              "artifact_id": "art_2bd307a8af9f41d7b00b93880a6c67eb",
+              "effective_params": {
+                "audio_stream": 0,
+                "channel_layout": null,
+                "channels": "auto",
+                "codec": "aac",
+                "compression_level": null,
+                "container": "m4a",
+                "mode": "encode",
+                "preset": null,
+                "range": {
+                  "end_ms": null,
+                  "start_ms": 0
+                },
+                "rate_control": {
+                  "mode": "auto"
+                },
+                "resolved": {
+                  "channels": 1,
+                  "codec": "aac",
+                  "rate_control": {
+                    "bitrate_bps": 64000,
+                    "mode": "bitrate"
+                  },
+                  "sample_rate": 22050
+                },
+                "sample_format": null,
+                "sample_rate": "auto"
+              },
+              "files": [
+                {
+                  "size_bytes": 65464,
+                  "sha256": "650b7b85e5db520faea9fd5b9b697799a4ecfa89516abe852bf4f45a8617e92d",
+                  "actual": {
+                    "codec": "aac",
+                    "sample_rate": 22050,
+                    "channels": 1
+                  }
+                }
+              ]
+            },
+            {
+              "transport": "mcp",
+              "job_id": "job_0139c695187f4c9894083f37a3ccf08b",
+              "artifact_id": "art_bd8355bd8e1c4255b2d6de46f32e205a",
+              "effective_params": {
+                "audio_stream": 0,
+                "channel_layout": null,
+                "channels": "auto",
+                "codec": "aac",
+                "compression_level": null,
+                "container": "m4a",
+                "mode": "encode",
+                "preset": null,
+                "range": {
+                  "end_ms": null,
+                  "start_ms": 0
+                },
+                "rate_control": {
+                  "mode": "auto"
+                },
+                "resolved": {
+                  "channels": 1,
+                  "codec": "aac",
+                  "rate_control": {
+                    "bitrate_bps": 64000,
+                    "mode": "bitrate"
+                  },
+                  "sample_rate": 22050
+                },
+                "sample_format": null,
+                "sample_rate": "auto"
+              },
+              "files": [
+                {
+                  "size_bytes": 65464,
+                  "sha256": "650b7b85e5db520faea9fd5b9b697799a4ecfa89516abe852bf4f45a8617e92d",
+                  "actual": {
+                    "codec": "aac",
+                    "sample_rate": 22050,
+                    "channels": 1
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tool": "extract_audio",
+          "operation": "video.extract_audio.v1",
+          "default_parameters": false,
+          "effective_params": {
+            "audio_stream": 0,
+            "channel_layout": null,
+            "channels": null,
+            "codec": null,
+            "compression_level": null,
+            "container": "m4a",
+            "mode": "copy",
+            "preset": null,
+            "range": {
+              "end_ms": null,
+              "start_ms": 0
+            },
+            "rate_control": null,
+            "sample_format": null,
+            "sample_rate": null
+          },
+          "results": [
+            {
+              "transport": "http",
+              "job_id": "job_910646ba8d8640aea052c5c159eff35d",
+              "artifact_id": "art_1cfa718e0b8e498596e4d51d2b822809",
+              "effective_params": {
+                "audio_stream": 0,
+                "channel_layout": null,
+                "channels": null,
+                "codec": null,
+                "compression_level": null,
+                "container": "m4a",
+                "mode": "copy",
+                "preset": null,
+                "range": {
+                  "end_ms": null,
+                  "start_ms": 0
+                },
+                "rate_control": null,
+                "resolved": {
+                  "channels": 1,
+                  "codec": "aac",
+                  "sample_rate": 44100
+                },
+                "sample_format": null,
+                "sample_rate": null
+              },
+              "files": [
+                {
+                  "size_bytes": 13456,
+                  "sha256": "99530072b932cb73345f2facb772bbfd73d8e93e8012f5631672802e12fde9d7",
+                  "actual": {
+                    "codec": "aac",
+                    "sample_rate": 44100,
+                    "channels": 1
+                  }
+                }
+              ]
+            },
+            {
+              "transport": "mcp",
+              "job_id": "job_2d814c7e3ed14ba7bbd8bebd732f672c",
+              "artifact_id": "art_a6ab497487144725800ada92a82b4a26",
+              "effective_params": {
+                "audio_stream": 0,
+                "channel_layout": null,
+                "channels": null,
+                "codec": null,
+                "compression_level": null,
+                "container": "m4a",
+                "mode": "copy",
+                "preset": null,
+                "range": {
+                  "end_ms": null,
+                  "start_ms": 0
+                },
+                "rate_control": null,
+                "resolved": {
+                  "channels": 1,
+                  "codec": "aac",
+                  "sample_rate": 44100
+                },
+                "sample_format": null,
+                "sample_rate": null
+              },
+              "files": [
+                {
+                  "size_bytes": 13456,
+                  "sha256": "99530072b932cb73345f2facb772bbfd73d8e93e8012f5631672802e12fde9d7",
+                  "actual": {
+                    "codec": "aac",
+                    "sample_rate": 44100,
+                    "channels": 1
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tool": "extract_audio",
+          "operation": "video.extract_audio.v1",
+          "default_parameters": true,
+          "effective_params": {
+            "audio_stream": 0,
+            "channel_layout": null,
+            "channels": "auto",
+            "codec": "aac",
+            "compression_level": null,
+            "container": "m4a",
+            "mode": "encode",
+            "preset": null,
+            "range": {
+              "end_ms": null,
+              "start_ms": 0
+            },
+            "rate_control": {
+              "mode": "auto"
+            },
+            "sample_format": null,
+            "sample_rate": "auto"
+          },
+          "results": [
+            {
+              "transport": "http",
+              "job_id": "job_d3260ea361c1491e905cd3f403e3cbfa",
+              "artifact_id": "art_a49a8d6f21ec4623a4e028b6de5dddef",
+              "effective_params": {
+                "audio_stream": 0,
+                "channel_layout": null,
+                "channels": "auto",
+                "codec": "aac",
+                "compression_level": null,
+                "container": "m4a",
+                "mode": "encode",
+                "preset": null,
+                "range": {
+                  "end_ms": null,
+                  "start_ms": 0
+                },
+                "rate_control": {
+                  "mode": "auto"
+                },
+                "resolved": {
+                  "channels": 1,
+                  "codec": "aac",
+                  "rate_control": {
+                    "bitrate_bps": 64000,
+                    "mode": "bitrate"
+                  },
+                  "sample_rate": 44100
+                },
+                "sample_format": null,
+                "sample_rate": "auto"
+              },
+              "files": [
+                {
+                  "size_bytes": 9640,
+                  "sha256": "a37f1a7aff8695464ba6ac37183fa0f74984b6ad70143105971c8b096007ceeb",
+                  "actual": {
+                    "codec": "aac",
+                    "sample_rate": 44100,
+                    "channels": 1
+                  }
+                }
+              ]
+            },
+            {
+              "transport": "mcp",
+              "job_id": "job_1de5f923d5b14b0385afc454060e5c44",
+              "artifact_id": "art_f8515cbf03d94404b60d1cba29242d18",
+              "effective_params": {
+                "audio_stream": 0,
+                "channel_layout": null,
+                "channels": "auto",
+                "codec": "aac",
+                "compression_level": null,
+                "container": "m4a",
+                "mode": "encode",
+                "preset": null,
+                "range": {
+                  "end_ms": null,
+                  "start_ms": 0
+                },
+                "rate_control": {
+                  "mode": "auto"
+                },
+                "resolved": {
+                  "channels": 1,
+                  "codec": "aac",
+                  "rate_control": {
+                    "bitrate_bps": 64000,
+                    "mode": "bitrate"
+                  },
+                  "sample_rate": 44100
+                },
+                "sample_format": null,
+                "sample_rate": "auto"
+              },
+              "files": [
+                {
+                  "size_bytes": 9640,
+                  "sha256": "a37f1a7aff8695464ba6ac37183fa0f74984b6ad70143105971c8b096007ceeb",
+                  "actual": {
+                    "codec": "aac",
+                    "sample_rate": 44100,
+                    "channels": 1
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tool": "extract_frames",
+          "operation": "video.extract_frames.v1",
+          "default_parameters": false,
+          "effective_params": {
+            "frame_selection": "nearest",
+            "image": {
+              "allow_upscale": false,
+              "background": "#ffffff",
+              "compression_level": 9,
+              "crop_x": 0.5,
+              "crop_y": 0.5,
+              "fit": "contain",
+              "format": "png",
+              "height": null,
+              "jpeg_subsampling": null,
+              "lossless": null,
+              "method": null,
+              "progressive": null,
+              "quality": null,
+              "resampling": "lanczos",
+              "width": 80
+            },
+            "sampling": {
+              "count": 3,
+              "end_ms": 900,
+              "mode": "count",
+              "start_ms": 0
+            },
+            "video_stream": 0
+          },
+          "results": [
+            {
+              "transport": "http",
+              "job_id": "job_377fc4c76437452f897c9d4e77f87c3a",
+              "artifact_id": "art_5540910f44b24bdc906ca8b9630817bb",
+              "effective_params": {
+                "frame_selection": "nearest",
+                "image": {
+                  "allow_upscale": false,
+                  "background": "#ffffff",
+                  "compression_level": 9,
+                  "crop_x": 0.5,
+                  "crop_y": 0.5,
+                  "fit": "contain",
+                  "format": "png",
+                  "height": null,
+                  "jpeg_subsampling": null,
+                  "lossless": null,
+                  "method": null,
+                  "progressive": null,
+                  "quality": null,
+                  "resampling": "lanczos",
+                  "width": 80
+                },
+                "resolved": {
+                  "requested_frame_count": 3,
+                  "successful_frame_count": 3,
+                  "video_stream_index": 0
+                },
+                "sampling": {
+                  "count": 3,
+                  "end_ms": 900,
+                  "mode": "count",
+                  "start_ms": 0
+                },
+                "video_stream": 0
+              },
+              "files": [
+                {
+                  "size_bytes": 2647,
+                  "sha256": "c944bccc1e599e08b150cfb7fe2c17486e2766732eebd69912550764806c984b",
+                  "actual": {
+                    "format": "PNG",
+                    "width": 80,
+                    "height": 45
+                  },
+                  "requested_time_ms": 0,
+                  "actual_time_ms": 0
+                },
+                {
+                  "size_bytes": 3045,
+                  "sha256": "7586952fbf4446ab63bcb6fdd28f90a659c403248a78214de6a71b8908393e91",
+                  "actual": {
+                    "format": "PNG",
+                    "width": 80,
+                    "height": 45
+                  },
+                  "requested_time_ms": 450,
+                  "actual_time_ms": 458
+                },
+                {
+                  "size_bytes": 2953,
+                  "sha256": "1d70c3586844cda03fc7a5d09c160a57e44bfff2826395644bfca0a09f28e31b",
+                  "actual": {
+                    "format": "PNG",
+                    "width": 80,
+                    "height": 45
+                  },
+                  "requested_time_ms": 900,
+                  "actual_time_ms": 917
+                }
+              ]
+            },
+            {
+              "transport": "mcp",
+              "job_id": "job_b9b0fb1fd4a24a91b74b0a5bab0d6ccc",
+              "artifact_id": "art_14291c004a4e48c99fc8eae5c4cfdcd4",
+              "effective_params": {
+                "frame_selection": "nearest",
+                "image": {
+                  "allow_upscale": false,
+                  "background": "#ffffff",
+                  "compression_level": 9,
+                  "crop_x": 0.5,
+                  "crop_y": 0.5,
+                  "fit": "contain",
+                  "format": "png",
+                  "height": null,
+                  "jpeg_subsampling": null,
+                  "lossless": null,
+                  "method": null,
+                  "progressive": null,
+                  "quality": null,
+                  "resampling": "lanczos",
+                  "width": 80
+                },
+                "resolved": {
+                  "requested_frame_count": 3,
+                  "successful_frame_count": 3,
+                  "video_stream_index": 0
+                },
+                "sampling": {
+                  "count": 3,
+                  "end_ms": 900,
+                  "mode": "count",
+                  "start_ms": 0
+                },
+                "video_stream": 0
+              },
+              "files": [
+                {
+                  "size_bytes": 2647,
+                  "sha256": "c944bccc1e599e08b150cfb7fe2c17486e2766732eebd69912550764806c984b",
+                  "actual": {
+                    "format": "PNG",
+                    "width": 80,
+                    "height": 45
+                  },
+                  "requested_time_ms": 0,
+                  "actual_time_ms": 0
+                },
+                {
+                  "size_bytes": 3045,
+                  "sha256": "7586952fbf4446ab63bcb6fdd28f90a659c403248a78214de6a71b8908393e91",
+                  "actual": {
+                    "format": "PNG",
+                    "width": 80,
+                    "height": 45
+                  },
+                  "requested_time_ms": 450,
+                  "actual_time_ms": 458
+                },
+                {
+                  "size_bytes": 2953,
+                  "sha256": "1d70c3586844cda03fc7a5d09c160a57e44bfff2826395644bfca0a09f28e31b",
+                  "actual": {
+                    "format": "PNG",
+                    "width": 80,
+                    "height": 45
+                  },
+                  "requested_time_ms": 900,
+                  "actual_time_ms": 917
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tool": "extract_frames",
+          "operation": "video.extract_frames.v1",
+          "default_parameters": true,
+          "effective_params": {
+            "frame_selection": "next",
+            "image": {
+              "allow_upscale": false,
+              "background": "#ffffff",
+              "compression_level": null,
+              "crop_x": 0.5,
+              "crop_y": 0.5,
+              "fit": "contain",
+              "format": "jpeg",
+              "height": null,
+              "jpeg_subsampling": 2,
+              "lossless": null,
+              "method": null,
+              "progressive": false,
+              "quality": 90,
+              "resampling": "lanczos",
+              "width": null
+            },
+            "sampling": {
+              "mode": "timestamps",
+              "timestamps_ms": [
+                0
+              ]
+            },
+            "video_stream": 0
+          },
+          "results": [
+            {
+              "transport": "http",
+              "job_id": "job_32ae6256348441b2a48c1448c4d36487",
+              "artifact_id": "art_696a29729e7345978407d158351a4f45",
+              "effective_params": {
+                "frame_selection": "next",
+                "image": {
+                  "allow_upscale": false,
+                  "background": "#ffffff",
+                  "compression_level": null,
+                  "crop_x": 0.5,
+                  "crop_y": 0.5,
+                  "fit": "contain",
+                  "format": "jpeg",
+                  "height": null,
+                  "jpeg_subsampling": 2,
+                  "lossless": null,
+                  "method": null,
+                  "progressive": false,
+                  "quality": 90,
+                  "resampling": "lanczos",
+                  "width": null
+                },
+                "resolved": {
+                  "requested_frame_count": 1,
+                  "successful_frame_count": 1,
+                  "video_stream_index": 0
+                },
+                "sampling": {
+                  "mode": "timestamps",
+                  "timestamps_ms": [
+                    0
+                  ]
+                },
+                "video_stream": 0
+              },
+              "files": [
+                {
+                  "size_bytes": 22355,
+                  "sha256": "2c6dd5941ccd8f047ef7e5f98123b923c7a0e60f5811904ef3fa2034361e1629",
+                  "actual": {
+                    "format": "JPEG",
+                    "width": 640,
+                    "height": 360,
+                    "quality": 90
+                  },
+                  "requested_time_ms": 0,
+                  "actual_time_ms": 0
+                }
+              ]
+            },
+            {
+              "transport": "mcp",
+              "job_id": "job_f9cdf2eabc48401c837dcbf994294290",
+              "artifact_id": "art_67903c93a1e74535ab14a0008ffdc6a1",
+              "effective_params": {
+                "frame_selection": "next",
+                "image": {
+                  "allow_upscale": false,
+                  "background": "#ffffff",
+                  "compression_level": null,
+                  "crop_x": 0.5,
+                  "crop_y": 0.5,
+                  "fit": "contain",
+                  "format": "jpeg",
+                  "height": null,
+                  "jpeg_subsampling": 2,
+                  "lossless": null,
+                  "method": null,
+                  "progressive": false,
+                  "quality": 90,
+                  "resampling": "lanczos",
+                  "width": null
+                },
+                "resolved": {
+                  "requested_frame_count": 1,
+                  "successful_frame_count": 1,
+                  "video_stream_index": 0
+                },
+                "sampling": {
+                  "mode": "timestamps",
+                  "timestamps_ms": [
+                    0
+                  ]
+                },
+                "video_stream": 0
+              },
+              "files": [
+                {
+                  "size_bytes": 22355,
+                  "sha256": "2c6dd5941ccd8f047ef7e5f98123b923c7a0e60f5811904ef3fa2034361e1629",
+                  "actual": {
+                    "format": "JPEG",
+                    "width": 640,
+                    "height": 360,
+                    "quality": 90
+                  },
+                  "requested_time_ms": 0,
+                  "actual_time_ms": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tool": "resize_image",
+          "operation": "image.resize.v1",
+          "default_parameters": false,
+          "effective_params": {
+            "allow_upscale": false,
+            "background": "#ffffff",
+            "compression_level": null,
+            "crop_x": 0.5,
+            "crop_y": 0.25,
+            "fit": "cover",
+            "format": "webp",
+            "height": 80,
+            "jpeg_subsampling": null,
+            "lossless": false,
+            "method": 5,
+            "progressive": null,
+            "quality": 70,
+            "resampling": "lanczos",
+            "width": 80
+          },
+          "results": [
+            {
+              "transport": "http",
+              "job_id": "job_feaad7c06ea84405a797837514795086",
+              "artifact_id": "art_da5aca6bf1c8485fa89fb26a8e33d919",
+              "effective_params": {
+                "allow_upscale": false,
+                "background": "#ffffff",
+                "compression_level": null,
+                "crop_x": 0.5,
+                "crop_y": 0.25,
+                "fit": "cover",
+                "format": "webp",
+                "height": 80,
+                "jpeg_subsampling": null,
+                "lossless": false,
+                "method": 5,
+                "progressive": null,
+                "quality": 70,
+                "resampling": "lanczos",
+                "resolved": {
+                  "color_space": "srgb",
+                  "format": "webp",
+                  "height": 80,
+                  "lossless": false,
+                  "method": 5,
+                  "quality": 70,
+                  "width": 80
+                },
+                "width": 80
+              },
+              "files": [
+                {
+                  "size_bytes": 1242,
+                  "sha256": "fc66b4ca59d8fbce6466a1b0b88edd3d2a42cc16f3c4e994b1bf93c8c5d29526",
+                  "actual": {
+                    "format": "WEBP",
+                    "width": 80,
+                    "height": 80
+                  }
+                }
+              ]
+            },
+            {
+              "transport": "mcp",
+              "job_id": "job_23fdb6ade6ee4ffe8ca51a275bd98453",
+              "artifact_id": "art_d6f282f1bee8492093bbff6fbca02dbd",
+              "effective_params": {
+                "allow_upscale": false,
+                "background": "#ffffff",
+                "compression_level": null,
+                "crop_x": 0.5,
+                "crop_y": 0.25,
+                "fit": "cover",
+                "format": "webp",
+                "height": 80,
+                "jpeg_subsampling": null,
+                "lossless": false,
+                "method": 5,
+                "progressive": null,
+                "quality": 70,
+                "resampling": "lanczos",
+                "resolved": {
+                  "color_space": "srgb",
+                  "format": "webp",
+                  "height": 80,
+                  "lossless": false,
+                  "method": 5,
+                  "quality": 70,
+                  "width": 80
+                },
+                "width": 80
+              },
+              "files": [
+                {
+                  "size_bytes": 1242,
+                  "sha256": "fc66b4ca59d8fbce6466a1b0b88edd3d2a42cc16f3c4e994b1bf93c8c5d29526",
+                  "actual": {
+                    "format": "WEBP",
+                    "width": 80,
+                    "height": 80
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tool": "resize_image",
+          "operation": "image.resize.v1",
+          "default_parameters": true,
+          "effective_params": {
+            "allow_upscale": false,
+            "background": "#ffffff",
+            "compression_level": null,
+            "crop_x": 0.5,
+            "crop_y": 0.5,
+            "fit": "contain",
+            "format": "jpeg",
+            "height": null,
+            "jpeg_subsampling": 2,
+            "lossless": null,
+            "method": null,
+            "progressive": false,
+            "quality": 90,
+            "resampling": "lanczos",
+            "width": null
+          },
+          "results": [
+            {
+              "transport": "http",
+              "job_id": "job_45755a13df864cc8926bc8f2fcc27333",
+              "artifact_id": "art_e76a6a32b6e548db9fa364c2a433490e",
+              "effective_params": {
+                "allow_upscale": false,
+                "background": "#ffffff",
+                "compression_level": null,
+                "crop_x": 0.5,
+                "crop_y": 0.5,
+                "fit": "contain",
+                "format": "jpeg",
+                "height": null,
+                "jpeg_subsampling": 2,
+                "lossless": null,
+                "method": null,
+                "progressive": false,
+                "quality": 90,
+                "resampling": "lanczos",
+                "resolved": {
+                  "color_space": "srgb",
+                  "format": "jpeg",
+                  "height": 1706,
+                  "jpeg_subsampling": 2,
+                  "progressive": false,
+                  "quality": 90,
+                  "width": 1279
+                },
+                "width": null
+              },
+              "files": [
+                {
+                  "size_bytes": 147036,
+                  "sha256": "3960ba10dcc9be26b85287b4263cac2ab51dcdeb497f6532f28d983787c9eceb",
+                  "actual": {
+                    "format": "JPEG",
+                    "width": 1279,
+                    "height": 1706,
+                    "quality": 90
+                  }
+                }
+              ]
+            },
+            {
+              "transport": "mcp",
+              "job_id": "job_a5103800b5364cc2aa0fe19abd797a27",
+              "artifact_id": "art_addbf559af43430fb6debbad101732a5",
+              "effective_params": {
+                "allow_upscale": false,
+                "background": "#ffffff",
+                "compression_level": null,
+                "crop_x": 0.5,
+                "crop_y": 0.5,
+                "fit": "contain",
+                "format": "jpeg",
+                "height": null,
+                "jpeg_subsampling": 2,
+                "lossless": null,
+                "method": null,
+                "progressive": false,
+                "quality": 90,
+                "resampling": "lanczos",
+                "resolved": {
+                  "color_space": "srgb",
+                  "format": "jpeg",
+                  "height": 1706,
+                  "jpeg_subsampling": 2,
+                  "progressive": false,
+                  "quality": 90,
+                  "width": 1279
+                },
+                "width": null
+              },
+              "files": [
+                {
+                  "size_bytes": 147036,
+                  "sha256": "3960ba10dcc9be26b85287b4263cac2ab51dcdeb497f6532f28d983787c9eceb",
+                  "actual": {
+                    "format": "JPEG",
+                    "width": 1279,
+                    "height": 1706,
+                    "quality": 90
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "resource_owner_id": "71849942da67405e987d61d5b965a9c0",
+      "engine": {
+        "ffmpeg": "7.1.5-0+deb13u1",
+        "ffprobe": "7.1.5-0+deb13u1",
+        "image_version": "parameters-local",
+        "implementation_sha256": "2cb5e45a4c7f6e928bf1dc5bc43987529f8a352760c62a72afba3824c9c333d8"
+      },
+      "cleanup": {
+        "containers_remaining": 0,
+        "volumes_remaining": 0
+      }
+    }
+  ],
+  "fixtures": {
+    "video": {
+      "size_bytes": 62835,
+      "sha256": "16af66744b6aaafdd4c4eec194d518b224d26d0db88c7fc697f4066b67152340"
+    },
+    "audio": {
+      "size_bytes": 122971,
+      "sha256": "aa85a226fc65477708df129ab5a5c5f7c48550fb53674a804c8e3ac851a7d225"
+    },
+    "image": {
+      "size_bytes": 95104,
+      "sha256": "e4e7a92a96f96c377e5bebe17e4dcc110c10c4b31301825bb384f76cde64831e"
+    }
+  },
+  "status": "passed"
+}

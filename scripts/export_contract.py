@@ -11,6 +11,7 @@ from media_service.models import (
     JobCreate,
     JobResult,
     MembersResult,
+    capabilities,
 )
 
 
@@ -23,7 +24,7 @@ def main():
     app = create_app(service=SimpleNamespace(settings=settings))
     root = Path(__file__).resolve().parents[1] / "docs" / "api"
     root.mkdir(exist_ok=True, parents=True)
-    values = {"v1-openapi": app.openapi()}
+    values = {"v1-openapi": app.openapi(), "media-operations": capabilities()}
     values.update({model.__name__: model.model_json_schema() for model in
                    (JobCreate, JobResult, ArtifactResult, MembersResult, FileResult, ErrorEnvelope)})
     for name, value in values.items():

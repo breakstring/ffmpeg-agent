@@ -3672,6 +3672,18 @@
                 "type": "null"
               }
             ]
+          },
+          "media": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Media"
           }
         },
         "additionalProperties": false,
@@ -3969,6 +3981,18 @@
                 "type": "null"
               }
             ]
+          },
+          "effective_params": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective Params"
           }
         },
         "additionalProperties": false,

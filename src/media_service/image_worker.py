@@ -24,7 +24,7 @@ SAVE_OPTIONS = {
 MODES = {"1", "L", "LA", "P", "RGB", "RGBA"}
 
 
-def resize(fd: int, destination: Path, params: ImageParams, max_pixels: int) -> dict:
+def _read_image(fd: int, max_pixels: int) -> Image.Image:
     Image.MAX_IMAGE_PIXELS = max_pixels
     warnings.simplefilter("error", Image.DecompressionBombWarning)
     os.lseek(fd, 0, os.SEEK_SET)
@@ -62,56 +62,112 @@ def resize(fd: int, destination: Path, params: ImageParams, max_pixels: int) -> 
             image = image.convert("RGB")
         elif image.mode in {"LA", "P"}:
             image = image.convert("RGBA")
-        if params.fit == "cover":
-            if params.width * params.height > max_pixels:
+        return image
+
+
+def _flatten(image: Image.Image, color: str) -> Image.Image:
+    background = Image.new("RGB", image.size, ImageColor.getrgb(color))
+    if image.mode == "RGBA":
+        background.paste(image, mask=image.getchannel("A"))
+    else:
+        background.paste(image.convert("RGB"))
+    return background
+
+
+def _save_image(image: Image.Image, destination: Path, format: str, options: dict) -> dict:
+    image.info.clear()
+    format_name, content_type = FORMATS[format]
+    with destination.open("xb") as output:
+        image.save(output, format=format_name, **options)
+        output.flush()
+        os.fsync(output.fileno())
+    # 重新解码输出，不能只凭save未抛异常就发布。
+    with Image.open(destination) as check:
+        check.load()
+        if check.size != image.size or check.format != format_name or check.getexif():
+            raise ServiceError("INVALID_MEDIA")
+    return {
+        "type": "image",
+        "format": format,
+        "content_type": content_type,
+        "width": image.width,
+        "height": image.height,
+        "color_space": "srgb",
+    }
+
+
+def resize(fd: int, destination: Path, params: dict, max_pixels: int) -> dict:
+    image = _read_image(fd, max_pixels)
+    width, height = params["width"], params["height"]
+    fit = params["fit"]
+    resampling = {
+        "lanczos": Image.Resampling.LANCZOS,
+        "bicubic": Image.Resampling.BICUBIC,
+        "bilinear": Image.Resampling.BILINEAR,
+        "nearest": Image.Resampling.NEAREST,
+    }[params["resampling"]]
+    if fit == "cover":
+        if width is None or height is None:
+            raise ServiceError("UNSUPPORTED_OPERATION")
+        if width * height > max_pixels:
+            raise ServiceError("OUTPUT_LIMIT")
+        if not params["allow_upscale"] and (width > image.width or height > image.height):
+            raise ServiceError("UNSUPPORTED_MEDIA")
+        image = ImageOps.fit(
+            image, (width, height), resampling, centering=(params["crop_x"], params["crop_y"])
+        )
+    elif width is not None or height is not None:
+        factors = []
+        if width is not None:
+            factors.append(width / image.width)
+        if height is not None:
+            factors.append(height / image.height)
+        factor = min(factors)
+        if not params["allow_upscale"]:
+            factor = min(factor, 1)
+        size = (max(1, round(image.width * factor)), max(1, round(image.height * factor)))
+        if size[0] * size[1] > max_pixels:
+            raise ServiceError("OUTPUT_LIMIT")
+        if fit == "pad":
+            if width is None or height is None:
+                raise ServiceError("UNSUPPORTED_OPERATION")
+            if width * height > max_pixels:
                 raise ServiceError("OUTPUT_LIMIT")
-            if not params.allow_upscale and (
-                params.width > image.width or params.height > image.height
-            ):
-                raise ServiceError("UNSUPPORTED_MEDIA")
-            image = ImageOps.fit(
-                image, (params.width, params.height), Image.Resampling.LANCZOS, centering=(0.5, 0.5)
+        image = image.resize(size, resampling)
+        if fit == "pad" and width is not None and height is not None:
+            background = Image.new("RGB", (width, height), ImageColor.getrgb(params["background"]))
+            position = (
+                round((width - image.width) * params["crop_x"]),
+                round((height - image.height) * params["crop_y"]),
             )
-        else:
-            factor = min(params.width / image.width, params.height / image.height)
-            if not params.allow_upscale:
-                factor = min(factor, 1)
-            size = (max(1, round(image.width * factor)), max(1, round(image.height * factor)))
-            if size[0] * size[1] > max_pixels:
-                raise ServiceError("OUTPUT_LIMIT")
-            image = image.resize(size, Image.Resampling.LANCZOS)
-        if params.format == "jpeg":
-            background = Image.new("RGB", image.size, ImageColor.getrgb(params.background))
-            if image.mode == "RGBA":
-                background.paste(image, mask=image.getchannel("A"))
-            else:
-                background.paste(image.convert("RGB"))
+            background.paste(
+                image.convert("RGB"),
+                position,
+                image.getchannel("A") if image.mode == "RGBA" else None,
+            )
             image = background
-        image.info.clear()
-        format_name, content_type = FORMATS[params.format]
-        with destination.open("xb") as output:
-            image.save(output, format=format_name, **SAVE_OPTIONS[params.format])
-            output.flush()
-            os.fsync(output.fileno())
-        # 重新解码输出，不能只凭save未抛异常就发布。
-        with Image.open(destination) as check:
-            check.load()
-            if check.size != image.size or check.format != format_name or check.getexif():
-                raise ServiceError("INVALID_MEDIA")
-        return {
-            "type": "image",
-            "format": params.format,
-            "content_type": content_type,
-            "width": image.width,
-            "height": image.height,
-            "color_space": "srgb",
+    if params["format"] == "jpeg":
+        image = _flatten(image, params["background"])
+        options = {
+            "quality": params["quality"],
+            "subsampling": params["jpeg_subsampling"],
+            "progressive": params["progressive"],
         }
+    elif params["format"] == "png":
+        options = {"compress_level": params["compression_level"]}
+    else:
+        options = {
+            "quality": params["quality"],
+            "lossless": params["lossless"],
+            "method": params["method"],
+        }
+    return _save_image(image, destination, params["format"], options)
 
 
 def main() -> None:
     try:
-        fd, destination, raw_params, max_pixels = sys.argv[1:]
-        params = ImageParams.model_validate_json(raw_params)
+        fd, destination, raw_params, max_pixels = sys.argv[1:5]
+        params = ImageParams.model_validate_json(raw_params).model_dump()
         media = resize(int(fd), Path(destination), params, int(max_pixels))
         print(json.dumps({"media": media}, separators=(",", ":")))
     except ServiceError as error:

@@ -48,7 +48,7 @@ async def test_dag_independent_branches_skipped_dependency_partial_collection(se
             {"id": "failed", "operation": "video.transcode.v1", "inputs": {"video": {"source": "missing"}}},
             {"id": "skipped", "operation": "media.probe.v1", "inputs": {"media": {"step": "failed", "output": "video"}}},
             {"id": "audio", "operation": "video.extract_audio.v1", "inputs": {"video": {"source": "main"}}, "params": {"preset": "wav_mono_16k_v1"}},
-            {"id": "frames", "operation": "video.extract_frames.v1", "inputs": {"video": {"source": "main"}}, "params": {"timestamps_ms": [0, 0, 999999]}},
+            {"id": "frames", "operation": "video.extract_frames.v1", "inputs": {"video": {"source": "main"}}, "params": {"sampling": {"mode": "timestamps", "timestamps_ms": [0, 0, 999999]}}},
         ],
         "outputs": {"bad": {"step": "failed", "output": "video"}, "dependent": {"step": "skipped", "output": "report"}, "audio": {"step": "audio", "output": "audio"}, "frames": {"step": "frames", "output": "frames"}},
     })
@@ -68,7 +68,7 @@ async def test_dag_independent_branches_skipped_dependency_partial_collection(se
 
 
 async def test_all_failed_frame_items_are_explicit_without_fake_artifact(service):
-    request = single("video.extract_frames.v1", "video", "frames", source("ffmpeg_h264_640x360.mkv"), {"timestamps_ms": [999999, 888888, 999999]})
+    request = single("video.extract_frames.v1", "video", "frames", source("ffmpeg_h264_640x360.mkv"), {"sampling": {"mode": "timestamps", "timestamps_ms": [999999, 888888, 999999]}})
     job_id, _ = await service.accept("test", "no-frames", request)
     job = await finished(service, job_id)
     assert job["status"] == "failed"

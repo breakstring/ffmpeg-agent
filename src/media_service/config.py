@@ -72,6 +72,8 @@ class Settings(BaseSettings):
     max_output_bytes: int = Field(default=2 * 1024**3, ge=1)
     max_work_bytes: int = Field(default=4 * 1024**3, ge=1)
     max_pixels: int = Field(default=40_000_000, ge=1)
+    max_frame_count: int = Field(default=100, ge=1, le=100000)
+    max_frame_rate: int = Field(default=240, ge=1, le=1000)
     max_duration_seconds: int = Field(default=3600, ge=1)
     disk_reserve_bytes: int = Field(default=512 * 1024**2, ge=0)
     task_timeout_seconds: float = Field(default=3600, gt=0)
@@ -159,6 +161,8 @@ class Settings(BaseSettings):
                 "max_output_bytes",
                 "max_work_bytes",
                 "max_pixels",
+                "max_frame_count",
+                "max_frame_rate",
                 "max_duration_seconds",
                 "task_timeout_seconds",
                 "http_download_seconds",

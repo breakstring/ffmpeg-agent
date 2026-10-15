@@ -1,0 +1,1818 @@
+{
+  "media.probe.v1": {
+    "input_ports": [
+      "media"
+    ],
+    "input_kind": "file",
+    "output_port": "report",
+    "output_type": "json",
+    "accepts_partial": false,
+    "default_params": {
+      "sections": [
+        "format",
+        "streams"
+      ],
+      "stream_indices": null,
+      "count_frames": false
+    },
+    "params_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "sections": {
+          "items": {
+            "enum": [
+              "format",
+              "streams",
+              "tags",
+              "chapters"
+            ],
+            "type": "string"
+          },
+          "maxItems": 4,
+          "minItems": 1,
+          "title": "Sections",
+          "type": "array"
+        },
+        "stream_indices": {
+          "anyOf": [
+            {
+              "items": {
+                "maximum": 31,
+                "minimum": 0,
+                "type": "integer"
+              },
+              "maxItems": 32,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stream Indices"
+        },
+        "count_frames": {
+          "default": false,
+          "title": "Count Frames",
+          "type": "boolean"
+        }
+      },
+      "title": "ProbeParams",
+      "type": "object"
+    }
+  },
+  "video.transcode.v1": {
+    "input_ports": [
+      "video"
+    ],
+    "input_kind": "file",
+    "output_port": "video",
+    "output_type": "video",
+    "accepts_partial": false,
+    "default_params": {
+      "preset": null,
+      "container": "mp4",
+      "codec": "h264",
+      "video_stream": 0,
+      "resize": {
+        "width": null,
+        "height": null,
+        "fit": "contain",
+        "allow_upscale": false,
+        "background": "#000000",
+        "crop_x": 0.5,
+        "crop_y": 0.5
+      },
+      "frame_rate": {
+        "mode": "source",
+        "value": null
+      },
+      "rate_control": {
+        "mode": "crf",
+        "value": 23.0
+      },
+      "speed": "medium",
+      "pixel_format": "yuv420p",
+      "audio": {
+        "mode": "encode",
+        "audio_stream": 0,
+        "codec": "aac",
+        "sample_rate": "auto",
+        "channels": "auto",
+        "channel_layout": null,
+        "sample_format": null,
+        "rate_control": {
+          "mode": "auto"
+        },
+        "compression_level": null
+      },
+      "range": {
+        "start_ms": 0,
+        "end_ms": null
+      }
+    },
+    "params_schema": {
+      "$defs": {
+        "AudioAutoBitrate": {
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "const": "auto",
+              "default": "auto",
+              "title": "Mode",
+              "type": "string"
+            }
+          },
+          "title": "AudioAutoBitrate",
+          "type": "object"
+        },
+        "AudioBitrate": {
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "const": "bitrate",
+              "default": "bitrate",
+              "title": "Mode",
+              "type": "string"
+            },
+            "bitrate_bps": {
+              "exclusiveMinimum": 0,
+              "title": "Bitrate Bps",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "bitrate_bps"
+          ],
+          "title": "AudioBitrate",
+          "type": "object"
+        },
+        "AudioEncoding": {
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "default": "encode",
+              "enum": [
+                "encode",
+                "copy",
+                "drop"
+              ],
+              "title": "Mode",
+              "type": "string"
+            },
+            "audio_stream": {
+              "default": 0,
+              "maximum": 31,
+              "minimum": 0,
+              "title": "Audio Stream",
+              "type": "integer"
+            },
+            "codec": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "aac",
+                    "mp3",
+                    "opus",
+                    "flac",
+                    "pcm"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": "aac",
+              "title": "Codec"
+            },
+            "sample_rate": {
+              "anyOf": [
+                {
+                  "maximum": 384000,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "enum": [
+                    "auto",
+                    "source"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": "auto",
+              "title": "Sample Rate"
+            },
+            "channels": {
+              "anyOf": [
+                {
+                  "maximum": 8,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "enum": [
+                    "auto",
+                    "source"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": "auto",
+              "title": "Channels"
+            },
+            "channel_layout": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "mono",
+                    "stereo",
+                    "2.1",
+                    "3.0",
+                    "4.0",
+                    "5.1",
+                    "7.1"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Channel Layout"
+            },
+            "sample_format": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "s16",
+                    "s24",
+                    "f32"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Sample Format"
+            },
+            "rate_control": {
+              "anyOf": [
+                {
+                  "discriminator": {
+                    "mapping": {
+                      "auto": "#/$defs/AudioAutoBitrate",
+                      "bitrate": "#/$defs/AudioBitrate",
+                      "quality": "#/$defs/AudioQuality"
+                    },
+                    "propertyName": "mode"
+                  },
+                  "oneOf": [
+                    {
+                      "$ref": "#/$defs/AudioBitrate"
+                    },
+                    {
+                      "$ref": "#/$defs/AudioQuality"
+                    },
+                    {
+                      "$ref": "#/$defs/AudioAutoBitrate"
+                    }
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Rate Control"
+            },
+            "compression_level": {
+              "anyOf": [
+                {
+                  "maximum": 12,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Compression Level"
+            }
+          },
+          "title": "AudioEncoding",
+          "type": "object"
+        },
+        "AudioQuality": {
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "const": "quality",
+              "default": "quality",
+              "title": "Mode",
+              "type": "string"
+            },
+            "value": {
+              "maximum": 9,
+              "minimum": 0,
+              "title": "Value",
+              "type": "number"
+            }
+          },
+          "required": [
+            "value"
+          ],
+          "title": "AudioQuality",
+          "type": "object"
+        },
+        "CRF": {
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "const": "crf",
+              "default": "crf",
+              "title": "Mode",
+              "type": "string"
+            },
+            "value": {
+              "default": 23.0,
+              "maximum": 63,
+              "minimum": 0,
+              "title": "Value",
+              "type": "number"
+            }
+          },
+          "title": "CRF",
+          "type": "object"
+        },
+        "FrameRate": {
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "default": "source",
+              "enum": [
+                "source",
+                "constant",
+                "max"
+              ],
+              "title": "Mode",
+              "type": "string"
+            },
+            "value": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Value"
+            }
+          },
+          "title": "FrameRate",
+          "type": "object"
+        },
+        "Resize": {
+          "additionalProperties": false,
+          "properties": {
+            "width": {
+              "anyOf": [
+                {
+                  "maximum": 65535,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Width"
+            },
+            "height": {
+              "anyOf": [
+                {
+                  "maximum": 65535,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Height"
+            },
+            "fit": {
+              "default": "contain",
+              "enum": [
+                "contain",
+                "cover",
+                "pad"
+              ],
+              "title": "Fit",
+              "type": "string"
+            },
+            "allow_upscale": {
+              "default": false,
+              "title": "Allow Upscale",
+              "type": "boolean"
+            },
+            "background": {
+              "default": "#000000",
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "title": "Background",
+              "type": "string"
+            },
+            "crop_x": {
+              "default": 0.5,
+              "maximum": 1,
+              "minimum": 0,
+              "title": "Crop X",
+              "type": "number"
+            },
+            "crop_y": {
+              "default": 0.5,
+              "maximum": 1,
+              "minimum": 0,
+              "title": "Crop Y",
+              "type": "number"
+            }
+          },
+          "title": "Resize",
+          "type": "object"
+        },
+        "TimeRange": {
+          "additionalProperties": false,
+          "properties": {
+            "start_ms": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Start Ms",
+              "type": "integer"
+            },
+            "end_ms": {
+              "anyOf": [
+                {
+                  "exclusiveMinimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "End Ms"
+            }
+          },
+          "title": "TimeRange",
+          "type": "object"
+        },
+        "VideoBitrate": {
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "const": "bitrate",
+              "default": "bitrate",
+              "title": "Mode",
+              "type": "string"
+            },
+            "bitrate_bps": {
+              "exclusiveMinimum": 0,
+              "title": "Bitrate Bps",
+              "type": "integer"
+            },
+            "maxrate_bps": {
+              "anyOf": [
+                {
+                  "exclusiveMinimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Maxrate Bps"
+            },
+            "buffer_size_bits": {
+              "anyOf": [
+                {
+                  "exclusiveMinimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Buffer Size Bits"
+            }
+          },
+          "required": [
+            "bitrate_bps"
+          ],
+          "title": "VideoBitrate",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "preset": {
+          "anyOf": [
+            {
+              "const": "web_720p_v1",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Preset"
+        },
+        "container": {
+          "default": "mp4",
+          "enum": [
+            "mp4",
+            "mkv",
+            "webm"
+          ],
+          "title": "Container",
+          "type": "string"
+        },
+        "codec": {
+          "default": "h264",
+          "enum": [
+            "h264",
+            "hevc",
+            "vp9",
+            "av1"
+          ],
+          "title": "Codec",
+          "type": "string"
+        },
+        "video_stream": {
+          "default": 0,
+          "maximum": 31,
+          "minimum": 0,
+          "title": "Video Stream",
+          "type": "integer"
+        },
+        "resize": {
+          "$ref": "#/$defs/Resize"
+        },
+        "frame_rate": {
+          "$ref": "#/$defs/FrameRate"
+        },
+        "rate_control": {
+          "discriminator": {
+            "mapping": {
+              "bitrate": "#/$defs/VideoBitrate",
+              "crf": "#/$defs/CRF"
+            },
+            "propertyName": "mode"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/CRF"
+            },
+            {
+              "$ref": "#/$defs/VideoBitrate"
+            }
+          ],
+          "title": "Rate Control"
+        },
+        "speed": {
+          "default": "medium",
+          "enum": [
+            "fast",
+            "medium",
+            "slow"
+          ],
+          "title": "Speed",
+          "type": "string"
+        },
+        "pixel_format": {
+          "const": "yuv420p",
+          "default": "yuv420p",
+          "title": "Pixel Format",
+          "type": "string"
+        },
+        "audio": {
+          "$ref": "#/$defs/AudioEncoding"
+        },
+        "range": {
+          "$ref": "#/$defs/TimeRange"
+        }
+      },
+      "title": "VideoParams",
+      "type": "object"
+    }
+  },
+  "audio.transcode.v1": {
+    "input_ports": [
+      "audio"
+    ],
+    "input_kind": "file",
+    "output_port": "audio",
+    "output_type": "audio",
+    "accepts_partial": false,
+    "default_params": {
+      "mode": "encode",
+      "audio_stream": 0,
+      "codec": "aac",
+      "sample_rate": "auto",
+      "channels": "auto",
+      "channel_layout": null,
+      "sample_format": null,
+      "rate_control": {
+        "mode": "auto"
+      },
+      "compression_level": null,
+      "preset": null,
+      "container": "m4a",
+      "range": {
+        "start_ms": 0,
+        "end_ms": null
+      }
+    },
+    "params_schema": {
+      "$defs": {
+        "AudioAutoBitrate": {
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "const": "auto",
+              "default": "auto",
+              "title": "Mode",
+              "type": "string"
+            }
+          },
+          "title": "AudioAutoBitrate",
+          "type": "object"
+        },
+        "AudioBitrate": {
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "const": "bitrate",
+              "default": "bitrate",
+              "title": "Mode",
+              "type": "string"
+            },
+            "bitrate_bps": {
+              "exclusiveMinimum": 0,
+              "title": "Bitrate Bps",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "bitrate_bps"
+          ],
+          "title": "AudioBitrate",
+          "type": "object"
+        },
+        "AudioQuality": {
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "const": "quality",
+              "default": "quality",
+              "title": "Mode",
+              "type": "string"
+            },
+            "value": {
+              "maximum": 9,
+              "minimum": 0,
+              "title": "Value",
+              "type": "number"
+            }
+          },
+          "required": [
+            "value"
+          ],
+          "title": "AudioQuality",
+          "type": "object"
+        },
+        "TimeRange": {
+          "additionalProperties": false,
+          "properties": {
+            "start_ms": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Start Ms",
+              "type": "integer"
+            },
+            "end_ms": {
+              "anyOf": [
+                {
+                  "exclusiveMinimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "End Ms"
+            }
+          },
+          "title": "TimeRange",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "default": "encode",
+          "enum": [
+            "encode",
+            "copy"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "audio_stream": {
+          "default": 0,
+          "maximum": 31,
+          "minimum": 0,
+          "title": "Audio Stream",
+          "type": "integer"
+        },
+        "codec": {
+          "anyOf": [
+            {
+              "enum": [
+                "aac",
+                "mp3",
+                "opus",
+                "flac",
+                "pcm"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "aac",
+          "title": "Codec"
+        },
+        "sample_rate": {
+          "anyOf": [
+            {
+              "maximum": 384000,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "enum": [
+                "auto",
+                "source"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "auto",
+          "title": "Sample Rate"
+        },
+        "channels": {
+          "anyOf": [
+            {
+              "maximum": 8,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "enum": [
+                "auto",
+                "source"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "auto",
+          "title": "Channels"
+        },
+        "channel_layout": {
+          "anyOf": [
+            {
+              "enum": [
+                "mono",
+                "stereo",
+                "2.1",
+                "3.0",
+                "4.0",
+                "5.1",
+                "7.1"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Channel Layout"
+        },
+        "sample_format": {
+          "anyOf": [
+            {
+              "enum": [
+                "s16",
+                "s24",
+                "f32"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sample Format"
+        },
+        "rate_control": {
+          "anyOf": [
+            {
+              "discriminator": {
+                "mapping": {
+                  "auto": "#/$defs/AudioAutoBitrate",
+                  "bitrate": "#/$defs/AudioBitrate",
+                  "quality": "#/$defs/AudioQuality"
+                },
+                "propertyName": "mode"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/AudioBitrate"
+                },
+                {
+                  "$ref": "#/$defs/AudioQuality"
+                },
+                {
+                  "$ref": "#/$defs/AudioAutoBitrate"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rate Control"
+        },
+        "compression_level": {
+          "anyOf": [
+            {
+              "maximum": 12,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Compression Level"
+        },
+        "preset": {
+          "anyOf": [
+            {
+              "enum": [
+                "aac_stereo_128k_v1",
+                "wav_mono_16k_v1"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Preset"
+        },
+        "container": {
+          "default": "m4a",
+          "enum": [
+            "m4a",
+            "mp3",
+            "ogg",
+            "flac",
+            "wav",
+            "mka"
+          ],
+          "title": "Container",
+          "type": "string"
+        },
+        "range": {
+          "$ref": "#/$defs/TimeRange"
+        }
+      },
+      "title": "AudioParams",
+      "type": "object"
+    }
+  },
+  "video.extract_audio.v1": {
+    "input_ports": [
+      "video"
+    ],
+    "input_kind": "file",
+    "output_port": "audio",
+    "output_type": "audio",
+    "accepts_partial": false,
+    "default_params": {
+      "mode": "encode",
+      "audio_stream": 0,
+      "codec": "aac",
+      "sample_rate": "auto",
+      "channels": "auto",
+      "channel_layout": null,
+      "sample_format": null,
+      "rate_control": {
+        "mode": "auto"
+      },
+      "compression_level": null,
+      "preset": null,
+      "container": "m4a",
+      "range": {
+        "start_ms": 0,
+        "end_ms": null
+      }
+    },
+    "params_schema": {
+      "$defs": {
+        "AudioAutoBitrate": {
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "const": "auto",
+              "default": "auto",
+              "title": "Mode",
+              "type": "string"
+            }
+          },
+          "title": "AudioAutoBitrate",
+          "type": "object"
+        },
+        "AudioBitrate": {
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "const": "bitrate",
+              "default": "bitrate",
+              "title": "Mode",
+              "type": "string"
+            },
+            "bitrate_bps": {
+              "exclusiveMinimum": 0,
+              "title": "Bitrate Bps",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "bitrate_bps"
+          ],
+          "title": "AudioBitrate",
+          "type": "object"
+        },
+        "AudioQuality": {
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "const": "quality",
+              "default": "quality",
+              "title": "Mode",
+              "type": "string"
+            },
+            "value": {
+              "maximum": 9,
+              "minimum": 0,
+              "title": "Value",
+              "type": "number"
+            }
+          },
+          "required": [
+            "value"
+          ],
+          "title": "AudioQuality",
+          "type": "object"
+        },
+        "TimeRange": {
+          "additionalProperties": false,
+          "properties": {
+            "start_ms": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Start Ms",
+              "type": "integer"
+            },
+            "end_ms": {
+              "anyOf": [
+                {
+                  "exclusiveMinimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "End Ms"
+            }
+          },
+          "title": "TimeRange",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "default": "encode",
+          "enum": [
+            "encode",
+            "copy"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "audio_stream": {
+          "default": 0,
+          "maximum": 31,
+          "minimum": 0,
+          "title": "Audio Stream",
+          "type": "integer"
+        },
+        "codec": {
+          "anyOf": [
+            {
+              "enum": [
+                "aac",
+                "mp3",
+                "opus",
+                "flac",
+                "pcm"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "aac",
+          "title": "Codec"
+        },
+        "sample_rate": {
+          "anyOf": [
+            {
+              "maximum": 384000,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "enum": [
+                "auto",
+                "source"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "auto",
+          "title": "Sample Rate"
+        },
+        "channels": {
+          "anyOf": [
+            {
+              "maximum": 8,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "enum": [
+                "auto",
+                "source"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "auto",
+          "title": "Channels"
+        },
+        "channel_layout": {
+          "anyOf": [
+            {
+              "enum": [
+                "mono",
+                "stereo",
+                "2.1",
+                "3.0",
+                "4.0",
+                "5.1",
+                "7.1"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Channel Layout"
+        },
+        "sample_format": {
+          "anyOf": [
+            {
+              "enum": [
+                "s16",
+                "s24",
+                "f32"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sample Format"
+        },
+        "rate_control": {
+          "anyOf": [
+            {
+              "discriminator": {
+                "mapping": {
+                  "auto": "#/$defs/AudioAutoBitrate",
+                  "bitrate": "#/$defs/AudioBitrate",
+                  "quality": "#/$defs/AudioQuality"
+                },
+                "propertyName": "mode"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/AudioBitrate"
+                },
+                {
+                  "$ref": "#/$defs/AudioQuality"
+                },
+                {
+                  "$ref": "#/$defs/AudioAutoBitrate"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rate Control"
+        },
+        "compression_level": {
+          "anyOf": [
+            {
+              "maximum": 12,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Compression Level"
+        },
+        "preset": {
+          "anyOf": [
+            {
+              "enum": [
+                "aac_stereo_128k_v1",
+                "wav_mono_16k_v1"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Preset"
+        },
+        "container": {
+          "default": "m4a",
+          "enum": [
+            "m4a",
+            "mp3",
+            "ogg",
+            "flac",
+            "wav",
+            "mka"
+          ],
+          "title": "Container",
+          "type": "string"
+        },
+        "range": {
+          "$ref": "#/$defs/TimeRange"
+        }
+      },
+      "title": "AudioParams",
+      "type": "object"
+    }
+  },
+  "video.extract_frames.v1": {
+    "input_ports": [
+      "video"
+    ],
+    "input_kind": "file",
+    "output_port": "frames",
+    "output_type": "collection",
+    "accepts_partial": false,
+    "default_params": {
+      "video_stream": 0,
+      "sampling": {
+        "mode": "timestamps",
+        "timestamps_ms": [
+          0
+        ]
+      },
+      "frame_selection": "next",
+      "image": {
+        "width": null,
+        "height": null,
+        "fit": "contain",
+        "allow_upscale": false,
+        "background": "#ffffff",
+        "crop_x": 0.5,
+        "crop_y": 0.5,
+        "resampling": "lanczos",
+        "format": "jpeg",
+        "quality": 90,
+        "compression_level": null,
+        "jpeg_subsampling": 2,
+        "progressive": false,
+        "lossless": null,
+        "method": null
+      }
+    },
+    "params_schema": {
+      "$defs": {
+        "CountSampling": {
+          "additionalProperties": false,
+          "properties": {
+            "start_ms": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Start Ms",
+              "type": "integer"
+            },
+            "end_ms": {
+              "anyOf": [
+                {
+                  "exclusiveMinimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "End Ms"
+            },
+            "mode": {
+              "const": "count",
+              "default": "count",
+              "title": "Mode",
+              "type": "string"
+            },
+            "count": {
+              "minimum": 1,
+              "title": "Count",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "count"
+          ],
+          "title": "CountSampling",
+          "type": "object"
+        },
+        "ImageParams": {
+          "additionalProperties": false,
+          "properties": {
+            "width": {
+              "anyOf": [
+                {
+                  "maximum": 65535,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Width"
+            },
+            "height": {
+              "anyOf": [
+                {
+                  "maximum": 65535,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Height"
+            },
+            "fit": {
+              "default": "contain",
+              "enum": [
+                "contain",
+                "cover",
+                "pad"
+              ],
+              "title": "Fit",
+              "type": "string"
+            },
+            "allow_upscale": {
+              "default": false,
+              "title": "Allow Upscale",
+              "type": "boolean"
+            },
+            "background": {
+              "default": "#ffffff",
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "title": "Background",
+              "type": "string"
+            },
+            "crop_x": {
+              "default": 0.5,
+              "maximum": 1,
+              "minimum": 0,
+              "title": "Crop X",
+              "type": "number"
+            },
+            "crop_y": {
+              "default": 0.5,
+              "maximum": 1,
+              "minimum": 0,
+              "title": "Crop Y",
+              "type": "number"
+            },
+            "resampling": {
+              "default": "lanczos",
+              "enum": [
+                "lanczos",
+                "bicubic",
+                "bilinear",
+                "nearest"
+              ],
+              "title": "Resampling",
+              "type": "string"
+            },
+            "format": {
+              "default": "jpeg",
+              "enum": [
+                "jpeg",
+                "png",
+                "webp"
+              ],
+              "title": "Format",
+              "type": "string"
+            },
+            "quality": {
+              "anyOf": [
+                {
+                  "maximum": 100,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Quality"
+            },
+            "compression_level": {
+              "anyOf": [
+                {
+                  "maximum": 9,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Compression Level"
+            },
+            "jpeg_subsampling": {
+              "anyOf": [
+                {
+                  "enum": [
+                    0,
+                    1,
+                    2
+                  ],
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Jpeg Subsampling"
+            },
+            "progressive": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Progressive"
+            },
+            "lossless": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Lossless"
+            },
+            "method": {
+              "anyOf": [
+                {
+                  "maximum": 6,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Method"
+            }
+          },
+          "title": "ImageParams",
+          "type": "object"
+        },
+        "IntervalSampling": {
+          "additionalProperties": false,
+          "properties": {
+            "start_ms": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Start Ms",
+              "type": "integer"
+            },
+            "end_ms": {
+              "anyOf": [
+                {
+                  "exclusiveMinimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "End Ms"
+            },
+            "mode": {
+              "const": "interval",
+              "default": "interval",
+              "title": "Mode",
+              "type": "string"
+            },
+            "interval_ms": {
+              "minimum": 1,
+              "title": "Interval Ms",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "interval_ms"
+          ],
+          "title": "IntervalSampling",
+          "type": "object"
+        },
+        "TimestampSampling": {
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "const": "timestamps",
+              "default": "timestamps",
+              "title": "Mode",
+              "type": "string"
+            },
+            "timestamps_ms": {
+              "items": {
+                "minimum": 0,
+                "type": "integer"
+              },
+              "minItems": 1,
+              "title": "Timestamps Ms",
+              "type": "array"
+            }
+          },
+          "required": [
+            "timestamps_ms"
+          ],
+          "title": "TimestampSampling",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "video_stream": {
+          "default": 0,
+          "maximum": 31,
+          "minimum": 0,
+          "title": "Video Stream",
+          "type": "integer"
+        },
+        "sampling": {
+          "discriminator": {
+            "mapping": {
+              "count": "#/$defs/CountSampling",
+              "interval": "#/$defs/IntervalSampling",
+              "timestamps": "#/$defs/TimestampSampling"
+            },
+            "propertyName": "mode"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/TimestampSampling"
+            },
+            {
+              "$ref": "#/$defs/IntervalSampling"
+            },
+            {
+              "$ref": "#/$defs/CountSampling"
+            }
+          ],
+          "title": "Sampling"
+        },
+        "frame_selection": {
+          "default": "next",
+          "enum": [
+            "next",
+            "previous",
+            "nearest"
+          ],
+          "title": "Frame Selection",
+          "type": "string"
+        },
+        "image": {
+          "$ref": "#/$defs/ImageParams"
+        }
+      },
+      "title": "FramesParams",
+      "type": "object"
+    }
+  },
+  "image.resize.v1": {
+    "input_ports": [
+      "image"
+    ],
+    "input_kind": "file",
+    "output_port": "image",
+    "output_type": "image",
+    "accepts_partial": false,
+    "default_params": {
+      "width": null,
+      "height": null,
+      "fit": "contain",
+      "allow_upscale": false,
+      "background": "#ffffff",
+      "crop_x": 0.5,
+      "crop_y": 0.5,
+      "resampling": "lanczos",
+      "format": "jpeg",
+      "quality": 90,
+      "compression_level": null,
+      "jpeg_subsampling": 2,
+      "progressive": false,
+      "lossless": null,
+      "method": null
+    },
+    "params_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "width": {
+          "anyOf": [
+            {
+              "maximum": 65535,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Width"
+        },
+        "height": {
+          "anyOf": [
+            {
+              "maximum": 65535,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Height"
+        },
+        "fit": {
+          "default": "contain",
+          "enum": [
+            "contain",
+            "cover",
+            "pad"
+          ],
+          "title": "Fit",
+          "type": "string"
+        },
+        "allow_upscale": {
+          "default": false,
+          "title": "Allow Upscale",
+          "type": "boolean"
+        },
+        "background": {
+          "default": "#ffffff",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "Background",
+          "type": "string"
+        },
+        "crop_x": {
+          "default": 0.5,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Crop X",
+          "type": "number"
+        },
+        "crop_y": {
+          "default": 0.5,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Crop Y",
+          "type": "number"
+        },
+        "resampling": {
+          "default": "lanczos",
+          "enum": [
+            "lanczos",
+            "bicubic",
+            "bilinear",
+            "nearest"
+          ],
+          "title": "Resampling",
+          "type": "string"
+        },
+        "format": {
+          "default": "jpeg",
+          "enum": [
+            "jpeg",
+            "png",
+            "webp"
+          ],
+          "title": "Format",
+          "type": "string"
+        },
+        "quality": {
+          "anyOf": [
+            {
+              "maximum": 100,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Quality"
+        },
+        "compression_level": {
+          "anyOf": [
+            {
+              "maximum": 9,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Compression Level"
+        },
+        "jpeg_subsampling": {
+          "anyOf": [
+            {
+              "enum": [
+                0,
+                1,
+                2
+              ],
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Jpeg Subsampling"
+        },
+        "progressive": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Progressive"
+        },
+        "lossless": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lossless"
+        },
+        "method": {
+          "anyOf": [
+            {
+              "maximum": 6,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Method"
+        }
+      },
+      "title": "ImageParams",
+      "type": "object"
+    }
+  }
+}

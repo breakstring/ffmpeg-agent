@@ -36,7 +36,7 @@ def request(source=None, *, frames=False):
         "steps": [{
             "id": "process", "operation": operation,
             "inputs": {input_port: {"source": "main"}},
-            "params": {"timestamps_ms": [0, 999999]} if frames else {},
+            "params": {"sampling": {"mode": "timestamps", "timestamps_ms": [0, 999999]}} if frames else {},
         }],
         "outputs": {"result": {"step": "process", "output": output_port}},
     })

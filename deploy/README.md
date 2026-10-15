@@ -25,7 +25,7 @@ curl --fail http://127.0.0.1:8080/health/ready
 
 默认仅向宿主机 `127.0.0.1:8080` 映射端口。跨机部署通过实际受控 HTTPS 入口提供服务，把 `public_base_url` 改为远端调用方可达地址；监听映射由 `MEDIA_BIND_ADDRESS` 和 `MEDIA_PORT` 配置。实际源服务的 hostname、端口、scheme 和允许目标网段加入对应调用方的 `source_rules`；空列表表示默认禁止 HTTP 来源。不可用全网段通配代替部署时的明确目标。
 
-默认 1 个 Worker、2 CPU、2 GiB 内存、128 PID、64 MiB `/tmp`、60 秒容器停止宽限期。配置中的 `max_work_bytes`、存储 `quota_bytes` 和磁盘余量控制持久工作/输出区域；Compose 的内存限制不构成磁盘配额。提高 Worker 数量之前先完成目标宿主机实测。构建参数 `BUILD_REVISION` 记录交付版本，不修改冻结操作或预设含义。
+默认 1 个 Worker、2 CPU、2 GiB 内存、128 PID、64 MiB `/tmp`、60 秒容器停止宽限期。配置中的 `max_work_bytes`、存储 `quota_bytes` 和磁盘余量控制持久工作/输出区域；Compose 的内存限制不构成磁盘配额。`max_frame_count` 默认 100，可按容量调整每次抽帧请求上限；`max_frame_rate` 默认 240 fps，只限制显式 constant/max 帧率，source 模式保留源帧时间节奏。这两项在服务 JSON 中配置，并通过 capabilities 公开。提高 Worker 数量之前先完成目标宿主机实测。构建参数 `BUILD_REVISION` 记录交付版本，不修改冻结操作或预设含义。
 
 ## 上传与远程 MCP
 
@@ -132,6 +132,15 @@ docker build --build-arg BUILD_REVISION=local-verification -t ffmpeg-agent:v1-lo
 ```
 
 脚本使用两组独立容器和私有卷，分别验证 Token 开/关、原始上传、真实 TCP multipart、远程 MCP、HEAD/Range/SHA 与 ffprobe，并在观察到登记半成品后强停整个测试容器验证恢复；不挂载业务共享输入，只清理本次所有权标签资源。当前结果见[增量进度](../docs/plans/v1-implementation-progress.md)。该单机远程协议验收不计为两台宿主机证据。
+
+六类媒体参数验收使用同一精确镜像，分别覆盖 Token 开/关、HTTP 与远程 MCP 的最简调用和自定义参数：
+
+```sh
+.venv/bin/python deploy/verify-parameters.py --image <精确镜像ID> \
+  --report deploy/parameters-container-arm64.json
+```
+
+该脚本验证六个操作及六个媒体工具的共享参数、默认值、幂等重放、有效参数一致性、文件/抽帧成员的 HEAD/Range/SHA 下载，并解码检查实际编码、尺寸、音频规格和帧时间。只读取本项目 fixture，使用独立容器和私有卷，结束后只清理本次创建的资源；报告不能代替另一架构或两台实际宿主机的验收。执行结果和未验证条件记录在[实施进度](../docs/plans/v1-implementation-progress.md)。
 
 2026-10-13 的原生 Linux arm64 实测如下。每组用 `Feline_Apocalypse.mp4` 执行 8 次 `video.transcode.v1` / `web_720p_v1`，限制为 2 CPU / 2 GiB / 128 PID。完整数据及镜像 ID 在 [`capacity-arm64.json`](capacity-arm64.json)。
 

@@ -17,7 +17,7 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 from media_service.auth import authorize
 from media_service.config import Settings
 from media_service.errors import ServiceError
-from media_service.media import FORMATS, MEDIA_RULES, PRESETS
+from media_service.media import capability_document
 from media_service.models import (
     OPERATIONS,
     ArtifactResult,
@@ -31,7 +31,6 @@ from media_service.models import (
     OutputPolicy,
     RetentionRequest,
     StrictModel,
-    capabilities,
 )
 from media_service.telemetry import event
 
@@ -102,6 +101,7 @@ class CapabilitiesResult(StrictModel):
     media_rules: dict
     input_formats: list[str]
     file_transfer: dict
+    media_parameters: dict
 
 
 class SubmittedResult(JobResult):
@@ -254,15 +254,7 @@ def create_mcp(service: Any, settings: Settings) -> tuple[ASGIApp, Server]:
         return (await service.state.job(caller, job_id)) | {"created": created}
 
     async def list_capabilities(caller: str, arguments: EmptyArgs) -> dict:
-        base = settings.public_base_url.rstrip("/")
-        return {
-            "operations": capabilities(), "limits": settings.public_limits(),
-            "engine": service.engine, "presets": PRESETS, "media_rules": MEDIA_RULES,
-            "input_formats": FORMATS.split(","),
-            "file_transfer": {"upload": f"{base}/v1/files",
-                              "upload_and_submit": f"{base}/v1/jobs/upload",
-                              "transport": "http", "authentication": "same_service_token"},
-        }
+        return capability_document(service)
 
     async def get_job(caller: str, arguments: JobArgs) -> dict:
         return await service.state.job(caller, arguments.job_id)
@@ -339,8 +331,8 @@ def create_mcp(service: Any, settings: Settings) -> tuple[ASGIApp, Server]:
     ]
     intent_tools = (
         ("probe_media", "media.probe.v1", "提交媒体探测任务"),
-        ("transcode_video", "video.transcode.v1", "提交固定预设的视频转码任务"),
-        ("transcode_audio", "audio.transcode.v1", "提交固定预设的音频转码任务"),
+        ("transcode_video", "video.transcode.v1", "提交视频转码任务，可按需覆盖默认参数"),
+        ("transcode_audio", "audio.transcode.v1", "提交音频转码任务，可按需覆盖默认参数"),
         ("extract_audio", "video.extract_audio.v1", "提交视频音轨提取任务"),
         ("extract_frames", "video.extract_frames.v1", "提交指定时间点的逐项抽帧任务"),
         ("resize_image", "image.resize.v1", "提交图片缩放任务"),
@@ -367,11 +359,11 @@ def create_mcp(service: Any, settings: Settings) -> tuple[ASGIApp, Server]:
         arguments = create_model(
             f"{name}Args", __base__=StrictModel,
             source=(Input, ...), idempotency_key=(IdempotencyKey, ...),
-            params=(params_model, ...),
+            params=(params_model, Field(default_factory=params_model)),
             output_policy=(OutputPolicy, Field(default_factory=OutputPolicy)),
         )
         definitions.append(ToolDefinition(
-            name, f"{description}；立即返回任务 ID，使用 get_job 查询。文件通过 HTTP 上传下载。",
+            name, f"{description}；params 可省略，与 HTTP 同参。立即返回任务 ID，使用 get_job 查询。文件通过 HTTP 上传下载。",
             arguments, SubmittedResult, intent_handler(operation),
         ))
     tools = {definition.name: definition for definition in definitions}

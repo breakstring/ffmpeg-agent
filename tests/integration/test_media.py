@@ -114,6 +114,7 @@ async def test_probe_keeps_normalized_report_contract(engine: MediaEngine):
     )
     assert product.files == ["report.json"] and product.media["type"] == "json"
     report = json.loads((directory / "report.json").read_text())
+    assert product.media["effective_params"]["sections"] == ["format", "streams"]
     assert report["type"] == "video" and report["duration_ms"] == 30834
     assert report["streams"][0]["width"] == 720
     assert "tags" not in report["streams"][0]
@@ -129,7 +130,9 @@ async def test_probe_keeps_normalized_report_contract(engine: MediaEngine):
     ],
 )
 async def test_video_preset_real_formats(engine: MediaEngine, name: str, size: tuple[int, int]):
-    product, directory = await run_media(engine, FIXTURES / name, "video.transcode.v1")
+    product, directory = await run_media(
+        engine, FIXTURES / name, "video.transcode.v1", {"preset": "web_720p_v1"}
+    )
     video = next(stream for stream in product.media["streams"] if stream["type"] == "video")
     audio = next(stream for stream in product.media["streams"] if stream["type"] == "audio")
     assert (video["width"], video["height"]) == size
@@ -195,7 +198,7 @@ async def test_frames_use_pts_keep_order_duplicates_and_partial(
         engine,
         boundaries / name,
         "video.extract_frames.v1",
-        {"timestamps_ms": [600, 0, 201, 201, 800], "format": "png"},
+        {"sampling": {"mode": "timestamps", "timestamps_ms": [600, 0, 201, 201, 800]}, "image": {"format": "png"}},
     )
     assert [item["actual_time_ms"] for item in product.items] == expected
     assert [item["index"] for item in product.items] == list(range(5))
@@ -212,7 +215,7 @@ async def test_all_frame_requests_fail_without_collection(engine: MediaEngine, b
             engine,
             boundaries / "known_pts.mp4",
             "video.extract_frames.v1",
-            {"timestamps_ms": [601, 800, 900]},
+            {"sampling": {"mode": "timestamps", "timestamps_ms": [601, 800, 900]}},
         )
     assert caught.value.details is not None
     assert [item["index"] for item in caught.value.details["items"]] == [0, 1, 2]
@@ -221,7 +224,7 @@ async def test_all_frame_requests_fail_without_collection(engine: MediaEngine, b
 
 async def test_rotation_and_odd_dimensions(engine: MediaEngine, boundaries: Path):
     product, directory = await run_media(
-        engine, boundaries / "rotated.mp4", "video.extract_frames.v1", {"timestamps_ms": [0]}
+        engine, boundaries / "rotated.mp4", "video.extract_frames.v1", {"sampling": {"mode": "timestamps", "timestamps_ms": [0]}}
     )
     with Image.open(directory / product.files[0]) as image:
         assert image.size == (48, 64)

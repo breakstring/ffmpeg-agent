@@ -1,9 +1,9 @@
 # 媒体服务首版技术选型
 
 状态：技术选型基线，实施与验收状态见[实施进度](../plans/v1-implementation-progress.md)\
-日期：2026-10-13\
+日期：2026-10-15\
 适用项目：`ffmpeg-agent`\
-依据：[首版设计](media-service-v1.md)；执行拆分见[首版实施计划](../plans/v1-implementation-plan.md)。
+依据：[首版设计](media-service-v1.md)与[六类能力参数化合同](media-parameters.md)；执行拆分见[首版实施计划](../plans/v1-implementation-plan.md)。
 
 ## 1. 结论与使用规模
 
@@ -180,25 +180,33 @@ HTTP 输出必须流式发送。Starlette 的文件响应支持 Range，见[官�
 
 这些思路用于改善远程调用体验，实际执行继续复用本项目的持久队列、进程组取消、发布检查点、租约和登记回收。参考源码链接用于追溯，不建立外部运行依赖。
 
-## 7. 媒体引擎与首批预设
+## 7. 媒体引擎、通用默认与可选预设
 
-首版采用 Debian 13 维护的 FFmpeg 7.1 系列包，不自行编译追随最新主版本。截至选型查证，[Debian 包页面](https://packages.debian.org/trixie/ffmpeg)提供 7.1 系列构建和 amd64/arm64 包。实际选用补丁版本、编码器和许可证清单由 P0 的镜像验证记录；两个架构分别验收，不从“存在软件包”推断媒体输出等价。
+采用 Debian 13 维护的 FFmpeg 7.1 系列包，不自行编译追随最新主版本。实际补丁版本、编码器、许可证及目标架构由精确镜像验收记录；不能从软件包存在推断处理结果已经验证。[Debian 包页面](https://packages.debian.org/trixie/ffmpeg)用于追溯发行基线。
 
-启动必须检测 FFmpeg、ffprobe、Pillow 版本及预设需要的编码器/格式。缺少所需能力时不就绪，不静默降级编码方式。任务冻结操作版本和预设内容，同时记录实际镜像与引擎版本。升级先排空任务，或保留可运行原有冻结定义的兼容实现。
+启动检测 FFmpeg、ffprobe、Pillow 与基础编码能力；基础能力缺失不就绪，可选编码器缺失仅关闭对应选择。任务保存规范化参数、实际引擎及镜像要求。升级先排空任务，已接受任务不得悄悄套用新默认。
 
-| 操作/预设 | 首版准备固化的行为 |
+| 能力 | 通用默认 |
 | --- | --- |
-| `media.probe.v1` | 规范化容器和流信息；缺失字段为空，报告 JSON 为产物 |
-| `web_720p_v1` | MP4、H.264/libx264、yuv420p；画面等比装入 1280×720、不过度放大、有效偶数尺寸；CFR 30fps、CRF 23、medium、faststart；存在音频时转 AAC 128k/48kHz/双声道 |
-| `aac_stereo_128k_v1` | M4A/AAC、128k、48kHz、双声道；用于音频转码及视频音轨提取 |
-| `wav_mono_16k_v1` | WAV/PCM s16le、16kHz、单声道；用于音频转码及视频音轨提取 |
-| `video.extract_audio.v1` | 首版按上述预设转换所选音轨；不提供任意编码 copy，缺音轨明确失败 |
-| `video.extract_frames.v1` | JPEG/PNG 集合；按归一化展示时间选择第一张不早于请求点的可解码帧，记录实际 PTS；保留请求顺序和重复时间点的独立结果 |
-| `image.resize.v1` | 静态 JPEG/PNG/WebP；先处理 EXIF 方向，再按 contain/cover 缩放；拒绝动画、多页和超限像素；透明图片转 JPEG 必须按约定背景合成 |
+| 探测 | format/streams，不扫描统计帧数 |
+| 视频 | H.264/MP4、8-bit yuv420p、CRF 23、medium；保留源尺寸与帧时间；有音轨时转 AAC，音频规格自动选择 |
+| 音频/提音轨 | AAC/M4A，采样率与声道 auto 优先保持源值，码率按实际声道自动选择兼容值 |
+| 抽帧 | 取 0ms 首帧，JPEG quality 90，保留尺寸 |
+| 图片 | 保留尺寸，JPEG quality 90；按需设置缩放、裁剪、补边及编码质量 |
 
-图片使用 Pillow 的 [EXIF 方向处理](https://pillow.readthedocs.io/en/stable/reference/ImageOps.html#PIL.ImageOps.exif_transpose)。输出去除 EXIF/GPS 等无关元数据；首版的颜色空间、ICC 支持范围、透明背景默认值及禁止放大时 cover 的拒绝规则必须在 P0 固化并形成样例。视频的方向、SAR、奇数尺寸、HDR/色彩支持范围以及抽帧时间归一化也必须明确；不支持的组合拒绝，不以成功状态掩盖语义变化。
+`preset` 默认 `null`。`web_720p_v1`、`aac_stereo_128k_v1`、`wav_mono_16k_v1` 是固定含义的可选快捷设置，显式参数可覆盖预设。六个 `.v1` 操作各有一套共享参数模型，MCP 不增加版本选择，HTTP/MCP 的 `params` 均可省略。
 
-上述预设是实施基线，尚未实测。版本化预设在完成 P0 验证后冻结，同名预设不得改变意义；需要更改时增加新版本。
+### 7.1 参数解析与编码器适配
+
+HTTP、multipart 元数据、MCP 媒体工具和任务图工具复用 Pydantic 模型。参数按通用默认、可选预设及显式覆盖解析，规范化后保存到现有任务定义，不增加数据库迁移。编码器变化时重算专属默认；`rate_control` 整体替换，显式冲突拒绝。
+
+支持受控的软件 H.264/HEVC/VP9/AV1 与 AAC/MP3/Opus/FLAC/PCM，按“已实现适配 ∩ 实际探测可用”公开能力。容器、编码、采样率、声道、质量及 copy 兼容使用明确规则，不开放任意 FFmpeg 选项。音频 auto 优先保持输入规格，不兼容时选兼容值；source 严格保持，不兼容时失败。auto 码率根据解析后的声道和编码器规则确定，显式目标码率不静默改写。详细默认及范围见[参数合同](media-parameters.md)。
+
+图片使用 Pillow [EXIF 方向处理](https://pillow.readthedocs.io/en/stable/reference/ImageOps.html#PIL.ImageOps.exif_transpose)，清除 EXIF/GPS 等无关元数据。视频保持 8-bit yuv420p/SDR，图片保持静态 8-bit SDR；方向、SAR、透明及颜色边界均须真实测试。
+
+尺寸、帧率、码率等媒体规格与资源预算分别校验；像素、时长、输出量、期限和 `max_frame_count` 不因参数化绕过。继续采用安全 FD、协议限制、单子进程槽、取消/reap 及不可变发布检查点。
+
+能力 schema、有效参数和实际结果适合公开查询，不返回原始 source、ffprobe/FFmpeg 输出或任意标签。HTTP/MCP 的有效配置和错误一致，最简调用与按需覆盖都有协议验收。
 
 ## 8. 默认限额、认证与运行维护
 
@@ -206,7 +214,8 @@ HTTP 输出必须流式发送。Starlette 的文件响应支持 Range，见[官�
 
 | 项目 | 起始值/规则 |
 | --- | --- |
-| 单任务输入 / 步骤 / 抽帧点数 | 最多 4 个输入、16 个步骤、100 个抽帧点 |
+| 单任务输入 / 步骤 / 抽帧点数 | 最多 4 个输入、16 个步骤；部署 `max_frame_count` 默认 100、可调整 |
+| 显式帧率上限 | `max_frame_rate` 默认 240 fps，只限制 constant/max，source 保留源时间节奏 |
 | 单个输入 / 单任务输出总量 | 各不超过 2 GiB；另限制时长、像素与临时文件总量 |
 | 任务总期限 | 3600 秒，含排队；超时后仍需完成停止与释放收尾 |
 | HTTP 获取 | 连接 10 秒、读闲置 30 秒、一次获取总预算 300 秒；最多 3 次尝试且受任务剩余预算限制 |
@@ -228,4 +237,6 @@ HTTP 输出必须流式发送。Starlette 的文件响应支持 Range，见[官�
 
 首版不实现多进程 API、独立 Worker 容器、分布式租约、PostgreSQL、Redis、Celery、对象存储 SDK、GPU、NFS 或长期历史查询。只有单节点资源持续不足、数据库等待明显影响 API、需要跨节点执行或需要高可用时，再评估拆分。增加容器副本不属于安全扩容方式；扩展必须重新设计任务领取、存储可达性和文件生命周期。
 
-本文记录技术选型与默认预算的基线，不代表版本组合、处理行为或容量已经验收。具体构建、执行结果和部署限制见[实施进度](../plans/v1-implementation-progress.md)，只有实际验证证据才能支持相应交付结论。
+P13～P17 完成参数化合同、媒体适配、HTTP/MCP 一致性及增量验收。10-bit/HDR/色彩转换和硬件编解码分别登记后续方向，具备相应样例、执行环境和端到端证据后再开放；本轮不提供未经验证的像素格式或硬件选项。
+
+本文记录技术选型与默认预算的基线，不代表新增版本组合、处理行为或容量已经验收。具体构建、执行结果和部署限制见[实施进度](../plans/v1-implementation-progress.md)，只有实际验证证据才能支持相应交付结论。

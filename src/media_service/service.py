@@ -104,7 +104,11 @@ class Service:
     async def accept(self, caller: str, key: str, request: JobCreate) -> tuple[str, bool]:
         if not self.ready or self.scheduler.failed or not self.db.healthy:
             raise ServiceError("STATE_UNAVAILABLE", 503, True)
-        result = await self.state.accept(caller, key, request, self.engine, self.disk_preflight)
+        async def preflight():
+            self.media.validate_request(request, self.engine)
+            await self.disk_preflight()
+
+        result = await self.state.accept(caller, key, request, self.engine, preflight)
         self.scheduler.wake.set()
         return result
 

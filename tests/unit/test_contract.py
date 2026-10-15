@@ -26,7 +26,7 @@ def test_canonical_defaults_and_mapping_order():
 @pytest.mark.parametrize("mutation", [
     lambda r: r.update(extra=True),
     lambda r: r["inputs"]["main"].update(key="a/../b"),
-    lambda r: r["steps"][0].update(operation="media.probe.v2"),
+    lambda r: r["steps"][0].update(operation="media.probe.v999"),
     lambda r: r["steps"][0].update(params={"shell": "true"}),
     lambda r: r["steps"][0].update(inputs={"wrong": {"source": "main"}}),
     lambda r: r["outputs"]["report"].update(output="wrong"),
@@ -66,6 +66,6 @@ def test_frame_requests_keep_duplicates_and_order():
     value = request()
     value["steps"] = [{"id": "f", "operation": "video.extract_frames.v1",
                        "inputs": {"video": {"source": "main"}},
-                       "params": {"timestamps_ms": [100, 0, 100]}}]
+                       "params": {"sampling": {"mode": "timestamps", "timestamps_ms": [100, 0, 100]}}}]
     value["outputs"] = {"frames": {"step": "f", "output": "frames"}}
-    assert JobCreate.model_validate(value).steps[0].params["timestamps_ms"] == [100, 0, 100]
+    assert JobCreate.model_validate(value).steps[0].params["sampling"]["timestamps_ms"] == [100, 0, 100]

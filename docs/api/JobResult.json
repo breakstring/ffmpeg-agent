@@ -131,6 +131,19 @@
             }
           ],
           "default": null
+        },
+        "effective_params": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Effective Params"
         }
       },
       "required": [

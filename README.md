@@ -6,14 +6,14 @@ Process media from applications or remote AI agents through HTTP and MCP. Upload
 
 | What you can do | Operation |
 | --- | --- |
-| Inspect media and download a JSON report | `media.probe.v1` |
-| Convert video to web-ready MP4 / H.264, up to 720p at 30 fps | `video.transcode.v1` |
-| Convert audio to AAC stereo or 16 kHz mono WAV | `audio.transcode.v1` |
-| Extract and convert a selected audio track from video | `video.extract_audio.v1` |
-| Extract JPEG or PNG frames at requested timestamps | `video.extract_frames.v1` |
-| Resize and convert static JPEG, PNG and WebP images | `image.resize.v1` |
+| Inspect media, select report sections and optionally count frames | `media.probe.v1` |
+| Convert video with defaults or select encoding, size, frame rate and quality | `video.transcode.v1` |
+| Convert audio with defaults or select codec, sample rate, channels and bitrate | `audio.transcode.v1` |
+| Extract and convert a selected audio track, or copy its original encoding | `video.extract_audio.v1` |
+| Extract frames by timestamps, interval or count, with image size and quality controls | `video.extract_frames.v1` |
+| Resize, crop, pad and convert static JPEG, PNG and WebP images | `image.resize.v1` |
 
-Tasks can chain operations, reuse inputs and return multiple outputs. Query `GET /v1/capabilities` for the running service's presets and limits.
+Tasks can chain operations, reuse inputs and return multiple outputs. Start with the defaults by omitting `params`, then add only the settings you need. HTTP and MCP accept the same parameters. Query `GET /v1/capabilities` for available encoders, parameter schemas and limits.
 
 ## Start with Docker Compose
 
@@ -49,7 +49,7 @@ The default service is reachable only on the host at port 8080. To connect remot
 
 ## Upload, process and download
 
-The following Python 3 standard-library example streams the upload and download without loading the whole video into memory. It converts `sample.mp4`, waits for the task and verifies the result's length and SHA-256. Keep the source unchanged while it runs.
+The following Python 3 standard-library example streams the upload and download without loading the whole video into memory. It converts `sample.mp4` to H.264/MP4, keeps the source dimensions and frame timing, waits for the task and verifies the result's length and SHA-256. Keep the source unchanged while it runs.
 
 Save the code as `example.py`, place your video at `sample.mp4`, and run:
 
@@ -121,7 +121,6 @@ job = api("POST", "/v1/jobs", {
     "steps": [{
         "id": "encode", "operation": "video.transcode.v1",
         "inputs": {"video": {"source": "source"}},
-        "params": {"preset": "web_720p_v1"},
     }],
     "outputs": {"video": {"step": "encode", "output": "video"}},
 }, {"Idempotency-Key": "readme-video-" + source_digest})
@@ -178,7 +177,6 @@ job = {
     "steps": [{
         "id": "encode", "operation": "video.transcode.v1",
         "inputs": {"video": {"source": "source"}},
-        "params": {"preset": "web_720p_v1"},
     }],
     "outputs": {"video": {"step": "encode", "output": "video"}},
 }
@@ -206,7 +204,6 @@ Discover the tools with `tools/list`. For example, call `transcode_video` with t
 ```json
 {
   "source": {"kind": "uploaded_file", "file_id": "<file_id returned by HTTP upload>"},
-  "params": {"preset": "web_720p_v1"},
   "idempotency_key": "readme-mcp-video-001"
 }
 ```
@@ -216,6 +213,34 @@ The tool returns `job_id`. Call `get_job` with `{"job_id":"<returned job_id>"}` 
 The six media tools are `probe_media`, `transcode_video`, `transcode_audio`, `extract_audio`, `extract_frames` and `resize_image`. Other tools cover capabilities, task graphs, cancellation, input release, artifacts and leases. See the [MCP contract](docs/api/v1-contract.md#远程-mcp) for their arguments.
 
 File bytes travel through HTTP: **upload → `file_id` → MCP processing/query → `artifact_id` → download**. MCP also accepts the other input types below. Only remote MCP is provided; the server cannot read paths on the client's computer.
+
+## Adjust media parameters
+
+All six tools work without `params`. Video defaults to H.264/MP4 with CRF 23 and keeps source dimensions and frame timing. Audio defaults to AAC and prefers the source sample rate and channels, choosing compatible values when necessary. Images keep their dimensions and become JPEG at quality 90; frame extraction defaults to the first frame; media probing returns format and stream information.
+
+To customize a result, add only the values you want to change. For example, call `transcode_video` with these arguments to fit within 1920×1080 without enlarging, use CRF 20, and encode mono AAC at 44.1 kHz:
+
+```json
+{
+  "source": {"kind": "uploaded_file", "file_id": "<file_id returned by HTTP upload>"},
+  "params": {
+    "resize": {"width": 1920, "height": 1080},
+    "rate_control": {"mode": "crf", "value": 20},
+    "audio": {"sample_rate": 44100, "channels": 1}
+  },
+  "idempotency_key": "readme-mcp-custom-video-001"
+}
+```
+
+For HTTP, use the same `params` object in a `video.transcode.v1` step in `POST /v1/jobs` or the multipart `job` part. Each tool has one parameter contract; no additional version selector is needed.
+
+Presets are optional shortcuts. `{"preset":"web_720p_v1"}` selects 720p/30 fps with AAC stereo; `aac_stereo_128k_v1` selects AAC 128 kbps/48 kHz/stereo, and `wav_mono_16k_v1` selects 16 kHz mono PCM. Explicit parameters override a selected preset. With no preset, source dimensions and timing are preserved. To request a fixed frame rate, use `frame_rate: {"mode":"constant","value":"30000/1001"}`.
+
+For audio, `auto` sample rate and channels prefer the source values and fall back to compatible values. Use `source` when retaining the exact source value is required; unsupported combinations then fail. Automatic bitrate depends on codec and output channels, and explicit bitrates are checked strictly. Audio `mode: "copy"` preserves the selected track's encoding and cannot be combined with resampling, quality settings or trimming. JPEG/WebP use format-specific quality; PNG uses `compression_level`.
+
+Query `steps[].effective_params` on the task and `media.effective_params` on the artifact to see accepted and resolved settings. Resolved audio bitrate is under `resolved.rate_control` (`resolved.audio.rate_control` for video); it is a target, so AAC file averages may differ. `media.streams[].frame_rate` is the container's nominal rate, especially for WebM; use the effective frame-rate strategy and decoded timestamps when checking actual timing.
+
+Available software codecs depend on the running image. For example, Opus outputs 48 kHz and the current AV1 encoder requires at least 64×64 pixels. See the [parameter contract](docs/design/media-parameters.md) for all six operations, detailed defaults, compatible combinations and frame/image controls.
 
 ## Choose an input and consume results
 
@@ -247,7 +272,7 @@ Use `POST /v1/files/{file_id}/release` or `POST /v1/artifacts/{artifact_id}/rele
 
 Run one service instance with its own state and work volumes. The default is one logical Worker, configurable from 1 to 4; increasing it requires workload and resource testing. Do not run several containers against the same state directory.
 
-The current presets do not support HDR, 10-bit video, non-square SAR, animated/multipage images, HLS processing or arbitrary FFmpeg commands. See the [API contract](docs/api/v1-contract.md) for supported media semantics and errors.
+The current processing scope excludes HDR, 10-bit video, hardware acceleration, non-square SAR, animated/multipage images, HLS processing and arbitrary FFmpeg commands. See the [API contract](docs/api/v1-contract.md) for supported media semantics and errors.
 
 - [Deployment and shared-volume examples](deploy/README.md)
 - [HTTP API contract](docs/api/v1-contract.md) and [OpenAPI](docs/api/v1-openapi.json)

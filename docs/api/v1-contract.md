@@ -1,8 +1,8 @@
 # 首版 API 与媒体边界合同
 
-状态：首版实施合同，包含 P8～P12 上传、可选 Token 与远程 MCP 增量；实现和验证结论见[实施进度](../plans/v1-implementation-progress.md)。
+状态：首版实施合同，包含 P8～P12 上传、可选 Token 与远程 MCP，以及 P13～P17 六类能力参数化增量；实现和验证结论见[实施进度](../plans/v1-implementation-progress.md)。
 
-本文细化[首版设计](../design/media-service-v1.md)、[技术选型](../design/technology-selection-v1.md)与[实施计划](../plans/v1-implementation-plan.md)中的首版边界。请求模型以 [`models.py`](../../src/media_service/models.py) 为实现入口，部署限制以 [`config.py`](../../src/media_service/config.py) 为入口。后续由实际 API 导出 OpenAPI 与 `GET /v1/capabilities`，文档中的字段列表不代替运行时 schema 或验收证据。
+本文细化[首版设计](../design/media-service-v1.md)、[技术选型](../design/technology-selection-v1.md)与[实施计划](../plans/v1-implementation-plan.md)中的首版边界。请求模型以 [`models.py`](../../src/media_service/models.py) 为实现入口，六类媒体参数以[参数合同](../design/media-parameters.md)为依据，部署限制以 [`config.py`](../../src/media_service/config.py) 为入口。后续由实际 API 导出 OpenAPI 与 `GET /v1/capabilities`，文档中的字段列表不代替运行时 schema 或验收证据。
 
 ## 服务访问与认证
 
@@ -12,7 +12,7 @@ HTTP `/v1`、远程 MCP `/mcp`、上传、元数据查询和下载使用同一�
 
 ## 请求与幂等
 
-请求字段采用 `snake_case`，不接受未知字段或未知操作版本。整数和布尔参数不互相转换，也不接受数字字符串。命名输入、步骤、输出及存储标识匹配 `^[A-Za-z][A-Za-z0-9_-]{0,63}$`；ID 由服务生成，调用方不依赖其中的编码规则。
+请求字段采用 `snake_case`，不接受未知字段或未知操作版本。整数和布尔参数不互相转换，整数字段不接受数字字符串；帧率等明确声明为有理数的字段允许其规定的字符串表达。命名输入、步骤、输出及存储标识匹配 `^[A-Za-z][A-Za-z0-9_-]{0,63}$`；ID 由服务生成，调用方不依赖其中的编码规则。
 
 任务包含 1～4 个命名输入、1～16 个步骤和 1～16 个命名输出。步骤输入使用 `{"source":"输入名"}` 或 `{"step":"步骤名","output":"端口名"}`。每个首版操作恰好使用一个指定输入端口。重复步骤 ID、未知引用、错误端口、类型不兼容、循环、未使用输入和无用途步骤在接受前拒绝。依赖深度上限为 16；请求中的步骤顺序不必为拓扑顺序。
 
@@ -70,12 +70,12 @@ HTTP 输入一旦完成获取和校验，后续步骤及恢复使用固定副本
 
 服务只交付 `/mcp` 的 Streamable HTTP，不提供 stdio 或本地路径桥接。MCP 与 FastAPI 同进程运行，直接调用现有任务、文件、产物和租约服务，共用单 SQLite 连接、调度器与 Worker。
 
-六个语义工具对应 `media.probe.v1`、`video.transcode.v1`、`audio.transcode.v1`、`video.extract_audio.v1`、`video.extract_frames.v1` 和 `image.resize.v1`；工具参数复用严格输入、版本化预设和输出策略，媒体工具接受后立即返回结构化 `job_id`，实际结果由查询获得。通用工具覆盖能力查询、任务图提交/查询/取消、托管输入元数据/release、产物元数据/成员、保留/release 和读取租约申请/续期/释放。工具名称如下，参数与输出 schema 以真实客户端的 `tools/list` 为准，版本变化不得静默修改既有媒体预设。
+六个语义媒体工具直接使用相同的通用参数：`probe_media`、`transcode_video`、`transcode_audio`、`extract_audio`、`extract_frames`、`resize_image`。`params` 可省略，省略时采用各自默认值；没有额外版本选择字段。媒体工具接受后立即返回结构化 `job_id`，实际结果由查询获得。其余 13 个工具覆盖能力查询、任务图提交/查询/取消、托管输入元数据/release、产物元数据/成员/保留/release 和租约。全部 19 个工具的 schema 以 `tools/list` 为准。
 
 | 工具 | 合同 |
 | --- | --- |
-| `probe_media`、`transcode_video`、`transcode_audio`、`extract_audio`、`extract_frames`、`resize_image` | `source` 输入引用、`params` 操作参数、`idempotency_key` 与可选 `output_policy`；生成单步骤任务，声明输出名固定为 `result` |
-| `list_capabilities` | 无参数；返回操作、限额、引擎与 HTTP 文件传输入口 |
+| `probe_media`、`transcode_video`、`transcode_audio`、`extract_audio`、`extract_frames`、`resize_image` | 必填 `source` 输入引用、`idempotency_key`；可选 `params` 与 `output_policy`；生成单步骤任务，声明输出名固定为 `result` |
+| `list_capabilities` | 无参数；返回操作、限额、引擎、`media_parameters` 与 HTTP 文件传输入口 |
 | `submit_job` | `definition` 完整任务图与 `idempotency_key`；返回任务及 `created` |
 | `get_job`、`cancel_job` | `job_id`；查询或持久请求取消，返回任务状态 |
 | `get_uploaded_file`、`release_uploaded_file` | `file_id`；查询托管输入或停止新引用 |
@@ -94,34 +94,75 @@ HTTP 输入一旦完成获取和校验，后续步骤及恢复使用固定副本
 
 ## 操作端口与参数
 
-| 操作 | 输入端口 → 输出端口 | 参数 |
+六个 `.v1` 操作直接支持全部受控参数，每个操作只有一套模型。HTTP 与 MCP 都允许省略 `params`，只需要在改变默认行为时传入所需字段。
+
+| 操作 | 输入端口 → 输出端口 | 通用默认与可调内容 |
 | --- | --- | --- |
-| `media.probe.v1` | `media` → `report` | 空对象；返回 JSON 报告文件 |
-| `video.transcode.v1` | `video` → `video` | `preset` 默认且仅支持 `web_720p_v1` |
-| `audio.transcode.v1` | `audio` → `audio` | `preset` 默认 `aac_stereo_128k_v1`，另支持 `wav_mono_16k_v1`；`audio_stream` 默认 0，范围 0～15 |
-| `video.extract_audio.v1` | `video` → `audio` | 与音频转码相同；无所选音轨时明确失败 |
-| `video.extract_frames.v1` | `video` → `frames` | `timestamps_ms` 为 1～100 个整数，逐项范围 0～86400000；`format` 为 `jpeg` 或 `png`，默认 `jpeg` |
-| `image.resize.v1` | `image` → `image` | `width`、`height` 均必填且为 1～8192 的整数；`fit` 为 `contain` 或 `cover`，默认 `contain`；`allow_upscale` 默认 `false`；`format` 为 `jpeg`、`png` 或 `webp`，默认 `jpeg`；`background` 默认为 `#ffffff`，接受六位十六进制 RGB |
+| `media.probe.v1` | `media` → `report` | 默认 format/streams；可选 sections、stream_indices、count_frames |
+| `video.transcode.v1` | `video` → `video` | 默认 H.264/MP4、CRF 23、保留源尺寸和帧时间；可调编码、容器、尺寸、帧率、质量/码率、速度、音轨及时间范围 |
+| `audio.transcode.v1` | `audio` → `audio` | 默认 AAC/M4A，采样率/声道/码率 auto；可调编码、容器、音轨、采样率、声道/布局、质量/码率、PCM格式及时间范围 |
+| `video.extract_audio.v1` | `video` → `audio` | 与音频转码共用参数；可选择 copy 提取原编码音轨 |
+| `video.extract_frames.v1` | `video` → `frames` | 默认取 0ms 首帧 JPEG quality 90；可按时间点/间隔/数量抽取，选择之前/之后/最近帧及图片输出参数 |
+| `image.resize.v1` | `image` → `image` | 默认保留尺寸、JPEG quality 90；可调宽高、contain/cover/pad、裁剪焦点、缩放算法和格式专属编码参数 |
 
-`audio_stream` 是输入媒体内从 0 开始的音频轨道序号，不是所有流的全局序号。操作最终还受部署的输入大小、媒体时长、像素、输出空间和总时限约束。创建期可判定的不支持版本、端口和参数返回 `422`；真实媒体不满足要求时写入执行结果。
+HTTP 最简视频转码请求如下，幂等键放在 `Idempotency-Key` 请求头，文件先通过 HTTP 上传：
 
-## 固定预设与媒体语义
+```json
+{
+  "inputs": {"source": {"kind": "uploaded_file", "file_id": "<file_id>"}},
+  "steps": [{
+    "id": "convert",
+    "operation": "video.transcode.v1",
+    "inputs": {"video": {"source": "source"}}
+  }],
+  "outputs": {"video": {"step": "convert", "output": "video"}}
+}
+```
 
-| 预设 | 固定行为 |
+MCP 调用 `transcode_video` 只需：
+
+```json
+{
+  "source": {"kind": "uploaded_file", "file_id": "<file_id>"},
+  "idempotency_key": "convert-001"
+}
+```
+
+需要覆盖设置时，在 HTTP 步骤或 MCP 工具中加入同一 `params` 对象。例如 `{"resize":{"width":1280},"rate_control":{"mode":"crf","value":20}}` 会等比缩到指定宽度并调整质量，其他值保持默认。普通 JSON、multipart 的 `job` JSON、MCP 媒体工具及 `submit_job` 共享参数解析、规范化和错误。
+
+`video_stream`、`audio_stream` 分别是视频轨道、音轨内从 0 开始的序号；探测的 `stream_indices` 使用容器全局流索引。创建期可判定的不支持操作、端口、参数或编码组合返回 `422`；依赖真实输入才能判定的问题写入执行结果。文件大小、像素、时长、输出空间和总时限由部署限制。
+
+### 默认、可选预设与覆盖
+
+`preset` 默认 `null`，使用通用默认值。以下预设是可选快捷设置，选择后仍可用显式参数覆盖；同名预设的含义保持固定。
+
+| 预设 | 快捷设置 |
 | --- | --- |
-| `web_720p_v1` | MP4、H.264/libx264、yuv420p；等比装入 1280×720，不放大，采用有效偶数尺寸；CFR 30fps、CRF 23、medium、faststart；有音频时转 AAC 128k、48kHz、双声道 |
-| `aac_stereo_128k_v1` | M4A、AAC 128k、48kHz、双声道 |
-| `wav_mono_16k_v1` | WAV、PCM s16le、16kHz、单声道 |
+| `web_720p_v1` | MP4/H.264/yuv420p，等比装入 1280×720、不放大，30fps、CRF 23、medium；有音轨时 AAC 128kbps/48kHz/双声道 |
+| `aac_stereo_128k_v1` | M4A/AAC、128kbps、48kHz、双声道 |
+| `wav_mono_16k_v1` | WAV/PCM s16le、16kHz、单声道 |
 
-同名预设不随升级改变语义。任务接受时冻结操作、预设与执行版本要求，能力不足或不兼容时明确失败；不静默换编码器、copy 音轨或更改画面策略。
+未选择预设时，视频 `resize` 默认 `{}` 保留源尺寸，`frame_rate` 默认 `source` 保留源帧时间节奏。显式选择 `constant` 或 `max` 时提供有界正有理数帧率，例如 `30000/1001`。切换编码器会重算专属默认，显式冲突拒绝；`rate_control` 整体替换，不能混合 CRF 与目标码率。
 
-视频首版不支持 HDR 或 10 bit 处理，不做隐式色调映射；非方形 SAR 输入拒绝。旋转按 90° 整数倍元数据自动校正画面方向；不能按该规则处理的方向明确拒绝。输出预设的尺寸约束作用于规范化后的画面。每种边界须有真实媒体证据，probe 对源媒体的描述不等于已支持其转换。
+音频采样率和声道默认 `auto`：优先保留输入值，不兼容时选择目标编码支持的值。自动采样率遇到未知或不兼容源值时回落到 48000 Hz，自动声道遇到未知、超范围或不适用于 MP3/Opus 的源值时回落到双声道。`source` 表示严格保持，无法满足就失败；数字也严格校验。通用码率为 `{"mode":"auto"}`，按实际输出声道计算首选值后再限制到编码器合法范围：AAC 为 64000 × 声道数，MP3 为 96000 × min(声道数, 2)，Opus 单声道 64000、双声道 96000、多声道 64000 × 声道数 bps。显式 `bitrate` 不因不兼容而静默调整。MP3 采样率对应的合法码率与 AAC 上限见[参数合同](../design/media-parameters.md)。
 
-抽帧以第一张可解码视频帧的 PTS 为零点。用原始 PTS 与 time base 的有理数计算规范化播放时间，选择第一张实际时间不早于请求毫秒时间的可解码帧；不能先舍入到毫秒再比较。缺失、不可解析或无法构成有序展示时间轴的 PTS 明确拒绝。返回 `actual_time_ms` 时四舍五入到整数毫秒，恰好半毫秒向上取整。
+`GET /v1/capabilities` 和 MCP `list_capabilities` 返回相同的 `media_parameters`，包括可用编码器、容器兼容和实际限制；六个操作的 `params_schema` 和 `default_params` 位于 `operations` 各条目。`default_params` 是省略参数时实际采用的规范化默认值，例如 JPEG quality 90；客户端应读取它，不根据 schema 的中间默认值推测实际设置。部署 `max_frame_count` 默认 100、可调整，超出抽帧请求数量返回 `OUTPUT_LIMIT`，不静默截断。`max_frame_rate` 默认 240 fps，只限制显式 `constant`/`max`，`source` 模式保留源帧时间节奏。
 
-抽帧结果按请求顺序保存，重复请求点也有独立索引。无命中或越界点返回逐项错误；有可用帧时可发布部分成功集合，全部失败不创建伪可用集合。文件名或序号不作为实际时间证据。已发布集合和成员清单不可原地补写。
+任务 `steps[].effective_params` 保存接受时的安全规范化参数；产物 `media.effective_params` 保存结合输入解析后的参数。音频目标码率在 `resolved.rate_control`，视频内音轨在 `resolved.audio.rate_control`；目标值不保证等于 AAC 成品平均码率。产物 `media.streams[].frame_rate` 为容器标称值，尤其 WebM `max` 模式不能据此推断实际帧间隔；帧率策略见 `media.effective_params.frame_rate`，实际节奏用解码帧时间戳验证。
 
-图片仅支持静态 JPEG、PNG 和 WebP，拒绝动画、多页和超限像素。先应用 EXIF 方向，再执行缩放；`contain` 等比装入目标尺寸，`cover` 等比填满并裁剪。禁止放大时，无法满足 `cover` 所需尺寸则拒绝。有效 RGB ICC 转换至 sRGB；无效 ICC 或不支持的颜色空间明确失败。透明图转 JPEG 先按 `background` 合成。输出去除 EXIF/GPS 等无关元数据，不复制未经处理的源色彩描述。
+上述公开参数不含原始 source、路径、URL 或认证信息。幂等摘要仍包含完整受限保存的请求，不能只对公开参数计算。任务接受后冻结参数与执行要求，重启不能重新套用后来修改的默认值。
+
+### 媒体边界
+
+本轮视频为 8-bit yuv420p/SDR，不处理 HDR、10-bit 或硬件加速。AV1/libsvtav1 最小输出为 64×64，VP9/AV1 CRF 必须是整数；AV1 目标码率模式不支持峰值码率与缓冲组合。Opus 输出为 48kHz，支持 1/2/3/6/8 声道及 mono/stereo/3.0/5.1/7.1 布局。可选编码器缺失时明确拒绝相应请求，不换编码器冒充成功。
+
+视频拒绝非方形 SAR；旋转按 90° 整数倍元数据校正，尺寸作用于规范化后的画面。不支持的方向或颜色组合明确拒绝。探测对源媒体的描述不等于已经支持其转换。音轨 copy 只复制兼容编码，不能同时要求重采样、质量调整或时间范围裁剪。
+
+抽帧以首张可解码视频帧的 PTS 为零点，按有理数时间选择 next/previous/nearest，nearest 平局取之前；不能先舍入再比较。返回 `actual_time_ms` 时四舍五入到整数毫秒，半毫秒向上取整。请求顺序和重复项保留；越界逐项报错，可发布部分成功集合，全部失败不创建伪可用集合。已发布集合不能补写。成员响应的 `media` 为对象或 `null`：成功项可查询逐帧尺寸、格式和色彩信息，失败项为 `null`。
+
+图片仅支持静态 JPEG/PNG/WebP，拒绝动画、多页和超限像素。先修正 EXIF 方向，再按 contain/cover/pad 处理；禁止放大时不能满足 cover 目标则拒绝。有效 RGB ICC 转为 sRGB，透明转 JPEG 按背景合成，输出清除 EXIF/GPS 等无关元数据。PNG 压缩级别与 JPEG/WebP 有损质量分别表达。
+
+完整字段、默认、兼容关系及采样规则见[六类媒体能力参数合同](../design/media-parameters.md)。
 
 ## 产物消费、保留与租约
 

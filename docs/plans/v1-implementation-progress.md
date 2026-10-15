@@ -1,8 +1,8 @@
 # 首版实施进度与验收证据
 
-日期：2026-10-13（Asia/Shanghai）。执行项目：cfKanban **KZ / ffmpeg-agent**，关联记录为 `.cfkanban-scope.json`。
+日期：2026-10-15（Asia/Shanghai）。执行项目：cfKanban **KZ / ffmpeg-agent**，关联记录为 `.cfkanban-scope.json`。
 
-P0～P7 原范围及本轮 P8～P12 当前环境可执行的实现和验收已完成。**P7/P12 的真实双宿主机验收按用户要求保留待办，后续具备环境后补验。** 同机容器和单机 HTTP/MCP 结果未计为跨宿主机通过。
+P0～P12 既有交付证据保留；P13～P17 通用媒体参数及简单默认调用的当前环境实现和验收已完成。**P7/P12 的真实双宿主机验收按用户要求保留待办，后续具备环境后补验。** 同机容器和单机 HTTP/MCP 结果未计为跨宿主机通过。
 
 ## 阶段状态
 
@@ -21,6 +21,42 @@ P0～P7 原范围及本轮 P8～P12 当前环境可执行的实现和验收已�
 | P10 请求内上传 | CFK-783 | 完成 | 严格绑定、完整边界后接受、输入删除后幂等重放；两 Token 模式真实 TCP probe 下载 |
 | P11 远程 MCP | CFK-784 | 完成 | 19 工具；6 项 TCP 测试、2025 握手/2026 发现、协议错误脱敏；仅 Streamable HTTP |
 | P12 增量交付 | CFK-785 | 完成当前环境范围 | 本机/容器各 275 项、8 项故障矩阵、生产上传/MCP/下载、两 Compose 模式通过；双宿主机仍待 |
+| P13 统一参数合同 | CFK-794 | 完成 | 六个操作同一模型、可省略参数、可选预设、规范化/幂等/持久化及能力发现 |
+| P14 音视频参数化 | CFK-795 | 完成 | 四种视频/五种音频编码、auto/source、质量/码率、尺寸/帧率/片段及 copy 包摘要 |
+| P15 图片/抽帧/探测 | CFK-796 | 完成 | 格式专属质量、单边尺寸/补边/裁剪、三种采样/取帧、标签过滤/统计及取消 |
+| P16 HTTP/MCP 一致 | CFK-797 | 完成 | 六能力最简及自定义调用，multipart、错误、有效参数、集合成员及机器合同 |
+| P17 参数化验收 | CFK-798 | 完成当前环境范围 | 本机/精确镜像各 456 项、48 个生产 HTTP/MCP 任务、8 项故障矩阵通过 |
+
+## P13～P17 通用参数证据
+
+先完善[参数合同](../design/media-parameters.md)及 cfKanban CFK-794～CFK-800，再实施共享参数与六类能力。按新项目的使用目标，六个现有 `.v1` 操作直接支持扩展参数；MCP 仍是 19 个工具，其中六个媒体工具一一对应六个媒体操作，不增加额外参数版本选择。
+
+- HTTP 与 MCP 均可省略 `params`。视频默认 H.264/MP4、CRF 23，保留源尺寸与帧时间；音频默认 AAC，auto 优先保留采样率与声道，按编码和实际声道选兼容码率。图片默认保持尺寸转 JPEG quality 90；抽帧默认首帧；探测默认 format/streams。
+- 三个具名预设保留为可选快捷设置，显式参数可覆盖。音频 `source` 严格保持，`auto` 才允许兼容回退；copy 拒绝编码变换、编码预设和精确裁剪。
+- HTTP、multipart、MCP 复用同一严格模型。`operations[操作名].default_params` 给出实际默认，任务和产物公开安全有效参数，帧成员公开实际媒体信息；不公开 source、路径或凭据。
+- 四种软件视频编码、五种音频编码及实际可用组合可查询；质量/码率、帧率、尺寸、采样率、声道、格式与预设不再写死为唯一规格。抽帧数量和显式帧率上限独立作为部署限制，可配置。
+- 真实媒体校验覆盖 VFR 源/输出精确 PTS、copy 音频逐包 SHA-256、禁止放大时奇数尺寸 cover、像素/透明/背景/质量、部分成功、扫描统计及脱敏；复用原进程组取消、FD、发布和回收。
+
+最终验收固定精确镜像：
+
+```text
+sha256:7eeda466adad958b13d4b91a980c9254fcd590b642c879c436c6f009da648a06
+```
+
+原生 Linux arm64、Python 3.14.8、FFmpeg/ffprobe 7.1.5、Pillow 12.3.0。镜像内 **27 份服务源码 SHA-256** 与工作区、最终本机验证记录逐项相等，六个原始 fixture 的长度与摘要保持不变。详见[镜像核对](../verification/parameters-image.json)。
+
+| 验证 | 实际结果 | 证据 |
+| --- | --- | --- |
+| Ruff / Pyright / diff / 根 Compose 配置 | 全部退出 0；Pyright 0 errors / 0 warnings | [本机验证](../verification/parameters-validation.json) |
+| 本机完整 pytest | **456 passed in 59.54s**；Python 3.14.7、FFmpeg 9.0.1 | 同上 |
+| 精确镜像完整 pytest | **456 passed in 110.23s**；锁定依赖、非 root、只读根 | [容器测试](../verification/parameters-tests-arm64.json) |
+| 生产 HTTP/MCP 全六能力 | **48 个任务通过**：六能力 × 默认/自定义 × HTTP/MCP × Token 开/关；幂等、下载、HEAD/Range/SHA、成员与有效参数一致 | [生产闭环](../verification/parameters-smoke-arm64.json) |
+| 精确镜像故障矩阵 | **8/8 通过**；执行强停、发布四窗口、取消恢复、热重启拒绝、孤儿锁 | [故障矩阵](../verification/parameters-faults-arm64.json) |
+| 双语文档与机器合同 | 代码示例一致，模型/JSON/Python 示例校验与 67 个本地链接通过；导出八份合同 | [README](../../README.md)、[中文说明](../../README.zh-CN.md)、[操作 schema](../api/media-operations.json) |
+
+生产闭环两组所有权标签容器/卷残留均为 0；测试与故障容器完成后清理各自资源。部署示例增加 `max_frame_count` / `max_frame_rate`，根 Compose 与 `.env.example` 仍解析通过。本地提交归档实现、文档与证据，未推送或生产部署。
+
+10-bit/HDR 与硬件加速分别保留 **CFK-799、CFK-800**，本轮未开放占位开关。实际双宿主机、增量原生 amd64 与新默认参数下的容量尚未验证；旧容量报告只代表当时的固定预设与精确镜像，不扩张到本轮全部编码或默认行为。
 
 ## P8～P12 增量证据
 

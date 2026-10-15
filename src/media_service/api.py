@@ -33,7 +33,6 @@ from media_service.models import (
     LeaseResult,
     MembersResult,
     RetentionRequest,
-    capabilities,
 )
 from media_service.telemetry import event
 from media_service.uploads import MultipartReader
@@ -258,16 +257,9 @@ def create_app(settings: Settings | None = None, service: Any = None) -> FastAPI
 
     @app.get("/v1/capabilities")
     async def get_capabilities(identity: str = Depends(caller)) -> dict:
-        from media_service.media import FORMATS, MEDIA_RULES, PRESETS
+        from media_service.media import capability_document
 
-        return {
-            "operations": capabilities(),
-            "limits": config.public_limits(),
-            "engine": service.engine,
-            "presets": PRESETS,
-            "media_rules": MEDIA_RULES,
-            "input_formats": FORMATS.split(","),
-        }
+        return capability_document(service)
 
     @app.post("/v1/jobs", response_model=JobResult, responses={202: {"model": JobResult}})
     async def create_job(
