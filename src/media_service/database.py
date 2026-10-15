@@ -10,6 +10,21 @@ import aiosqlite
 
 T = TypeVar("T")
 
+AGENT_SCHEMA = """
+CREATE TABLE agent_requests (
+ id TEXT PRIMARY KEY, caller TEXT NOT NULL, message_key TEXT NOT NULL,
+ request_hash TEXT NOT NULL, request TEXT, outcome TEXT, job_hash TEXT,
+ job_id TEXT REFERENCES jobs(id),
+ state TEXT NOT NULL CHECK(state IN
+ ('queued','planning','planned','submitting','submitted','canceling','needs_input','unsupported','failed','canceled')),
+ cancel_requested INTEGER NOT NULL DEFAULT 0 CHECK(cancel_requested IN (0,1)),
+ created REAL NOT NULL, deadline REAL NOT NULL, terminal_at REAL, expires_at REAL,
+ error TEXT, UNIQUE(caller,message_key)
+);
+CREATE INDEX agent_requests_pending ON agent_requests(state,created);
+CREATE INDEX agent_requests_job ON agent_requests(job_id);
+"""
+
 UPLOAD_SCHEMA = """
 CREATE TABLE uploaded_files (
  id TEXT PRIMARY KEY, caller TEXT NOT NULL, upload_key TEXT NOT NULL,
@@ -151,14 +166,19 @@ class Database:
                 version = row[0] if row else -1
             if version == 0:
                 await self.connection.executescript(
-                    "BEGIN IMMEDIATE;\n" + SCHEMA + "\nPRAGMA user_version=2;\nCOMMIT;"
+                    "BEGIN IMMEDIATE;\n" + SCHEMA + AGENT_SCHEMA
+                    + "\nPRAGMA user_version=3;\nCOMMIT;"
                 )
             elif version == 1:
-                # 原有任务与产物表不变；新增托管输入及其任务引用。
                 await self.connection.executescript(
-                    "BEGIN IMMEDIATE;\n" + UPLOAD_SCHEMA + "\nPRAGMA user_version=2;\nCOMMIT;"
+                    "BEGIN IMMEDIATE;\n" + UPLOAD_SCHEMA + AGENT_SCHEMA
+                    + "\nPRAGMA user_version=3;\nCOMMIT;"
                 )
-            elif version != 2:
+            elif version == 2:
+                await self.connection.executescript(
+                    "BEGIN IMMEDIATE;\n" + AGENT_SCHEMA + "\nPRAGMA user_version=3;\nCOMMIT;"
+                )
+            elif version != 3:
                 raise RuntimeError("unsupported state schema; explicit migration required")
             async with self.connection.execute("PRAGMA quick_check") as cursor:
                 row = await cursor.fetchone()

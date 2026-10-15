@@ -18,6 +18,7 @@ from starlette.exceptions import HTTPException
 from starlette.routing import Route
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
+from media_service.agent_models import AgentRequest, AgentTaskResult, MediaPlan
 from media_service.auth import authorize
 from media_service.config import Settings
 from media_service.content import ArtifactResponse
@@ -94,7 +95,9 @@ class RequestBoundary:
 
         headers = Headers(scope=scope)
         path = scope["path"]
-        if path.startswith("/v1/") or path in {"/mcp", "/mcp/"}:
+        if path.startswith("/v1/") or path in {
+            "/mcp", "/mcp/", "/a2a", "/a2a/", "/.well-known/agent-card.json"
+        }:
             try:
                 scope["state"]["caller"] = authorize(self.config, headers)
             except ServiceError as exc:
@@ -273,7 +276,8 @@ def create_app(settings: Settings | None = None, service: Any = None) -> FastAPI
 
     @app.get("/health/ready")
     async def ready() -> dict:
-        if not service.ready or service.scheduler.failed or not service.db.healthy:
+        if (not service.ready or service.scheduler.failed or not service.db.healthy
+                or getattr(getattr(service, "agent_tasks", None), "failed", False)):
             raise ServiceError("STATE_UNAVAILABLE", 503, True)
         return {"status": "ready"}
 
@@ -282,6 +286,40 @@ def create_app(settings: Settings | None = None, service: Any = None) -> FastAPI
         from media_service.media import capability_document
 
         return capability_document(service)
+
+    def require_agent() -> None:
+        if not config.llm_enabled:
+            raise ServiceError("AGENT_DISABLED", 503)
+
+    @app.post("/v1/agent/tasks", response_model=AgentTaskResult,
+              responses={202: {"model": AgentTaskResult}})
+    async def generate_media(
+        definition: AgentRequest,
+        request: Request,
+        response: Response,
+        identity: str = Depends(caller),
+    ) -> dict:
+        require_agent()
+        key = idempotency_key(request)
+        if not service.ready:
+            raise ServiceError("STATE_UNAVAILABLE", 503, True)
+        task_id, created = await service.agent_tasks.submit(identity, key, definition)
+        response.status_code = 202 if created else 200
+        response.headers["Location"] = f"/v1/agent/tasks/{task_id}"
+        return await service.agent_tasks.get(identity, task_id)
+
+    @app.get("/v1/agent/tasks/{agent_task_id}", response_model=AgentTaskResult)
+    async def get_agent_task(agent_task_id: str, identity: str = Depends(caller)) -> dict:
+        return await service.agent_tasks.get(identity, agent_task_id)
+
+    @app.post("/v1/agent/tasks/{agent_task_id}/cancel", response_model=AgentTaskResult,
+              responses={202: {"model": AgentTaskResult}})
+    async def cancel_agent_task(
+        agent_task_id: str, response: Response, identity: str = Depends(caller)
+    ) -> dict:
+        result = await service.agent_tasks.cancel(identity, agent_task_id)
+        response.status_code = 202 if result["status"] == "canceling" else 200
+        return result
 
     @app.post("/v1/jobs", response_model=JobResult, responses={202: {"model": JobResult}})
     async def create_job(
@@ -500,6 +538,10 @@ def create_app(settings: Settings | None = None, service: Any = None) -> FastAPI
         )
 
     app.router.routes.append(Route("/mcp", endpoint=mcp_app, methods=["GET", "POST", "DELETE"]))
+    if config.a2a_enabled:
+        from media_service.a2a import register_a2a
+
+        register_a2a(app, service)
 
     default_openapi = app.openapi
 
@@ -508,9 +550,10 @@ def create_app(settings: Settings | None = None, service: Any = None) -> FastAPI
             document = default_openapi()
             # FastAPI 序列化 OpenAPI 时递归排除 None，会丢掉条件默认中的“不适用”值。
             # 从共享模型恢复请求 schema，保证 HTTP 与 MCP 看到相同的默认规则。
-            job_schema = JobCreate.model_json_schema(ref_template="#/components/schemas/{model}")
-            document["components"]["schemas"].update(job_schema.pop("$defs", {}))
-            document["components"]["schemas"]["JobCreate"] = job_schema
+            for model in (JobCreate, AgentRequest, MediaPlan, AgentTaskResult):
+                schema = model.model_json_schema(ref_template="#/components/schemas/{model}")
+                document["components"]["schemas"].update(schema.pop("$defs", {}))
+                document["components"]["schemas"][model.__name__] = schema
         return app.openapi_schema or {}
 
     app.openapi = documented_openapi

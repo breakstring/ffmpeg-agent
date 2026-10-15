@@ -1,0 +1,192 @@
+{
+  "created_at": "2026-10-15T16:24:50.292470+00:00",
+  "cases": [
+    {
+      "name": "http_image",
+      "transport": "http",
+      "stage": "complete",
+      "status": "succeeded",
+      "decision": "execute",
+      "operations": [
+        "image.resize.v1"
+      ],
+      "outputs": [
+        {
+          "operation": "image.resize.v1",
+          "files": [
+            {
+              "size_bytes": 7962,
+              "sha256": "ecad0d6508fb8ab8e99ff6c0262b0efa7be6c01783ac9768c8753b50dbc625f0",
+              "actual": {
+                "format": "PNG",
+                "width": 80,
+                "height": 107
+              }
+            }
+          ]
+        }
+      ],
+      "passed": true,
+      "idempotent_agent_and_job": true,
+      "elapsed_seconds": 27.348
+    },
+    {
+      "name": "mcp_audio",
+      "transport": "mcp",
+      "stage": "complete",
+      "status": "succeeded",
+      "decision": "execute",
+      "operations": [
+        "audio.transcode.v1"
+      ],
+      "outputs": [
+        {
+          "operation": "audio.transcode.v1",
+          "files": [
+            {
+              "size_bytes": 100617,
+              "sha256": "4ac985fd23c44547b25c8bb8e05b61178cbffff25e48762b4743bc6c2f03a728",
+              "actual": {
+                "codec": "flac",
+                "sample_rate": 48000,
+                "channels": 1
+              }
+            }
+          ]
+        }
+      ],
+      "passed": true,
+      "idempotent_agent_and_job": true,
+      "elapsed_seconds": 21.017
+    },
+    {
+      "name": "a2a_video",
+      "transport": "a2a",
+      "stage": "planning_and_media_completion",
+      "status": "failed",
+      "decision": null,
+      "operations": [],
+      "error_code": "PLANNING_TIMEOUT",
+      "passed": false,
+      "elapsed_seconds": 60.061
+    },
+    {
+      "name": "http_probe",
+      "transport": "http",
+      "stage": "complete",
+      "status": "succeeded",
+      "decision": "execute",
+      "operations": [
+        "media.probe.v1",
+        "media.probe.v1"
+      ],
+      "outputs": [
+        {
+          "operation": "media.probe.v1",
+          "files": [
+            {
+              "size_bytes": 401,
+              "sha256": "7aa865bb5039bd4c4dc808a6d021fe0cf4f79d73e7f8ad43d442199ba9ceeaf7",
+              "actual": {
+                "type": "audio",
+                "stream_count": 1
+              }
+            }
+          ]
+        },
+        {
+          "operation": "media.probe.v1",
+          "files": [
+            {
+              "size_bytes": 734,
+              "sha256": "42f1dc61646764d97fdbd72471886b2828b5bf130feb3ff4083c35ec08200abc",
+              "actual": {
+                "type": "video",
+                "stream_count": 2
+              }
+            }
+          ]
+        }
+      ],
+      "passed": true,
+      "idempotent_agent_and_job": true,
+      "elapsed_seconds": 19.812
+    },
+    {
+      "name": "http_unsupported",
+      "transport": "http",
+      "stage": "complete",
+      "status": "unsupported",
+      "decision": "unsupported",
+      "operations": [],
+      "passed": true,
+      "idempotent_agent_and_job": true,
+      "elapsed_seconds": 6.12
+    },
+    {
+      "name": "http_needs_input",
+      "transport": "http",
+      "stage": "complete",
+      "status": "needs_input",
+      "decision": "needs_input",
+      "operations": [],
+      "passed": true,
+      "idempotent_agent_and_job": true,
+      "elapsed_seconds": 15.674
+    }
+  ],
+  "checks": [
+    "nonroot_readonly_exact_image_with_private_model_configuration",
+    "protected_http_mcp_a2a_and_card",
+    "official_a2a_1_0_discovery",
+    "mcp_22_tools",
+    "verified_project_fixture_uploads",
+    "restart_queries_existing_plan_and_media_job",
+    "project_fixtures_unchanged"
+  ],
+  "failed_stage": "disclosure_scan",
+  "image_id": "sha256:2eb4dff61e47452234b302dc9080be2973f07cb361b2e9dd0537766ef858b35d",
+  "fixtures": {
+    "video": {
+      "size_bytes": 62056,
+      "sha256": "3befa1884aaeeedc2fd99eb1e8701dc1ca8dd294f9a6e01da8e042fb853602f9"
+    },
+    "audio": {
+      "size_bytes": 129610,
+      "sha256": "b66e6a869d49a0660598a798890c075357a0610fe6a6cf15ea4c3be2dbf5e86b"
+    },
+    "image": {
+      "size_bytes": 267778,
+      "sha256": "990b60e737edd31c4c3609181cf069d92f66c4d34e9fe588f2f37445b331b429"
+    }
+  },
+  "resource_owner_id": "b7e80c473f284300a1f47d70c31086f9",
+  "model": "qwen3.8-flash",
+  "model_output_mode": "prompted",
+  "engine": {
+    "ffmpeg": "7.1.5-0+deb13u1",
+    "ffprobe": "7.1.5-0+deb13u1",
+    "image_version": "local",
+    "implementation_sha256": "e0b35473b7fae63fbe23c249a91e9250b2db206b26aa23a7d3a035c84c96468f"
+  },
+  "restart": {
+    "same_agent_task": true,
+    "same_job": true,
+    "same_plan": true,
+    "same_outputs": true,
+    "query_only_no_resubmission": true
+  },
+  "cleanup": {
+    "containers_remaining": 0,
+    "volumes_remaining": 0
+  },
+  "disclosure_checks": {
+    "report": true,
+    "container_arguments": true,
+    "container_environment": true,
+    "public_responses": true,
+    "container_logs": true
+  },
+  "status": "failed",
+  "error_code": "media_cases_failed"
+}

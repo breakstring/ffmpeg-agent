@@ -1,12 +1,12 @@
 # 首版 API 与媒体边界合同
 
-状态：首版实施合同，包含 P8～P12 上传、可选 Token 与远程 MCP，以及 P13～P17 六类能力参数化增量；实现和验证结论见[实施进度](../plans/v1-implementation-progress.md)。
+状态：首版实施合同，包含 P8～P12 上传、可选 Token 与远程 MCP、P13～P17 六类能力参数化，以及 P18～P21 自然语言与 A2A 增量；实现和验证结论见[实施进度](../plans/v1-implementation-progress.md)。
 
 本文细化[首版设计](../design/media-service-v1.md)、[技术选型](../design/technology-selection-v1.md)与[实施计划](../plans/v1-implementation-plan.md)中的首版边界。请求模型以 [`models.py`](../../src/media_service/models.py) 为实现入口，六类媒体参数以[参数合同](../design/media-parameters.md)为依据，部署限制以 [`config.py`](../../src/media_service/config.py) 为入口。后续由实际 API 导出 OpenAPI 与 `GET /v1/capabilities`，文档中的字段列表不代替运行时 schema 或验收证据。
 
 ## 服务访问与认证
 
-HTTP `/v1`、远程 MCP `/mcp`、上传、元数据查询和下载使用同一个可选服务 Token。配置中显式设置 `service_token` 为 Token 时，统一要求 `Authorization: Bearer ...`；显式设置为 `null` 时开放访问，所有请求归属固定 `service_caller`；仅配置一个调用方时自动选定。简单模式不提供用户身份、角色或 OAuth 系统。省略 `service_token` 时保持已有 `callers.tokens` 认证兼容。
+HTTP `/v1`、远程 MCP `/mcp`、可选 A2A `/a2a` 与 `/.well-known/agent-card.json`、上传、元数据查询和下载使用同一个可选服务 Token。配置中显式设置 `service_token` 为 Token 时，统一要求 `Authorization: Bearer ...`；显式设置为 `null` 时开放访问，所有请求归属固定 `service_caller`；仅配置一个调用方时自动选定。简单模式不提供用户身份、角色或 OAuth 系统。省略 `service_token` 时保持已有 `callers.tokens` 认证兼容。
 
 存储区域、HTTP 来源规则和资源限额仍由服务部署配置确定，客户端不能用请求字段变更服务空间。配置共享卷不关闭 HTTP 上传、来源获取、下载或 MCP。跨机通过 HTTPS 或受控加密入口；Token 只由客户端连接配置加入请求头，不出现在 URL、MCP 工具参数、日志、错误或公开查询结果中。
 
@@ -95,6 +95,24 @@ OpenAPI 将 `job` 描述为 JSON 字符串，使用 `contentMediaType: applicati
 协议层未知请求方法返回标准 JSON-RPC `-32601`，参数结构错误返回 `-32602`，错误文本固定且不带原始输入 `data`；畸形信封和重复 Host/Origin 在入口拒绝。
 
 文件字节通过 HTTP 上传下载，MCP 传输承载 JSON-RPC 消息；不支持 base64 大文件工具参数。完整闭环为 `HTTP 上传 → file_id → MCP 提交/查询 → artifact_id → HTTP 下载`，也支持既有 HTTP 来源、共享输入和产物引用。客户端必须分别为 MCP 和文件 HTTP 请求配置统一 Bearer Token，下载 URL 不包含 Token。
+
+## 自然语言任务与 A2A
+
+自然语言请求模型见 [AgentRequest](AgentRequest.json)，响应见 [AgentTaskResult](AgentTaskResult.json)，受限计划见 [MediaPlan](MediaPlan.json)。完整增量合同见[自然语言与 A2A 设计](../design/media-agent.md)，请求示例与配置见[使用指南](../usage/agent.zh-CN.md)。
+
+| HTTP 请求 | 行为 |
+| --- | --- |
+| `POST /v1/agent/tasks` | `intent`、1～4 个 `inputs` 和可选 `output_policy`；必需 `Idempotency-Key`，新请求 `202`，重放 `200`，返回完整 agent task 与 `Location` |
+| `GET /v1/agent/tasks/{agent_task_id}` | 查询当前规划/媒体状态、结论、有效计划与关联 job |
+| `POST /v1/agent/tasks/{agent_task_id}/cancel` | 请求取消；返回 `canceling` 时为 `202`，其他状态为 `200` |
+
+模型默认关闭，关闭时新提交返回 `503 AGENT_DISABLED`，已有请求仍可通过 HTTP 查询/取消。启用后 MCP 增加 `generate_media`（`request: AgentRequest`、`idempotency_key`）、`get_agent_task` 和 `cancel_agent_task`（`agent_task_id`），三个工具复用 HTTP 响应模型。基础 19 个工具继续存在；自然语言工具随开关增加为 22 个。`generate_media` 标注 `openWorldHint=true`，说明会调用外部模型。HTTP/MCP 共享规划请求的 caller/幂等键作用域，与结构化媒体任务的键空间分开。
+
+描述为 1～4000 字符；不允许任意命令或新增操作。规划器只看到描述、输入别名、schema/defaults 和实际能力，服务端绑定原输入并复用 `JobCreate` 校验。规划不自动探测或预占文件；文件须在媒体接受事务中仍有引用资格。结果不公开原始描述、来源或供应商原始响应；能力接口 `agent` 只公布开关、协议、入口与限制，不含模型地址和密钥。
+
+公开状态包括 `queued/planning/planned` 与关联媒体任务派生的状态，终态为 `succeeded/partial/failed/canceled/needs_input/unsupported`。`decision` 可为 `execute/needs_input/unsupported`，有效计划存于 `plan`，媒体任务存于 `job_id/job`。模型计划完成不能代表媒体完成；`needs_input/unsupported` 结束本轮请求，需完整描述配新键重新提交。取消须等待本地模型请求或媒体执行实际停止，`canceling` 不表示完成取消。
+
+A2A 使用官方 Python SDK 的 1.0 JSON-RPC 协议，入口 `/a2a`、能力卡 `/.well-known/agent-card.json`，单独开关且要求模型开启。消息使用单个 data part 承载公共请求，或 text intent 加 data inputs/output_policy；`messageId` 用于稳定幂等，不接受内嵌文件字节、task/context 续写、streaming 或 push notification。任务状态从同一持久化规划和媒体任务投影：执行中及取消中为 `working`，成功为 `completed`，部分成功/失败为 `failed`，实际取消为 `canceled`，需补充信息/不支持为 `rejected`。部分成功仍返回成功产物的 HTTP 引用和安全元数据，不能通过协议成功掩盖媒体失败。
 
 ## 操作端口与参数
 

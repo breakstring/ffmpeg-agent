@@ -1,0 +1,103 @@
+{
+  "recorded_at": "2026-10-15T16:33:53.057444+00:00",
+  "image_id": "sha256:680953c259022ca9d1ad9e703021e67a1ad431eab04be6189da0a0e6f663a0c4",
+  "python": "3.14.7",
+  "checks": [
+    {
+      "command": "uv run ruff check .",
+      "exit_code": 0
+    },
+    {
+      "command": "uv run pyright",
+      "exit_code": 0,
+      "summary": "0 errors, 0 warnings, 0 informations"
+    },
+    {
+      "command": "uv run pytest -q",
+      "exit_code": 0,
+      "summary": "635 passed in 85.25s"
+    },
+    {
+      "command": "PYTHONPATH=src uv run python scripts/export_contract.py",
+      "exit_code": 0,
+      "summary": "exported 11 contracts"
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0
+    }
+  ],
+  "source_files_in_image_match_workspace": true,
+  "source_file_count": 32,
+  "source_sha256": {
+    "__init__.py": "91447944015cec709e8aa7655f7e9d64e1e4508e7023a57fe3746911c0fc6fed",
+    "__main__.py": "f905cfaf617c389eb4b80076082c93757804cc04e07ab378694f5fb5be4e4a9f",
+    "a2a.py": "e77bd13bc10835a8fb525c016e3e2b6057a85c4e783a8babb05adbfb4c4c48f5",
+    "agent_models.py": "a25bcc0b65a216a58688da905b504c18e11056eb285cf2540ab0f14fcb4d3ddf",
+    "agent_tasks.py": "31c8b7fdbab9032eb0942d34327a3f3bae03d48b772d54117b0d8276dc952e7a",
+    "api.py": "23d1ed82bfc081c93ec3d42beb9a5f45f41c4a75d1b47d40803632156a4e2bda",
+    "artifacts.py": "97f0563a959fcde14816376f4f45064e0f1f7d6f23cc0c389d2e519f655f26fe",
+    "auth.py": "bc7dad2db7d5d835858fe0e198d64f97b786ad049bf964ac832c004e6bdd4306",
+    "av.py": "8d3046bb3e63b88b5053db9c9aa4f88b8d73508e637d748b290380658caeb555",
+    "config.py": "0e88604aac84c3535f6b313c745c4ae215dfdaa6cdb88789a4a2a03844eab41d",
+    "content.py": "3869820e3c9a67f9af5afd3577b3c0c504370429587c2a17cff30eafc327cfd7",
+    "database.py": "3dd969861664871f976944ec63c2adffdb5c48d0be70e52d423145fdb428258e",
+    "downloader.py": "258ec7e8214b2aa5932f92a37fb30898a8b7f5dd6085cdee569a258ad8e089e8",
+    "errors.py": "37d4743518138541fd2c74f394f48574b991c7fe6e2e5bce93b71aae96a254b0",
+    "executor.py": "3a01a664a1032828baf01742872a8dd09e2371d0b9e6e558f73cec99cb3a4430",
+    "files.py": "3b77ad28aa1a21ad9122024308ce4192597e33782f86e3bf741d60f0f6fdd578",
+    "image_worker.py": "a6ebc63ac5f924508327c848165967e69de62c1a4203d55e79bb68c3cbdd0691",
+    "local_env.py": "e229d6e8d23dd972a375afc56a034ae4ab76f406262f25b299d9f62a44bf372e",
+    "mcp.py": "dc04b9658226db5a6a14de5151ef04df84c4bccc9a63425718a6a65fe8a8e7d0",
+    "media.py": "d454ae040e4c305e72b25e64af284e40d44882fe33ca1dbf8c807892daf33d98",
+    "models.py": "bbae28177bd8eba9e6c5b0dd1248b20ac70d373382ffd9caf83cebf9da2010a2",
+    "parameters.py": "478b4b9cc7bf5001aaa702e49343622ca5ba6b7396d44dff127f1106459a8beb",
+    "planning.py": "7c033f457453f0d24622804c53786dbe603e4e93a78ace392ee7fc93d8b24215",
+    "products.py": "f343ad904dcb23d86ab8c6e71d442882a2a6ccc769f8c60070867059654d60d2",
+    "publishing.py": "515d447b8881795ffa1e07b65a14e5588fea4cd6c57a6ad19920956554eb131f",
+    "runtime.py": "ccdebdf67908075afc1ea790a0bc301fff859f3b55989aa865c8294f20417c76",
+    "scheduler.py": "8317a36efccf40f8a88608d8014ac6d8f6693d6029de016ae566a4892a76b52e",
+    "service.py": "f55f59f9a620222a8ba94f6c9440516492d585bdd72f64ece8e8e2eb528cbad6",
+    "state.py": "7dfc98e7eca8b02b2b4490056b82a9a982bc01d5fef4cc17d18fbb074537f4a7",
+    "telemetry.py": "cbcc02b5c8b0238d43594679c52d3a99da399353ca6546a97806049eeaa13f72",
+    "uploads.py": "8ab7d4394f60babfacbec064b021399a34f2af93835f94108893d67139aef7e7",
+    "visual.py": "e98b5906a9e6adbf10ec3a4092f89cd3f5b7016ee60f2f3f7f68bd37ffc9e2cf"
+  },
+  "review_regressions": [
+    "cancel_during_error_settlement",
+    "cancel_before_process_first_runs",
+    "shutdown_after_plan_commit",
+    "planner_initialization_failure",
+    "model_explanation_private_echo"
+  ],
+  "documentation": {
+    "local_links_and_anchors": 150,
+    "json_examples_parsed": 6,
+    "files_checked": 10,
+    "final_changed_markdown_files": 11,
+    "final_local_link_targets_checked": 159
+  },
+  "unverified": [
+    "actual_two_hosts",
+    "native_amd64_increment",
+    "planning_capacity_benchmark"
+  ],
+  "planning_prompt": {
+    "scope": "offline_mock_transport_synthetic_request",
+    "all_six_parameter_schemas_preserved": true,
+    "duplicate_params_schema_removed": true,
+    "request_bytes_before": 118161,
+    "request_bytes_after": 71873,
+    "verified_by": "tests/unit/test_planning.py"
+  },
+  "privacy": {
+    "env_local_ignored": true,
+    "env_local_tracked": false,
+    "changed_files_checked": 52,
+    "model_key_found_in_changed_files": false
+  },
+  "owned_resource_readback": {
+    "agent_and_fault_containers_remaining": 0,
+    "agent_and_fault_volumes_remaining": 0
+  }
+}

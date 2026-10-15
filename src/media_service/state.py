@@ -36,6 +36,7 @@ class State:
     async def accept(
         self, caller: str, key: str, request: JobCreate, engine: dict,
         preflight: Callable[[], Awaitable[None]] | None = None,
+        *, agent_request_id: str | None = None,
     ) -> tuple[str, bool]:
         policy = request.output_policy
         storage_id = policy.storage_id or self.settings.callers[caller].default_output_storage
@@ -57,6 +58,21 @@ class State:
 
         async def create(tx: Transaction):
             now = time.time()
+            if agent_request_id is not None:
+                agent = await tx.one(
+                    "SELECT * FROM agent_requests WHERE id=? AND caller=?",
+                    (agent_request_id, caller),
+                )
+                if agent is None or agent["job_hash"] != digest:
+                    raise ServiceError("STATE_CONFLICT", 409)
+                if agent["job_id"]:
+                    return agent["job_id"], False
+                if agent["cancel_requested"]:
+                    raise ServiceError("CANCELED", 409)
+                if agent["state"] != "submitting":
+                    raise ServiceError("STATE_CONFLICT", 409)
+                if agent["deadline"] <= now:
+                    raise ServiceError("PLANNING_TIMEOUT", 504)
             existing = await tx.one(
                 "SELECT id,request_hash FROM jobs WHERE caller=? AND idempotency_key=?",
                 (caller, key),
@@ -64,6 +80,7 @@ class State:
             if existing:
                 if existing["request_hash"] != digest:
                     raise ServiceError("IDEMPOTENCY_CONFLICT", 409)
+                await link_agent(tx, existing["id"])
                 return existing["id"], False
             count = await tx.one("SELECT count(*) AS n FROM jobs WHERE status='queued'")
             output_usage = await tx.one(
@@ -164,7 +181,15 @@ class State:
                 await tx.execute(
                     "INSERT INTO file_refs(file_id,job_id) VALUES(?,?)", (file_id, job_id)
                 )
+            await link_agent(tx, job_id)
             return job_id, True
+
+        async def link_agent(tx: Transaction, accepted_id: str):
+            if agent_request_id is not None:
+                await tx.execute(
+                    "UPDATE agent_requests SET state='submitted',job_id=?,request=NULL WHERE id=?",
+                    (accepted_id, agent_request_id),
+                )
 
         if preflight is not None:
             existing = await self.db.one(
@@ -174,6 +199,8 @@ class State:
             if existing:
                 if existing["request_hash"] != digest:
                     raise ServiceError("IDEMPOTENCY_CONFLICT", 409)
+                if agent_request_id is not None:
+                    return await self.db.run(create)
                 return existing["id"], False
             # 文件检查不占数据库事务；create 内仍重新检查并发接受的同键请求。
             await preflight()
@@ -279,20 +306,20 @@ class State:
         return await self.db.run(claim_one)
 
     async def cancel(self, caller: str, job_id: str) -> bool:
-        async def request(tx: Transaction):
-            job = await tx.one("SELECT * FROM jobs WHERE id=? AND caller=?", (job_id, caller))
-            if job is None:
-                raise ServiceError("NOT_FOUND", 404)
-            if job["status"] in TERMINAL:
-                return False
-            await tx.execute(
-                "UPDATE jobs SET cancel_requested=1,status='canceling' WHERE id=?", (job_id,)
-            )
-            if job["current_attempt"] is None:
-                await self._finish(tx, job_id, "canceled", ServiceError("CANCELED").public())
-            return True
+        return await self.db.run(lambda tx: self.cancel_in_transaction(tx, caller, job_id))
 
-        return await self.db.run(request)
+    async def cancel_in_transaction(self, tx: Transaction, caller: str, job_id: str) -> bool:
+        job = await tx.one("SELECT * FROM jobs WHERE id=? AND caller=?", (job_id, caller))
+        if job is None:
+            raise ServiceError("NOT_FOUND", 404)
+        if job["status"] in TERMINAL:
+            return False
+        await tx.execute(
+            "UPDATE jobs SET cancel_requested=1,status='canceling' WHERE id=?", (job_id,)
+        )
+        if job["current_attempt"] is None:
+            await self._finish(tx, job_id, "canceled", ServiceError("CANCELED").public())
+        return True
 
     async def eligible(
         self, tx: Transaction, job_id: str, attempt_id: str, *, cancellation: bool = False

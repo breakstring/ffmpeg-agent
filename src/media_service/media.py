@@ -106,6 +106,20 @@ def capability_document(service) -> dict:
         "media_parameters": available_parameters(service.engine),
         "file_transfer": {"upload": f"{base}/v1/files", "upload_and_submit": f"{base}/v1/jobs/upload",
                           "transport": "http", "authentication": "same_service_token"},
+        "agent": {
+            "enabled": service.settings.llm_enabled,
+            "a2a_enabled": service.settings.a2a_enabled,
+            "http": f"{base}/v1/agent/tasks",
+            "mcp_tools": ["generate_media", "get_agent_task", "cancel_agent_task"]
+                         if service.settings.llm_enabled else [],
+            "a2a": {"url": f"{base}/a2a", "card": f"{base}/.well-known/agent-card.json",
+                    "protocol_version": "1.0"} if service.settings.a2a_enabled else None,
+            "limits": {"max_intent_characters": 4000, "max_inputs": 4, "max_steps": 16,
+                       "planning_concurrency": service.settings.planning_concurrency,
+                       "max_pending_requests": service.settings.max_agent_requests,
+                       "planning_timeout_seconds": service.settings.planning_timeout_seconds},
+            "continuations": False, "streaming": False,
+        },
     }
 
 

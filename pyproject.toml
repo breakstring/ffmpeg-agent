@@ -13,6 +13,8 @@ dependencies = [
   "pillow==12.3.0",
   "mcp==2.1.0",
   "python-multipart==0.0.22",
+  "pydantic-ai-slim[openai]==2.56.0",
+  "a2a-sdk[http-server]==1.2.2",
 ]
 
 [dependency-groups]

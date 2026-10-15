@@ -14,6 +14,7 @@ from starlette.datastructures import Headers
 from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
+from media_service.agent_models import AgentRequest, AgentTaskResult
 from media_service.auth import authorize
 from media_service.config import Settings
 from media_service.errors import ServiceError
@@ -60,6 +61,15 @@ class JobArgs(StrictModel):
     job_id: JobId
 
 
+class GenerateMediaArgs(StrictModel):
+    request: AgentRequest
+    idempotency_key: IdempotencyKey
+
+
+class AgentTaskArgs(StrictModel):
+    agent_task_id: str = Field(min_length=1, max_length=128)
+
+
 class ArtifactArgs(StrictModel):
     artifact_id: ArtifactId
     lease_id: LeaseId | None = None
@@ -103,6 +113,7 @@ class CapabilitiesResult(StrictModel):
     input_formats: list[str]
     file_transfer: dict
     media_parameters: dict
+    agent: dict
 
 
 class SubmittedResult(JobResult):
@@ -133,6 +144,7 @@ class ToolDefinition:
     read_only: bool = False
     destructive: bool = False
     idempotent: bool = True
+    open_world: bool = False
 
     def schema(self) -> types.Tool:
         return types.Tool(
@@ -144,7 +156,7 @@ class ToolDefinition:
                 read_only_hint=self.read_only,
                 destructive_hint=self.destructive,
                 idempotent_hint=self.idempotent,
-                open_world_hint=False,
+                open_world_hint=self.open_world,
             ),
         )
 
@@ -301,6 +313,20 @@ def create_mcp(service: Any, settings: Settings) -> tuple[ASGIApp, Server]:
     async def release_uploaded_file(caller: str, arguments: UploadedArgs) -> dict:
         return await service.uploads.release(caller, arguments.file_id)
 
+    async def generate_media(caller: str, arguments: GenerateMediaArgs) -> dict:
+        if not service.ready:
+            raise ServiceError("STATE_UNAVAILABLE", 503, True)
+        task_id, _ = await service.agent_tasks.submit(
+            caller, arguments.idempotency_key, arguments.request
+        )
+        return await service.agent_tasks.get(caller, task_id)
+
+    async def get_agent_task(caller: str, arguments: AgentTaskArgs) -> dict:
+        return await service.agent_tasks.get(caller, arguments.agent_task_id)
+
+    async def cancel_agent_task(caller: str, arguments: AgentTaskArgs) -> dict:
+        return await service.agent_tasks.cancel(caller, arguments.agent_task_id)
+
     definitions = [
         ToolDefinition("list_capabilities", "查询实际可用编码器、容器兼容组合、参数 schema/默认值、部署限额和 HTTP 文件传输入口。"
                        "工具 schema 枚举表示已适配范围；选择可选编码器前以此处 media_parameters 为准。",
@@ -373,6 +399,25 @@ def create_mcp(service: Any, settings: Settings) -> tuple[ASGIApp, Server]:
                   "立即返回任务 ID，使用 get_job 查询。文件通过 HTTP 上传下载。",
             arguments, SubmittedResult, intent_handler(operation),
         ))
+    if settings.llm_enabled:
+        definitions.extend([
+            ToolDefinition(
+                "generate_media", "根据自然语言描述规划并提交受限媒体任务；会调用外部模型服务。"
+                "request 包含 intent、1～4 个具名 inputs 和可选 output_policy。"
+                "立即返回 agent_task_id，仅表示已接受；使用 get_agent_task 查询规划和媒体结果。"
+                "needs_input/unsupported 为本轮终态，完善描述后用新幂等键提交。文件通过 HTTP 上传下载。",
+                GenerateMediaArgs, AgentTaskResult, generate_media, open_world=True,
+            ),
+            ToolDefinition(
+                "get_agent_task", "查询自然语言任务、已验证计划和关联媒体结果；规划完成不等于媒体完成。",
+                AgentTaskArgs, AgentTaskResult, get_agent_task, read_only=True,
+            ),
+            ToolDefinition(
+                "cancel_agent_task", "请求取消规划或关联媒体任务；canceling 表示尚未停止，"
+                "只有 canceled 才是取消终态。", AgentTaskArgs, AgentTaskResult,
+                cancel_agent_task, destructive=True,
+            ),
+        ])
     tools = {definition.name: definition for definition in definitions}
 
     async def list_tools(

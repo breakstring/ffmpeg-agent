@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 from typing import Literal
+from urllib.parse import urlsplit
 
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -97,6 +98,16 @@ class Settings(BaseSettings):
     runtime_mode: Literal["local", "container"] = "container"
     engine_series: str = "7.1"
     image_version: str = "0.1.0"
+    llm_enabled: bool = False
+    llm_api_key: SecretStr | None = None
+    llm_model: str | None = None
+    llm_base_url: str | None = None
+    llm_output_mode: Literal["native", "prompted"] = "prompted"
+    planning_concurrency: int = Field(default=2, ge=1, le=4)
+    max_agent_requests: int = Field(default=32, ge=1, le=1024)
+    planning_timeout_seconds: float = Field(default=60, gt=0, le=300)
+    planning_max_output_tokens: int = Field(default=4096, ge=256, le=16384)
+    a2a_enabled: bool = False
     ffmpeg_path: str = "ffmpeg"
     ffprobe_path: str = "ffprobe"
     host: str = "0.0.0.0"
@@ -104,6 +115,23 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def consistent(self):
+        if self.a2a_enabled and not self.llm_enabled:
+            raise ValueError("A2A requires natural language planning")
+        if self.llm_enabled:
+            if not self.llm_api_key or not self.llm_api_key.get_secret_value().strip():
+                raise ValueError("planning requires a model API key")
+            if not self.llm_model or not self.llm_model.strip() or not self.llm_base_url:
+                raise ValueError("planning requires a model and base URL")
+            parsed = urlsplit(self.llm_base_url)
+            if (parsed.scheme not in {"http", "https"} or not parsed.hostname
+                    or parsed.username or parsed.password or parsed.query or parsed.fragment):
+                raise ValueError("invalid model base URL")
+        if self.a2a_enabled:
+            parsed = urlsplit(self.public_base_url)
+            if (parsed.scheme not in {"http", "https"} or not parsed.hostname
+                    or parsed.username or parsed.password or parsed.query or parsed.fragment
+                    or parsed.path not in {"", "/"}):
+                raise ValueError("A2A requires a public origin without credentials or path")
         if self.service_caller is None and len(self.callers) == 1:
             self.service_caller = next(iter(self.callers))
         if "service_token" in self.model_fields_set:
@@ -149,7 +177,12 @@ class Settings(BaseSettings):
     @classmethod
     def from_file(cls) -> Settings:
         path = Path(os.environ.get("MEDIA_CONFIG_FILE", "/run/secrets/media-config.json"))
-        return cls.model_validate(json.loads(path.read_text()))
+        data = json.loads(path.read_text())
+        if env_path := os.environ.get("MEDIA_ENV_FILE"):
+            from media_service.local_env import load_local_env
+
+            data.update(load_local_env(Path(env_path)))
+        return cls.model_validate(data)
 
     def public_limits(self) -> dict:
         return {

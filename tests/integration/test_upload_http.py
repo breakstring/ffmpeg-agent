@@ -125,7 +125,7 @@ async def test_legacy_schema_migration_preserves_records_and_is_idempotent(tmp_p
     connection.commit()
     connection.close()
     await db.open()
-    assert await db.one("PRAGMA user_version") == {"user_version": 2}
+    assert await db.one("PRAGMA user_version") == {"user_version": 3}
     assert await db.one("SELECT value FROM meta WHERE key='preserved'") == {"value": "value"}
     assert await db.all("SELECT * FROM uploaded_files") == []
     await db.close()

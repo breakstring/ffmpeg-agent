@@ -5,6 +5,10 @@
 适用项目：`ffmpeg-agent`\
 依据：[首版设计](media-service-v1.md)与[六类能力参数化合同](media-parameters.md)；执行拆分见[首版实施计划](../plans/v1-implementation-plan.md)。
 
+## 自然语言与 A2A 增量选型（2026-10-16）
+
+采用 PydanticAI slim 的 OpenAI-compatible provider 进行受限结构化规划，采用官方 Python A2A SDK 进行协议适配；保留现有 FastAPI、单 SQLite 和媒体 Worker。模型不生成 shell 命令，不接管媒体生命周期；A2A 不维护独立内存任务事实源。精确依赖、公共合同与验证范围见 [自然语言与 A2A 合同](media-agent.md)，执行拆分为 P18～P21。
+
 ## 1. 结论与使用规模
 
 首版使用 Python、FastAPI 和 SQLite，交付为一个 Docker 容器。HTTP API、远程 MCP、调度器、回收器和可配置数量的逻辑 Worker 在同一个应用进程中运行；FFmpeg、ffprobe 和图片处理作为受控子进程执行。数据库是容器私有持久卷中的 SQLite 文件，不部署数据库服务或消息队列。

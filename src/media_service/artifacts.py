@@ -293,6 +293,7 @@ class Artifacts:
             "(SELECT id FROM artifacts WHERE job_id=j.id)) "
             "AND NOT EXISTS (SELECT 1 FROM leases WHERE artifact_id IN "
             "(SELECT id FROM artifacts WHERE job_id=j.id)) "
+            "AND NOT EXISTS (SELECT 1 FROM agent_requests WHERE job_id=j.id) "
             "AND NOT EXISTS (SELECT 1 FROM attempts WHERE job_id=j.id AND status='running')",
             (time.time(),),
         )

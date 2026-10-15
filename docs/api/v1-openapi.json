@@ -400,6 +400,457 @@
         ]
       }
     },
+    "/v1/agent/tasks": {
+      "post": {
+        "summary": "Generate Media",
+        "operationId": "generate_media_v1_agent_tasks_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentTaskResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Gone",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Content Too Large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "416": {
+            "description": "Range Not Satisfiable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentTaskResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/agent/tasks/{agent_task_id}": {
+      "get": {
+        "summary": "Get Agent Task",
+        "operationId": "get_agent_task_v1_agent_tasks__agent_task_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "agent_task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Task Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentTaskResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Gone"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "416": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Range Not Satisfiable"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/v1/agent/tasks/{agent_task_id}/cancel": {
+      "post": {
+        "summary": "Cancel Agent Task",
+        "operationId": "cancel_agent_task_v1_agent_tasks__agent_task_id__cancel_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "agent_task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Task Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentTaskResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Gone"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "416": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Range Not Satisfiable"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentTaskResult"
+                }
+              }
+            },
+            "description": "Accepted"
+          }
+        }
+      }
+    },
     "/v1/jobs": {
       "post": {
         "summary": "Create Job",
@@ -3157,6 +3608,175 @@
   },
   "components": {
     "schemas": {
+      "AgentRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "intent": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Intent",
+            "type": "string"
+          },
+          "inputs": {
+            "maxProperties": 4,
+            "minProperties": 1,
+            "patternProperties": {
+              "^[A-Za-z][A-Za-z0-9_-]{0,63}$": {
+                "discriminator": {
+                  "mapping": {
+                    "artifact": "#/components/schemas/ArtifactInput",
+                    "http_file": "#/components/schemas/HttpFile",
+                    "shared_file": "#/components/schemas/SharedFile",
+                    "uploaded_file": "#/components/schemas/UploadedFile"
+                  },
+                  "propertyName": "kind"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/SharedFile"
+                  },
+                  {
+                    "$ref": "#/components/schemas/HttpFile"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ArtifactInput"
+                  },
+                  {
+                    "$ref": "#/components/schemas/UploadedFile"
+                  }
+                ]
+              }
+            },
+            "title": "Inputs",
+            "type": "object"
+          },
+          "output_policy": {
+            "$ref": "#/components/schemas/OutputPolicy"
+          }
+        },
+        "required": [
+          "intent",
+          "inputs"
+        ],
+        "title": "AgentRequest",
+        "type": "object"
+      },
+      "AgentTaskResult": {
+        "additionalProperties": false,
+        "properties": {
+          "agent_task_id": {
+            "title": "Agent Task Id",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "planning",
+              "planned",
+              "running",
+              "canceling",
+              "succeeded",
+              "partial",
+              "needs_input",
+              "unsupported",
+              "failed",
+              "canceled"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "planning_deadline_at": {
+            "title": "Planning Deadline At",
+            "type": "string"
+          },
+          "decision": {
+            "anyOf": [
+              {
+                "enum": [
+                  "execute",
+                  "needs_input",
+                  "unsupported"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Decision"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Message"
+          },
+          "plan": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MediaPlan"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "job_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Job Id"
+          },
+          "job": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JobResult"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ErrorResult"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "agent_task_id",
+          "status",
+          "created_at",
+          "planning_deadline_at"
+        ],
+        "title": "AgentTaskResult",
+        "type": "object"
+      },
       "ArtifactInput": {
         "additionalProperties": false,
         "properties": {
@@ -3653,22 +4273,23 @@
         "title": "ErrorEnvelope"
       },
       "ErrorResult": {
+        "additionalProperties": false,
         "properties": {
           "code": {
-            "type": "string",
-            "title": "Code"
+            "title": "Code",
+            "type": "string"
           },
           "message": {
-            "type": "string",
-            "title": "Message"
+            "title": "Message",
+            "type": "string"
           },
           "retryable": {
-            "type": "boolean",
-            "title": "Retryable"
+            "title": "Retryable",
+            "type": "boolean"
           },
           "request_id": {
-            "type": "string",
-            "title": "Request Id"
+            "title": "Request Id",
+            "type": "string"
           },
           "details": {
             "anyOf": [
@@ -3680,18 +4301,18 @@
                 "type": "null"
               }
             ],
+            "default": null,
             "title": "Details"
           }
         },
-        "additionalProperties": false,
-        "type": "object",
         "required": [
           "code",
           "message",
           "retryable",
           "request_id"
         ],
-        "title": "ErrorResult"
+        "title": "ErrorResult",
+        "type": "object"
       },
       "FileResult": {
         "properties": {
@@ -4230,13 +4851,13 @@
         "type": "object"
       },
       "JobResult": {
+        "additionalProperties": false,
         "properties": {
           "job_id": {
-            "type": "string",
-            "title": "Job Id"
+            "title": "Job Id",
+            "type": "string"
           },
           "status": {
-            "type": "string",
             "enum": [
               "queued",
               "running",
@@ -4246,22 +4867,24 @@
               "failed",
               "canceled"
             ],
-            "title": "Status"
+            "title": "Status",
+            "type": "string"
           },
           "phase": {
             "anyOf": [
               {
-                "type": "string",
                 "enum": [
                   "acquiring_inputs",
                   "processing",
                   "publishing"
-                ]
+                ],
+                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
+            "default": null,
             "title": "Phase"
           },
           "progress": {
@@ -4273,19 +4896,20 @@
                 "type": "null"
               }
             ],
+            "default": null,
             "title": "Progress"
           },
           "inputs_released": {
-            "type": "boolean",
-            "title": "Inputs Released"
+            "title": "Inputs Released",
+            "type": "boolean"
           },
           "created_at": {
-            "type": "string",
-            "title": "Created At"
+            "title": "Created At",
+            "type": "string"
           },
           "deadline_at": {
-            "type": "string",
-            "title": "Deadline At"
+            "title": "Deadline At",
+            "type": "string"
           },
           "idempotency_expires_at": {
             "anyOf": [
@@ -4302,15 +4926,15 @@
             "items": {
               "$ref": "#/components/schemas/StepResult"
             },
-            "type": "array",
-            "title": "Steps"
+            "title": "Steps",
+            "type": "array"
           },
           "outputs": {
             "additionalProperties": {
               "$ref": "#/components/schemas/OutputResult"
             },
-            "type": "object",
-            "title": "Outputs"
+            "title": "Outputs",
+            "type": "object"
           },
           "error": {
             "anyOf": [
@@ -4320,16 +4944,15 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "default": null
           },
           "execution": {
             "additionalProperties": true,
-            "type": "object",
-            "title": "Execution"
+            "title": "Execution",
+            "type": "object"
           }
         },
-        "additionalProperties": false,
-        "type": "object",
         "required": [
           "job_id",
           "status",
@@ -4341,7 +4964,8 @@
           "outputs",
           "execution"
         ],
-        "title": "JobResult"
+        "title": "JobResult",
+        "type": "object"
       },
       "LeaseRequest": {
         "properties": {
@@ -4380,6 +5004,37 @@
           "expires_at"
         ],
         "title": "LeaseResult"
+      },
+      "MediaPlan": {
+        "additionalProperties": false,
+        "properties": {
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/Step"
+            },
+            "maxItems": 16,
+            "minItems": 1,
+            "title": "Steps",
+            "type": "array"
+          },
+          "outputs": {
+            "maxProperties": 16,
+            "minProperties": 1,
+            "patternProperties": {
+              "^[A-Za-z][A-Za-z0-9_-]{0,63}$": {
+                "$ref": "#/components/schemas/StepBinding"
+              }
+            },
+            "title": "Outputs",
+            "type": "object"
+          }
+        },
+        "required": [
+          "steps",
+          "outputs"
+        ],
+        "title": "MediaPlan",
+        "type": "object"
       },
       "MemberResult": {
         "properties": {
@@ -4523,18 +5178,19 @@
         "type": "object"
       },
       "OutputResult": {
+        "additionalProperties": false,
         "properties": {
           "step": {
-            "type": "string",
-            "title": "Step"
+            "title": "Step",
+            "type": "string"
           },
           "output": {
-            "type": "string",
-            "title": "Output"
+            "title": "Output",
+            "type": "string"
           },
           "status": {
-            "type": "string",
-            "title": "Status"
+            "title": "Status",
+            "type": "string"
           },
           "artifact_id": {
             "anyOf": [
@@ -4545,6 +5201,7 @@
                 "type": "null"
               }
             ],
+            "default": null,
             "title": "Artifact Id"
           },
           "error": {
@@ -4555,17 +5212,17 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "default": null
           }
         },
-        "additionalProperties": false,
-        "type": "object",
         "required": [
           "step",
           "output",
           "status"
         ],
-        "title": "OutputResult"
+        "title": "OutputResult",
+        "type": "object"
       },
       "Resize": {
         "additionalProperties": false,
@@ -6063,13 +6720,13 @@
         "type": "object"
       },
       "StepResult": {
+        "additionalProperties": false,
         "properties": {
           "id": {
-            "type": "string",
-            "title": "Id"
+            "title": "Id",
+            "type": "string"
           },
           "status": {
-            "type": "string",
             "enum": [
               "pending",
               "running",
@@ -6079,7 +6736,8 @@
               "skipped",
               "canceled"
             ],
-            "title": "Status"
+            "title": "Status",
+            "type": "string"
           },
           "artifact_id": {
             "anyOf": [
@@ -6090,6 +6748,7 @@
                 "type": "null"
               }
             ],
+            "default": null,
             "title": "Artifact Id"
           },
           "error": {
@@ -6100,7 +6759,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "default": null
           },
           "effective_params": {
             "anyOf": [
@@ -6112,16 +6772,16 @@
                 "type": "null"
               }
             ],
+            "default": null,
             "title": "Effective Params"
           }
         },
-        "additionalProperties": false,
-        "type": "object",
         "required": [
           "id",
           "status"
         ],
-        "title": "StepResult"
+        "title": "StepResult",
+        "type": "object"
       },
       "TimeRange": {
         "additionalProperties": false,

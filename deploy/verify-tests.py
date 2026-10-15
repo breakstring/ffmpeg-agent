@@ -29,7 +29,7 @@ def main() -> int:
         # 仅此验证 venv 在 tmpfs；动态扩展需要 exec，服务 Compose 不更改。
         "--tmpfs", "/tmp:rw,exec,nosuid,nodev,size=1536m",
     ]
-    for part in ("tests", "scripts", "examples", "pyproject.toml"):
+    for part in ("tests", "scripts", "examples", "deploy", "pyproject.toml"):
         command += ["--mount", f"type=bind,src={root / part},dst=/verification/{part},readonly"]
     command += [
         "--env", "MEDIA_TEST_ENGINE_SERIES=7.1",

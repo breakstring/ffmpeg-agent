@@ -1,0 +1,40 @@
+{
+  "python": "3.14.7",
+  "versions": {
+    "pydantic-ai-slim": "2.56.0",
+    "a2a-sdk": "1.2.2",
+    "openai": "3.31.0",
+    "fastapi": "0.143.0",
+    "pydantic": "2.14.1",
+    "starlette": "1.7.0",
+    "mcp": "2.1.0"
+  },
+  "planner_mock": {
+    "passed": true,
+    "requests": [
+      {
+        "path": "/v1/chat/completions",
+        "format": "json_schema",
+        "has_tools": false
+      }
+    ],
+    "output": {
+      "operation": "resize",
+      "width": 1280
+    }
+  },
+  "a2a_mock": {
+    "passed": true,
+    "card": 200,
+    "v1_send": "TASK_STATE_COMPLETED",
+    "v1_get": "TASK_STATE_COMPLETED",
+    "v03_send": "completed",
+    "v1_sse": true,
+    "unsupported_version_error": -32009,
+    "openapi": true
+  },
+  "source_files_unchanged": {
+    "pyproject.toml": true,
+    "uv.lock": true
+  }
+}

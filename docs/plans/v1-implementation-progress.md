@@ -1,8 +1,8 @@
 # 首版实施进度与验收证据
 
-日期：2026-10-15（Asia/Shanghai）。执行项目：cfKanban **KZ / ffmpeg-agent**，关联记录为 `.cfkanban-scope.json`。
+日期：2026-10-16（Asia/Shanghai）。执行项目：cfKanban **KZ / ffmpeg-agent**，关联记录为 `.cfkanban-scope.json`。
 
-P0～P12 既有交付证据保留；P13～P17 通用媒体参数及简单默认调用的当前环境实现和验收已完成。**P7/P12 的真实双宿主机验收按用户要求保留待办，后续具备环境后补验。** 同机容器和单机 HTTP/MCP 结果未计为跨宿主机通过。
+P0～P17 既有交付证据保留；P18～P21 自然语言规划与官方 A2A 的当前环境实现和验收已完成。**P7/P12 的真实双宿主机验收按用户要求保留待办，后续具备环境后补验。** 同机容器和单机 HTTP/MCP/A2A 结果未计为跨宿主机通过。
 
 ## 阶段状态
 
@@ -26,6 +26,10 @@ P0～P12 既有交付证据保留；P13～P17 通用媒体参数及简单默认�
 | P15 图片/抽帧/探测 | CFK-796 | 完成 | 格式专属质量、单边尺寸/补边/裁剪、三种采样/取帧、标签过滤/统计及取消 |
 | P16 HTTP/MCP 一致 | CFK-797 | 完成 | 六能力最简及自定义调用，multipart、错误、有效参数、集合成员及机器合同 |
 | P17 参数化验收 | CFK-798 | 完成当前环境范围 | 本机/精确镜像各 456 项、48 个生产 HTTP/MCP 任务、8 项故障矩阵通过 |
+| P18 自然语言合同与依赖 | CFK-808 | 完成 | Python 3.14、PydanticAI slim 2.56.0、A2A SDK 1.2.2 解析、导入与协议基线 |
+| P19 持久规划与 HTTP/MCP | CFK-809 | 完成 | 同库 schema 3、规划幂等/有界并发/取消/恢复、输入资格；启用时 22 个 MCP 工具 |
+| P20 官方 A2A | CFK-810 | 完成 | A2A 1.0 JSON-RPC、官方客户端、统一鉴权、异步查询/取消、HTTP 产物引用 |
+| P21 自然语言增量验收 | CFK-811 | 完成当前环境范围 | 本机/精确镜像各 635 项、百炼 6 场景、6 个整容器强停恢复场景通过 |
 
 ## 专用素材迁移与内容回归验证
 
@@ -204,3 +208,41 @@ sha256:f5a01280a8b1771e80e8df8fbeb3d1136ed95f6dbb6469d187fbf0dd5e2c236b
 真实双宿主机验收先保留待办，后续有**第二台实际宿主机**、两侧受控网络可达的服务/来源地址及专用测试凭据后，再执行 `deploy/verify-http-remote.py host` 和 `run`。详细步骤、私有配置模板、主机身份核对及结果校验已备齐；单机脚本自验不能将此项打勾。P7保持未完成。
 
 其他明确限制：amd64仅完成模拟环境运行基线，未测原生amd64容量；视频不支持HDR/10bit/非方形SAR，图片不支持动画/多页；集合不自动打包，不支持任意引擎参数、跨容器Worker或多实例共享SQLite。保持这些首版边界，不以缺少第二宿主机为由扩大架构。
+
+
+## 2026-10-16：冻结自然语言与 A2A 增量（P18）
+
+按用户授权，新增 [自然语言与 A2A 合同](../design/media-agent.md)，同步既有服务设计、技术选型和 P18～P21 实施计划。cfKanban KZ / ffmpeg-agent 已创建并读回 CFK-808～811；合同区分规划接受、有效计划与媒体执行，冻结单库幂等/取消/恢复、文件引用资格、A2A 1.0 和统一可选 Token。
+
+Python 3.14.7 / macOS arm64 隔离解析和安装 `pydantic-ai-slim[openai]==2.56.0`、`a2a-sdk[http-server]==1.2.2` 通过，既有固定依赖版本未变；主项目 uv lock/sync 也已通过。无外部模型请求的 MockTransport 验证结构化输出与官方 SDK 协议入口，结果见 [依赖 preflight](../verification/agent-dependency-preflight.json)。其中 SDK 0.3/SSE 是依赖探测，不是本服务提供这些能力的证据。
+
+`.env.local` 已存在且被 `.env.*` 忽略，未被 Git 跟踪；只核对键名存在，不输出值。重新提供无秘密 `.env.example`。此记录仅证明合同与依赖基线，不代表实现、真实百炼或容器增量验收完成；后续结果分别追加，既有双宿主机等未验证条件保持不变。
+
+## 2026-10-16：自然语言与 A2A 实现和验收（P19～P21）
+
+使用 PydanticAI 生成受限 `MediaPlan`，由原媒体服务绑定输入、校验并执行；新增 HTTP 自然语言任务和 MCP 三工具，以及官方 A2A 1.0 JSON-RPC、Agent Card 与[可运行客户端](../../examples/a2a-workflow.py)。配置默认关闭，启用方式见[中文指南](../usage/agent.zh-CN.md)及[英文指南](../usage/agent.md)。Compose 使用私有服务 JSON，不自动传递 `.env.example` 的模型字段。
+
+schema 3 在同一 SQLite 增加短期规划记录，保存计划后恢复直接提交，原子关联唯一媒体 job；未保存计划时的在途模型调用中断返回 `PLANNING_INTERRUPTED`，不自动再次请求模型。取消遵循实际停止，提交期间到期/release 的输入不会复活。独立复核发现并修复取消撞上错误收尾、计划刚提交即关闭、模型初始化失败遗留后台任务、模型说明复述私有描述四类边界，均已固化回归。公开说明只用受控模板，终态清除原始描述与输入绑定。
+
+最终精确镜像为 Linux arm64、Python 3.14.8、FFmpeg/ffprobe 7.1.5，32 份服务源码 SHA-256 与工作区逐项一致：
+
+```text
+sha256:680953c259022ca9d1ad9e703021e67a1ad431eab04be6189da0a0e6f663a0c4
+```
+
+| 验证 | 实际结果 | 证据 |
+| --- | --- | --- |
+| Ruff / Pyright / diff / 机器合同 | 退出 0，Pyright 0 errors / 0 warnings；导出 11 份合同 | [本机与源码记录](../verification/agent-local-validation.json) |
+| 本机完整 pytest | **635 passed in 85.25s**；Python 3.14.7、FFmpeg 9.0.1 | 同上 |
+| 精确镜像完整 pytest | **635 passed in 150.34s**；FFmpeg 7.1、非 root、只读根 | [容器完整测试](../verification/agent-tests-arm64.json) |
+| 百炼真实模型与三通路 | `qwen3.8-flash`、默认 60 秒规划预算，**6/6 场景通过**；幂等、真实媒体、重启查询与公开响应/日志凭据扫描通过 | [百炼验收](../verification/agent-validation.json) |
+| 整容器故障恢复 | **6/6 通过**，6 次 KILL 退出均为 137；planning/planned/submitting/submitted 与两个取消窗口，恢复不重复调用模型或创建 job | [故障报告](../verification/agent-faults-arm64.json) |
+| 文档与示例 | 10 份文档的 150 个本地链接/锚点、6 个 JSON 示例及 CLI 参数检查通过 | [使用指南](../usage/agent.zh-CN.md)、本机记录 |
+
+百炼实际输出：HTTP 图片为 PNG 80×107；MCP 音频为 FLAC 48 kHz 单声道；A2A 一次请求得到 H.264 MP4 320×180、MP3，以及 0/500 ms 的两张 PNG 80×45；HTTP 双输入探测得到音频和视频两份报告。不支持的字幕任务返回 `unsupported`，缺少目标格式返回 `needs_input`，均不创建媒体 job。下载核对字节数/SHA-256、HEAD/Range，图片解码和 ffprobe 属性均符合要求；成功结果重启后保持同一 agent task、job、计划及输出。
+
+[首次 60 秒验收](../verification/agent-validation-default60.json)保留 5/6 通过及 A2A 组合规划超时的事实。后续仅删除模型能力提示中与输出 schema 完全重复的参数 schema，六操作约束、说明、条件默认和端口保持一致；离线请求体由 118,161 降至 71,873 字节。最终镜像复验仍使用默认 60 秒，组合请求在 43.814 秒完成规划、执行和校验。该次成功不代表延迟保证；`planning_timeout_seconds` 可在 (0,300] 秒内配置，验收脚本也支持显式预算与单场景选择，不自动重试已中断的规划。
+
+`.env.local` 未修改、未跟踪且继续被忽略；模型 Key 未出现在变更文件、公开响应、容器参数/环境或日志中。验收只在进程中读取配置，以 0700 临时父目录中的只读文件挂载到测试容器，不将 Key 放入 Docker 环境或命令行。百炼和故障测试的自有容器/卷残留为 0，生成媒体与日志不提交。
+
+本轮仅本地提交，未 push、merge、tag 或生产部署。真实双宿主机、自然语言增量原生 amd64、规划容量与长期延迟分布未验证；P7/P12 环境待办、HDR/10-bit（CFK-799）、硬件加速（CFK-800）保持原范围。A2A 首期仅单次请求、查询、取消及 HTTP 产物，不声明多轮、SSE、push 或 0.3 客户端兼容。

@@ -6,7 +6,9 @@ import shutil
 import time
 from contextlib import suppress
 from pathlib import Path
+from typing import TYPE_CHECKING
 
+from media_service.agent_tasks import AgentTasks
 from media_service.artifacts import Artifacts
 from media_service.config import Settings
 from media_service.database import Database, Transaction, wait_settled
@@ -25,9 +27,12 @@ from media_service.uploads import Uploads
 
 logger = logging.getLogger("media_service")
 
+if TYPE_CHECKING:
+    from media_service.planning import Planner
+
 
 class Service:
-    def __init__(self, settings: Settings):
+    def __init__(self, settings: Settings, *, planner: Planner | None = None):
         self.settings = settings
         self.db = Database(settings.state_dir)
         self.state = State(self.db, settings)
@@ -43,6 +48,7 @@ class Service:
         self.ready = False
         self.closing = False
         self.maintenance: asyncio.Task | None = None
+        self.agent_tasks = AgentTasks(self, planner)
 
     async def start(self):
         self.settings.work_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -62,12 +68,23 @@ class Service:
             await self.uploads.recover()
             await self.publisher.reconcile(self.engine)
             await self.runtime.recover_jobs(self.engine)
+            # 规划恢复先于回收，未结束的计划/关联保护既有任务元数据。
+            await self.agent_tasks.recover()
             await self.artifacts.gc()
             await self.uploads.gc()
+            await self.agent_tasks.start()
             self.scheduler.start()
             self.maintenance = asyncio.create_task(self.maintain())
             self.ready = True
         except BaseException:
+            self.ready = False
+            self.closing = True
+            await self.agent_tasks.close()
+            await self.scheduler.stop()
+            if self.maintenance is not None:
+                self.maintenance.cancel()
+                with suppress(asyncio.CancelledError):
+                    await self.maintenance
             await self.db.close()
             raise
 
@@ -86,7 +103,7 @@ class Service:
     async def maintain(self):
         while not self.closing:
             await asyncio.sleep(self.settings.gc_interval_seconds)
-            if self.scheduler.failed or not self.db.healthy:
+            if self.scheduler.failed or self.agent_tasks.failed or not self.db.healthy:
                 self.ready = False
                 # 正式入口由容器init托管，致命错误终止整个应用生命周期。
                 if self.settings.runtime_mode == "container":
@@ -96,19 +113,24 @@ class Service:
                 return
             try:
                 await self.state.expire_queued()
+                await self.agent_tasks.gc()
                 await self.artifacts.gc()
                 await self.uploads.gc()
             except Exception:
                 logger.error('{"event":"gc_retry","code":"STATE_UNAVAILABLE"}')
 
-    async def accept(self, caller: str, key: str, request: JobCreate) -> tuple[str, bool]:
+    async def accept(
+        self, caller: str, key: str, request: JobCreate, *, agent_request_id: str | None = None,
+    ) -> tuple[str, bool]:
         if not self.ready or self.scheduler.failed or not self.db.healthy:
             raise ServiceError("STATE_UNAVAILABLE", 503, True)
         async def preflight():
             self.media.validate_request(request, self.engine)
             await self.disk_preflight()
 
-        result = await self.state.accept(caller, key, request, self.engine, preflight)
+        result = await self.state.accept(
+            caller, key, request, self.engine, preflight, agent_request_id=agent_request_id,
+        )
         self.scheduler.wake.set()
         return result
 
@@ -342,6 +364,7 @@ class Service:
     async def close(self):
         self.ready = False
         self.closing = True
+        await self.agent_tasks.close()
         await self.uploads.close()
         await self.scheduler.stop()
         await self.executor.stop_all()

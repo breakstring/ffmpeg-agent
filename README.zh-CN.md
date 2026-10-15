@@ -15,6 +15,8 @@
 
 任务可以串联操作、复用输入并返回多个输出。省略 `params` 即可使用默认处理，再按需补充参数；HTTP 和 MCP 接受相同参数。通过 `GET /v1/capabilities` 查询可用编码器、参数 schema 和限制。
 
+可选自然语言入口使用 PydanticAI 将描述转换为受校验的媒体计划，也可开启官方 A2A 入口供其他 Agent 调用同一任务服务。两项能力默认关闭，配置和示例见[自然语言与 A2A 使用指南](docs/usage/agent.zh-CN.md) / [English guide](docs/usage/agent.md)。
+
 ## 使用 Docker Compose 启动
 
 需要 Docker、Compose 和 Python 3。在仓库根目录运行以下命令；已有配置会保留，可以重复执行：
@@ -30,6 +32,8 @@ docker compose up -d --build --wait
 Compose 会等待服务就绪。生成器将随机服务 Token 写入 `deploy/local/media-config.json`；保持其父目录仅当前用户可访问（`0700`）。下面的示例会自动读取这个文件，无需将 Token 复制到命令中。
 
 在 `.env` 中设置公开地址、端口和容器资源；在私有 JSON 中设置 Token、公开 URL、存储和服务限额。HTTP、MCP、上传和下载通过相同 Bearer 头校验；将 `service_token` 设为 `null` 即开放这些入口。
+
+通过 Compose 开启自然语言和 A2A 时，将 `llm_*` 与 `a2a_enabled` 配置加入上述私有 JSON。`.env.example` 中的模型设置用于显式本地读取，Compose 不会将它们传入服务，详见[启用方法](docs/usage/agent.zh-CN.md#开启规划)。
 
 | `.env` 变量 | 默认值 | 用途 |
 | --- | --- | --- |

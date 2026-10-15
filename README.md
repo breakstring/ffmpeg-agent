@@ -15,6 +15,8 @@ Process media from applications or remote AI agents through HTTP and MCP. Upload
 
 Tasks can chain operations, reuse inputs and return multiple outputs. Start with the defaults by omitting `params`, then add only the settings you need. HTTP and MCP accept the same parameters. Query `GET /v1/capabilities` for available encoders, parameter schemas and limits.
 
+Optional natural-language tasks turn a description into a validated media plan using PydanticAI. Enable the official A2A endpoint to expose the same task service to other agents. Both features are off by default. See the [natural-language and A2A guide](docs/usage/agent.md) / [自然语言与 A2A 使用指南](docs/usage/agent.zh-CN.md).
+
 ## Start with Docker Compose
 
 You need Docker with Compose and Python 3. Run these commands from the repository root. Existing configuration is kept, so you can run them again:
@@ -30,6 +32,8 @@ docker compose up -d --build --wait
 Compose waits for the service to become ready. The generator creates a random service Token in `deploy/local/media-config.json`. Keep its parent directory private (`0700`). The examples below use that file automatically; you do not need to copy the Token into commands.
 
 Edit `.env` for the published address, port and container resources. Edit the private JSON for the Token, public URL, storage and service limits. A Token protects HTTP, MCP, uploads and downloads through the same Bearer header; setting `service_token` to `null` opens these endpoints.
+
+For natural-language tasks and A2A under Compose, add `llm_*` and `a2a_enabled` settings to that private JSON. The model settings in `.env.example` are for explicit local loading; Compose does not forward them to the service. See the [enablement guide](docs/usage/agent.md#enable-planning).
 
 | `.env` variable | Default | Purpose |
 | --- | --- | --- |

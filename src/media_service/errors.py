@@ -22,6 +22,12 @@ class ServiceError(Exception):
 
 
 MESSAGES = {
+    "AGENT_DISABLED": "自然语言规划未启用",
+    "PLANNING_FAILED": "模型服务暂未完成规划",
+    "PLANNING_INVALID_OUTPUT": "模型未返回可执行的有效计划",
+    "PLANNING_TIMEOUT": "自然语言规划超过允许时限",
+    "PLANNING_INTERRUPTED": "规划已中断，请使用新幂等键重新提交",
+    "PLANNING_CLOSED": "规划服务正在关闭",
     "UNAUTHORIZED": "需要有效的调用凭据",
     "FORBIDDEN": "当前身份无权执行此操作",
     "NOT_FOUND": "资源不存在",

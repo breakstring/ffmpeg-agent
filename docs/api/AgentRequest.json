@@ -1,0 +1,259 @@
+{
+  "$defs": {
+    "ArtifactInput": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "artifact",
+          "title": "Kind",
+          "type": "string"
+        },
+        "artifact_id": {
+          "pattern": "^art_[a-f0-9]{32}$",
+          "title": "Artifact Id",
+          "type": "string"
+        },
+        "member_key": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9_.-]{1,128}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Member Key"
+        }
+      },
+      "required": [
+        "kind",
+        "artifact_id"
+      ],
+      "title": "ArtifactInput",
+      "type": "object"
+    },
+    "HttpFile": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "http_file",
+          "title": "Kind",
+          "type": "string"
+        },
+        "url": {
+          "maxLength": 8192,
+          "minLength": 1,
+          "title": "Url",
+          "type": "string"
+        },
+        "headers": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "maxProperties": 8,
+          "title": "Headers",
+          "type": "object"
+        },
+        "expires_at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expires At"
+        },
+        "expected_size_bytes": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Size Bytes"
+        },
+        "expected_sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Sha256"
+        }
+      },
+      "required": [
+        "kind",
+        "url"
+      ],
+      "title": "HttpFile",
+      "type": "object"
+    },
+    "OutputPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "storage_id": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Storage Id"
+        },
+        "retention_seconds": {
+          "default": 86400,
+          "maximum": 604800,
+          "minimum": 1,
+          "title": "Retention Seconds",
+          "type": "integer"
+        }
+      },
+      "title": "OutputPolicy",
+      "type": "object"
+    },
+    "SharedFile": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "shared_file",
+          "title": "Kind",
+          "type": "string"
+        },
+        "storage_id": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$",
+          "title": "Storage Id",
+          "type": "string"
+        },
+        "key": {
+          "maxLength": 1024,
+          "minLength": 1,
+          "title": "Key",
+          "type": "string"
+        },
+        "expected_size_bytes": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Size Bytes"
+        },
+        "expected_sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Sha256"
+        }
+      },
+      "required": [
+        "kind",
+        "storage_id",
+        "key"
+      ],
+      "title": "SharedFile",
+      "type": "object"
+    },
+    "UploadedFile": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "uploaded_file",
+          "title": "Kind",
+          "type": "string"
+        },
+        "file_id": {
+          "pattern": "^file_[a-f0-9]{32}$",
+          "title": "File Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "file_id"
+      ],
+      "title": "UploadedFile",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "intent": {
+      "maxLength": 4000,
+      "minLength": 1,
+      "title": "Intent",
+      "type": "string"
+    },
+    "inputs": {
+      "maxProperties": 4,
+      "minProperties": 1,
+      "patternProperties": {
+        "^[A-Za-z][A-Za-z0-9_-]{0,63}$": {
+          "discriminator": {
+            "mapping": {
+              "artifact": "#/$defs/ArtifactInput",
+              "http_file": "#/$defs/HttpFile",
+              "shared_file": "#/$defs/SharedFile",
+              "uploaded_file": "#/$defs/UploadedFile"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/SharedFile"
+            },
+            {
+              "$ref": "#/$defs/HttpFile"
+            },
+            {
+              "$ref": "#/$defs/ArtifactInput"
+            },
+            {
+              "$ref": "#/$defs/UploadedFile"
+            }
+          ]
+        }
+      },
+      "title": "Inputs",
+      "type": "object"
+    },
+    "output_policy": {
+      "$ref": "#/$defs/OutputPolicy"
+    }
+  },
+  "required": [
+    "intent",
+    "inputs"
+  ],
+  "title": "AgentRequest",
+  "type": "object"
+}

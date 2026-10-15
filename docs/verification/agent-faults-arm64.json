@@ -1,0 +1,493 @@
+{
+  "started_at": "2026-10-15T16:32:21.896060+00:00",
+  "image_id": "sha256:680953c259022ca9d1ad9e703021e67a1ad431eab04be6189da0a0e6f663a0c4",
+  "architecture": "arm64",
+  "engine_series": "7.1",
+  "planner": "injected_fake_no_model_network",
+  "checks": [
+    {
+      "case": "planning",
+      "passed": true,
+      "duration_seconds": 6.705,
+      "evidence": {
+        "checkpoint": "planning",
+        "before": {
+          "agent_task_id": "agent_f2daac959abe49cf84278a19db9a152d",
+          "status": "planning",
+          "job_id": null,
+          "error_code": null
+        },
+        "after": {
+          "agent_task_id": "agent_f2daac959abe49cf84278a19db9a152d",
+          "status": "failed",
+          "job_id": null,
+          "error_code": "PLANNING_INTERRUPTED"
+        },
+        "cancel_response": null,
+        "before_snapshot": {
+          "agent": {
+            "id": "agent_f2daac959abe49cf84278a19db9a152d",
+            "state": "planning",
+            "cancel_requested": 0,
+            "request_cleared": false,
+            "job_hash": null,
+            "job_id": null,
+            "plan_sha256": null,
+            "error_code": null
+          },
+          "jobs": [],
+          "agent_count": 1,
+          "model_calls": 1,
+          "runtime": {
+            "clean": false,
+            "generation": "1890b992-69bc-4027-8b5d-c69afa1dcfe1:4026533467:17985822"
+          }
+        },
+        "after_snapshot": {
+          "agent": {
+            "id": "agent_f2daac959abe49cf84278a19db9a152d",
+            "state": "failed",
+            "cancel_requested": 0,
+            "request_cleared": true,
+            "job_hash": null,
+            "job_id": null,
+            "plan_sha256": null,
+            "error_code": "PLANNING_INTERRUPTED"
+          },
+          "jobs": [],
+          "agent_count": 1,
+          "model_calls": 1,
+          "runtime": {
+            "clean": false,
+            "generation": "1890b992-69bc-4027-8b5d-c69afa1dcfe1:4026533468:17986190"
+          }
+        },
+        "replay_status": 200,
+        "artifact": null,
+        "kills": [
+          {
+            "signal": "KILL",
+            "exit_code": 137,
+            "running": false,
+            "container_id": "ecf940479b4938746d02d8867aea08d6a7f7f65a0880c267845fe31e38b0ef7a",
+            "started_at": "2026-10-15T16:32:22.047780413Z",
+            "finished_at": "2026-10-15T16:32:25.556633733Z"
+          }
+        ]
+      }
+    },
+    {
+      "case": "planned",
+      "passed": true,
+      "duration_seconds": 6.941,
+      "evidence": {
+        "checkpoint": "planned",
+        "before": {
+          "agent_task_id": "agent_652ac2966466477fb2cc810513e9ad39",
+          "status": "planned",
+          "job_id": null,
+          "error_code": null
+        },
+        "after": {
+          "agent_task_id": "agent_652ac2966466477fb2cc810513e9ad39",
+          "status": "succeeded",
+          "job_id": "job_649ac6974f9d44ca801a486488ee1188",
+          "error_code": null
+        },
+        "cancel_response": null,
+        "before_snapshot": {
+          "agent": {
+            "id": "agent_652ac2966466477fb2cc810513e9ad39",
+            "state": "planned",
+            "cancel_requested": 0,
+            "request_cleared": false,
+            "job_hash": "88d6dbb00ae8365b240b469f82176257ea073ba61d4ef7699c4cd2a228c59ef7",
+            "job_id": null,
+            "plan_sha256": "2d52b04d6e2fa6a6dd1a0cc8305e24f4f942d7ee1ba9e9605054a005e66bb340",
+            "error_code": null
+          },
+          "jobs": [],
+          "agent_count": 1,
+          "model_calls": 1,
+          "runtime": {
+            "clean": false,
+            "generation": "1890b992-69bc-4027-8b5d-c69afa1dcfe1:4026533467:17986491"
+          }
+        },
+        "after_snapshot": {
+          "agent": {
+            "id": "agent_652ac2966466477fb2cc810513e9ad39",
+            "state": "submitted",
+            "cancel_requested": 0,
+            "request_cleared": true,
+            "job_hash": "88d6dbb00ae8365b240b469f82176257ea073ba61d4ef7699c4cd2a228c59ef7",
+            "job_id": "job_649ac6974f9d44ca801a486488ee1188",
+            "plan_sha256": "2d52b04d6e2fa6a6dd1a0cc8305e24f4f942d7ee1ba9e9605054a005e66bb340",
+            "error_code": null
+          },
+          "jobs": [
+            {
+              "id": "job_649ac6974f9d44ca801a486488ee1188",
+              "status": "succeeded",
+              "cancel_requested": 0,
+              "attempt_count": 1,
+              "inputs_released": 1
+            }
+          ],
+          "agent_count": 1,
+          "model_calls": 1,
+          "runtime": {
+            "clean": false,
+            "generation": "1890b992-69bc-4027-8b5d-c69afa1dcfe1:4026533468:17986856"
+          }
+        },
+        "replay_status": 200,
+        "artifact": {
+          "artifact_id": "art_c9510930e9fe463da00c4b2d81fd6ce5",
+          "sha256": "42f1dc61646764d97fdbd72471886b2828b5bf130feb3ff4083c35ec08200abc",
+          "state": "ready"
+        },
+        "kills": [
+          {
+            "signal": "KILL",
+            "exit_code": 137,
+            "running": false,
+            "container_id": "4a0bd0f77b35f13770d7c419f087f09798796ac1cf06d168035ab977981dd55e",
+            "started_at": "2026-10-15T16:32:28.737130874Z",
+            "finished_at": "2026-10-15T16:32:32.237317497Z"
+          }
+        ]
+      }
+    },
+    {
+      "case": "submitting",
+      "passed": true,
+      "duration_seconds": 7.037,
+      "evidence": {
+        "checkpoint": "submitting",
+        "before": {
+          "agent_task_id": "agent_9ba711a8bbf54171b4f66b5b0af2ca56",
+          "status": "planned",
+          "job_id": null,
+          "error_code": null
+        },
+        "after": {
+          "agent_task_id": "agent_9ba711a8bbf54171b4f66b5b0af2ca56",
+          "status": "succeeded",
+          "job_id": "job_1c9f04aa7fa9409d968e3006ff1aa8a8",
+          "error_code": null
+        },
+        "cancel_response": null,
+        "before_snapshot": {
+          "agent": {
+            "id": "agent_9ba711a8bbf54171b4f66b5b0af2ca56",
+            "state": "submitting",
+            "cancel_requested": 0,
+            "request_cleared": false,
+            "job_hash": "88d6dbb00ae8365b240b469f82176257ea073ba61d4ef7699c4cd2a228c59ef7",
+            "job_id": null,
+            "plan_sha256": "2d52b04d6e2fa6a6dd1a0cc8305e24f4f942d7ee1ba9e9605054a005e66bb340",
+            "error_code": null
+          },
+          "jobs": [],
+          "agent_count": 1,
+          "model_calls": 1,
+          "runtime": {
+            "clean": false,
+            "generation": "1890b992-69bc-4027-8b5d-c69afa1dcfe1:4026533467:17987185"
+          }
+        },
+        "after_snapshot": {
+          "agent": {
+            "id": "agent_9ba711a8bbf54171b4f66b5b0af2ca56",
+            "state": "submitted",
+            "cancel_requested": 0,
+            "request_cleared": true,
+            "job_hash": "88d6dbb00ae8365b240b469f82176257ea073ba61d4ef7699c4cd2a228c59ef7",
+            "job_id": "job_1c9f04aa7fa9409d968e3006ff1aa8a8",
+            "plan_sha256": "2d52b04d6e2fa6a6dd1a0cc8305e24f4f942d7ee1ba9e9605054a005e66bb340",
+            "error_code": null
+          },
+          "jobs": [
+            {
+              "id": "job_1c9f04aa7fa9409d968e3006ff1aa8a8",
+              "status": "succeeded",
+              "cancel_requested": 0,
+              "attempt_count": 1,
+              "inputs_released": 1
+            }
+          ],
+          "agent_count": 1,
+          "model_calls": 1,
+          "runtime": {
+            "clean": false,
+            "generation": "1890b992-69bc-4027-8b5d-c69afa1dcfe1:4026533468:17987556"
+          }
+        },
+        "replay_status": 200,
+        "artifact": {
+          "artifact_id": "art_623d3ca225324e7ea1e91f54f496834c",
+          "sha256": "42f1dc61646764d97fdbd72471886b2828b5bf130feb3ff4083c35ec08200abc",
+          "state": "ready"
+        },
+        "kills": [
+          {
+            "signal": "KILL",
+            "exit_code": 137,
+            "running": false,
+            "container_id": "2f532988c658a182dfc1c9149c94cdda36021e1365452491757073db125c72d2",
+            "started_at": "2026-10-15T16:32:35.673661429Z",
+            "finished_at": "2026-10-15T16:32:39.229836278Z"
+          }
+        ]
+      }
+    },
+    {
+      "case": "submitted",
+      "passed": true,
+      "duration_seconds": 7.032,
+      "evidence": {
+        "checkpoint": "submitted",
+        "before": {
+          "agent_task_id": "agent_1b6e3515c9854605bda81b0cbcac49e3",
+          "status": "queued",
+          "job_id": "job_64c95c0ef9b449b6ae48119f3e9ed3b4",
+          "error_code": null
+        },
+        "after": {
+          "agent_task_id": "agent_1b6e3515c9854605bda81b0cbcac49e3",
+          "status": "succeeded",
+          "job_id": "job_64c95c0ef9b449b6ae48119f3e9ed3b4",
+          "error_code": null
+        },
+        "cancel_response": null,
+        "before_snapshot": {
+          "agent": {
+            "id": "agent_1b6e3515c9854605bda81b0cbcac49e3",
+            "state": "submitted",
+            "cancel_requested": 0,
+            "request_cleared": true,
+            "job_hash": "88d6dbb00ae8365b240b469f82176257ea073ba61d4ef7699c4cd2a228c59ef7",
+            "job_id": "job_64c95c0ef9b449b6ae48119f3e9ed3b4",
+            "plan_sha256": "2d52b04d6e2fa6a6dd1a0cc8305e24f4f942d7ee1ba9e9605054a005e66bb340",
+            "error_code": null
+          },
+          "jobs": [
+            {
+              "id": "job_64c95c0ef9b449b6ae48119f3e9ed3b4",
+              "status": "queued",
+              "cancel_requested": 0,
+              "attempt_count": 0,
+              "inputs_released": 0
+            }
+          ],
+          "agent_count": 1,
+          "model_calls": 1,
+          "runtime": {
+            "clean": false,
+            "generation": "1890b992-69bc-4027-8b5d-c69afa1dcfe1:4026533467:17987888"
+          }
+        },
+        "after_snapshot": {
+          "agent": {
+            "id": "agent_1b6e3515c9854605bda81b0cbcac49e3",
+            "state": "submitted",
+            "cancel_requested": 0,
+            "request_cleared": true,
+            "job_hash": "88d6dbb00ae8365b240b469f82176257ea073ba61d4ef7699c4cd2a228c59ef7",
+            "job_id": "job_64c95c0ef9b449b6ae48119f3e9ed3b4",
+            "plan_sha256": "2d52b04d6e2fa6a6dd1a0cc8305e24f4f942d7ee1ba9e9605054a005e66bb340",
+            "error_code": null
+          },
+          "jobs": [
+            {
+              "id": "job_64c95c0ef9b449b6ae48119f3e9ed3b4",
+              "status": "succeeded",
+              "cancel_requested": 0,
+              "attempt_count": 1,
+              "inputs_released": 1
+            }
+          ],
+          "agent_count": 1,
+          "model_calls": 1,
+          "runtime": {
+            "clean": false,
+            "generation": "1890b992-69bc-4027-8b5d-c69afa1dcfe1:4026533468:17988257"
+          }
+        },
+        "replay_status": 200,
+        "artifact": {
+          "artifact_id": "art_808264ee9d0a40afbe377b76f8cb1178",
+          "sha256": "42f1dc61646764d97fdbd72471886b2828b5bf130feb3ff4083c35ec08200abc",
+          "state": "ready"
+        },
+        "kills": [
+          {
+            "signal": "KILL",
+            "exit_code": 137,
+            "running": false,
+            "container_id": "5c849398f703fb10d4dedc17778300a2b9bfd4f3921d79fa55020fbc7dec27f4",
+            "started_at": "2026-10-15T16:32:42.707743274Z",
+            "finished_at": "2026-10-15T16:32:46.243698662Z"
+          }
+        ]
+      }
+    },
+    {
+      "case": "cancel_planning",
+      "passed": true,
+      "duration_seconds": 7.547,
+      "evidence": {
+        "checkpoint": "cancel_planning",
+        "before": {
+          "agent_task_id": "agent_b9562991abb04fc5a4f54e2f35d3aa28",
+          "status": "canceling",
+          "job_id": null,
+          "error_code": null
+        },
+        "after": {
+          "agent_task_id": "agent_b9562991abb04fc5a4f54e2f35d3aa28",
+          "status": "canceled",
+          "job_id": null,
+          "error_code": "CANCELED"
+        },
+        "cancel_response": {
+          "agent_task_id": "agent_b9562991abb04fc5a4f54e2f35d3aa28",
+          "status": "canceling",
+          "job_id": null,
+          "error_code": null
+        },
+        "before_snapshot": {
+          "agent": {
+            "id": "agent_b9562991abb04fc5a4f54e2f35d3aa28",
+            "state": "canceling",
+            "cancel_requested": 1,
+            "request_cleared": false,
+            "job_hash": null,
+            "job_id": null,
+            "plan_sha256": null,
+            "error_code": null
+          },
+          "jobs": [],
+          "agent_count": 1,
+          "model_calls": 1,
+          "runtime": {
+            "clean": false,
+            "generation": "1890b992-69bc-4027-8b5d-c69afa1dcfe1:4026533467:17988591"
+          }
+        },
+        "after_snapshot": {
+          "agent": {
+            "id": "agent_b9562991abb04fc5a4f54e2f35d3aa28",
+            "state": "canceled",
+            "cancel_requested": 1,
+            "request_cleared": true,
+            "job_hash": null,
+            "job_id": null,
+            "plan_sha256": null,
+            "error_code": "CANCELED"
+          },
+          "jobs": [],
+          "agent_count": 1,
+          "model_calls": 1,
+          "runtime": {
+            "clean": false,
+            "generation": "1890b992-69bc-4027-8b5d-c69afa1dcfe1:4026533468:17989047"
+          }
+        },
+        "replay_status": 200,
+        "artifact": null,
+        "kills": [
+          {
+            "signal": "KILL",
+            "exit_code": 137,
+            "running": false,
+            "container_id": "0b390b2fac087d2f3f3333cc005f409ac4867873551d24f78bfed5fe21ba8057",
+            "started_at": "2026-10-15T16:32:49.740256609Z",
+            "finished_at": "2026-10-15T16:32:54.129001828Z"
+          }
+        ]
+      }
+    },
+    {
+      "case": "cancel_submitting",
+      "passed": true,
+      "duration_seconds": 7.916,
+      "evidence": {
+        "checkpoint": "cancel_submitting",
+        "before": {
+          "agent_task_id": "agent_c24fa5b899fb4124b0ce0dd878b27ff8",
+          "status": "canceling",
+          "job_id": null,
+          "error_code": null
+        },
+        "after": {
+          "agent_task_id": "agent_c24fa5b899fb4124b0ce0dd878b27ff8",
+          "status": "canceled",
+          "job_id": null,
+          "error_code": "CANCELED"
+        },
+        "cancel_response": {
+          "agent_task_id": "agent_c24fa5b899fb4124b0ce0dd878b27ff8",
+          "status": "canceling",
+          "job_id": null,
+          "error_code": null
+        },
+        "before_snapshot": {
+          "agent": {
+            "id": "agent_c24fa5b899fb4124b0ce0dd878b27ff8",
+            "state": "canceling",
+            "cancel_requested": 1,
+            "request_cleared": false,
+            "job_hash": "88d6dbb00ae8365b240b469f82176257ea073ba61d4ef7699c4cd2a228c59ef7",
+            "job_id": null,
+            "plan_sha256": "2d52b04d6e2fa6a6dd1a0cc8305e24f4f942d7ee1ba9e9605054a005e66bb340",
+            "error_code": null
+          },
+          "jobs": [],
+          "agent_count": 1,
+          "model_calls": 1,
+          "runtime": {
+            "clean": false,
+            "generation": "1890b992-69bc-4027-8b5d-c69afa1dcfe1:4026533467:17989346"
+          }
+        },
+        "after_snapshot": {
+          "agent": {
+            "id": "agent_c24fa5b899fb4124b0ce0dd878b27ff8",
+            "state": "canceled",
+            "cancel_requested": 1,
+            "request_cleared": true,
+            "job_hash": "88d6dbb00ae8365b240b469f82176257ea073ba61d4ef7699c4cd2a228c59ef7",
+            "job_id": null,
+            "plan_sha256": "2d52b04d6e2fa6a6dd1a0cc8305e24f4f942d7ee1ba9e9605054a005e66bb340",
+            "error_code": "CANCELED"
+          },
+          "jobs": [],
+          "agent_count": 1,
+          "model_calls": 1,
+          "runtime": {
+            "clean": false,
+            "generation": "1890b992-69bc-4027-8b5d-c69afa1dcfe1:4026533468:17989799"
+          }
+        },
+        "replay_status": 200,
+        "artifact": null,
+        "kills": [
+          {
+            "signal": "KILL",
+            "exit_code": 137,
+            "running": false,
+            "container_id": "9e10a703cdaf2c4f4601b9c9f7e8781aa93a1b536edf23f5f7c16ee556a738d0",
+            "started_at": "2026-10-15T16:32:57.289486047Z",
+            "finished_at": "2026-10-15T16:33:01.65123307Z"
+          }
+        ]
+      }
+    }
+  ],
+  "stop_method": "whole_container_SIGKILL_then_restart",
+  "cleanup": "label_verified_owned_resources_only",
+  "passed": true,
+  "finished_at": "2026-10-15T16:33:05.073174+00:00"
+}
