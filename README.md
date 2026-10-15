@@ -17,230 +17,159 @@ Tasks can chain operations, reuse inputs and return multiple outputs. Start with
 
 ## Start with Docker Compose
 
-You need Docker with Compose and Python 3. Run these commands from the repository root; installing the service's Python dependencies on your host is unnecessary. If `.env` already exists, keep it and skip the copy command.
+You need Docker with Compose and Python 3. Run these commands from the repository root. Existing configuration is kept, so you can run them again:
 
 ```sh
-cp .env.example .env
-python3 deploy/generate-config.py
-docker compose up -d --build
-docker compose logs -f media
+if [ ! -f .env ]; then cp .env.example .env; fi
+if [ ! -f deploy/local/media-config.json ]; then
+  python3 deploy/generate-config.py
+fi
+docker compose up -d --build --wait
 ```
 
-Exit the log viewer with Ctrl+C, then check readiness:
+Compose waits for the service to become ready. The generator creates a random service Token in `deploy/local/media-config.json`. Keep its parent directory private (`0700`). The examples below use that file automatically; you do not need to copy the Token into commands.
 
-```sh
-curl --fail http://127.0.0.1:8080/health/ready
-```
-
-The generator creates `deploy/local/media-config.json` with a random service Token. It refuses to overwrite existing configuration; skip generation if you already have that file. Keep its parent directory private (`0700`).
-
-Edit `.env` for the image name, host address, port, configuration file location and container resource limits. Edit the private JSON for the Token, public URL, storage and service limits. Tokens belong in the private JSON, never in `.env`, command arguments or Git. A Token protects HTTP, MCP, uploads and downloads through the same `Authorization: Bearer ...` header; setting `service_token` to `null` opens these endpoints.
+Edit `.env` for the published address, port and container resources. Edit the private JSON for the Token, public URL, storage and service limits. A Token protects HTTP, MCP, uploads and downloads through the same Bearer header; setting `service_token` to `null` opens these endpoints.
 
 | `.env` variable | Default | Purpose |
 | --- | --- | --- |
 | `MEDIA_IMAGE` | `ffmpeg-agent:v1-local` | Local image name |
 | `MEDIA_BIND_ADDRESS` / `MEDIA_PORT` | `127.0.0.1` / `8080` | Published host address and port |
-| `MEDIA_CONFIG_PATH` | `./deploy/local/media-config.json` | Private JSON path, relative to the repository root |
+| `MEDIA_CONFIG_PATH` | `./deploy/local/media-config.json` | Private service JSON path, relative to the repository root |
 | `MEDIA_CPUS` / `MEDIA_MEMORY` / `MEDIA_PIDS_LIMIT` | `2.0` / `2g` / `128` | Container CPU, memory and process limits |
 
-In the private JSON, `service_token` controls authentication, `public_base_url` determines client and artifact URLs, and `worker_concurrency` sets logical task concurrency (1–4, default 1). If you change `MEDIA_PORT`, update `public_base_url` and the readiness-check URL too; otherwise the examples and returned artifact URLs still point to port 8080.
+If you use a custom `MEDIA_CONFIG_PATH`, generate or keep that configuration and pass its path to examples with `--config`. If you change the port, update `public_base_url` in the JSON too. `worker_concurrency` sets logical task concurrency (1–4, default 1).
 
-The default service is reachable only on the host at port 8080. To connect remotely, provide an HTTPS entry point, set `public_base_url` to its externally reachable URL, and forward the correct public Host header. MCP validates Host and Origin against that address. The client examples below read this JSON; use a private client copy when calling from another machine.
+The default service is reachable only on the host. For remote use, provide an HTTPS entry point, set `public_base_url` to the externally reachable URL, and forward the correct public Host header. MCP validates Host and Origin against that address. A remote client needs only a private JSON containing `public_base_url` and `service_token`, passed with `--config`; it does not need the server's storage or deployment configuration. Keep Tokens out of command arguments and Git.
 
 ## Upload, process and download
 
-The following Python 3 standard-library example streams the upload and download without loading the whole video into memory. It converts `sample.mp4` to H.264/MP4, keeps the source dimensions and frame timing, waits for the task and verifies the result's length and SHA-256. Keep the source unchanged while it runs.
+The repository includes complete clients that upload a local file, wait for processing, and download and verify the result. All commands below use existing sample files and a new temporary output directory, so they can be copied and run again. Keep the source unchanged while uploading.
 
-Save the code as `example.py`, place your video at `sample.mp4`, and run:
+### HTTP: upload and submit together
+
+This Python 3 standard-library client needs no extra packages. By default, it converts video to H.264/MP4, preserving source dimensions and frame timing:
 
 ```sh
-python3 example.py sample.mp4 result.mp4
+output_dir=$(mktemp -d)
+printf 'Output directory: %s\n' "$output_dir"
+python3 examples/http-workflow.py \
+  tests/fixtures/ffmpeg_h264_640x360.mkv "$output_dir/result.mp4"
 ```
 
-The destination must not already exist. If you changed `MEDIA_CONFIG_PATH`, update the config path in the example too.
+It sends one multipart request to `POST /v1/jobs/upload`, polls the returned task, and saves the verified MP4. You do not need to supply encoding parameters, handle IDs manually, or mount a shared volume.
 
-```python
-import hashlib
-import http.client
-import json
-import sys
-import time
-import urllib.parse
-import urllib.request
-from pathlib import Path
+### HTTP: upload first, then submit
 
-source, destination = map(Path, sys.argv[1:3])
-config = json.loads(Path("deploy/local/media-config.json").read_text())
-base = config["public_base_url"].rstrip("/")
-token = config["service_token"]
-auth = {"Authorization": "Bearer " + token} if token else {}
+Add `--upload-first` to use `POST /v1/files` followed by `POST /v1/jobs`. The client also prints the `file_id`, which can be reused in other tasks while the upload is available:
 
-
-def api(method, path, body=None, extra=None):
-    data = json.dumps(body).encode() if body is not None else None
-    headers = {**auth, **(extra or {})}
-    if data is not None:
-        headers["Content-Type"] = "application/json"
-    request = urllib.request.Request(base + path, data=data, headers=headers, method=method)
-    with urllib.request.urlopen(request, timeout=30) as response:
-        return json.load(response) if response.status != 204 else None
-
-
-hasher = hashlib.sha256()
-with source.open("rb") as stream:
-    for chunk in iter(lambda: stream.read(1024 * 1024), b""):
-        hasher.update(chunk)
-source_digest = hasher.hexdigest()
-url = urllib.parse.urlsplit(base)
-connection_type = http.client.HTTPSConnection if url.scheme == "https" else http.client.HTTPConnection
-connection = connection_type(url.hostname, url.port, timeout=300)
-try:
-    connection.putrequest("POST", url.path.rstrip("/") + "/v1/files")
-    headers = {
-        **auth,
-        "Content-Type": "application/octet-stream",
-        "Content-Length": str(source.stat().st_size),
-        "X-File-Sha256": source_digest,
-        "Idempotency-Key": "readme-file-" + source_digest,
-    }
-    for name, value in headers.items():
-        connection.putheader(name, value)
-    connection.endheaders()
-    with source.open("rb") as stream:
-        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
-            connection.send(chunk)
-    response = connection.getresponse()
-    if response.status not in (200, 201):
-        raise RuntimeError("Upload HTTP status: " + str(response.status))
-    uploaded = json.loads(response.read())
-finally:
-    connection.close()
-
-job = api("POST", "/v1/jobs", {
-    "inputs": {"source": {"kind": "uploaded_file", "file_id": uploaded["file_id"]}},
-    "steps": [{
-        "id": "encode", "operation": "video.transcode.v1",
-        "inputs": {"video": {"source": "source"}},
-    }],
-    "outputs": {"video": {"step": "encode", "output": "video"}},
-}, {"Idempotency-Key": "readme-video-" + source_digest})
-print("file_id:", uploaded["file_id"], "job_id:", job["job_id"])
-deadline = time.monotonic() + 600
-while job["status"] not in {"succeeded", "partial", "failed", "canceled"}:
-    if time.monotonic() >= deadline:
-        raise TimeoutError("Keep polling the same job_id; do not submit a duplicate job")
-    time.sleep(1)
-    job = api("GET", "/v1/jobs/" + job["job_id"])
-if job["status"] != "succeeded":
-    raise RuntimeError("Task status: " + job["status"])
-artifact_id = job["outputs"]["video"]["artifact_id"]
-lease = api("POST", f"/v1/artifacts/{artifact_id}/leases", {"duration_seconds": 900})
-try:
-    headers = {"X-Artifact-Lease-Id": lease["lease_id"]}
-    artifact = api("GET", f"/v1/artifacts/{artifact_id}", extra=headers)
-    request = urllib.request.Request(artifact["access"]["http"]["content"], headers={**auth, **headers})
-    digest, size = hashlib.sha256(), 0
-    with urllib.request.urlopen(request, timeout=300) as response, destination.open("xb") as output:
-        for chunk in iter(lambda: response.read(1024 * 1024), b""):
-            output.write(chunk)
-            digest.update(chunk)
-            size += len(chunk)
-        if int(response.headers["Content-Length"]) != size:
-            raise RuntimeError("Incomplete HTTP download")
-    if size != artifact["size_bytes"] or digest.hexdigest() != artifact["sha256"]:
-        raise RuntimeError("Artifact integrity check failed")
-finally:
-    api("DELETE", "/v1/leases/" + lease["lease_id"])
-print("Download verified")
+```sh
+output_dir=$(mktemp -d)
+printf 'Output directory: %s\n' "$output_dir"
+python3 examples/http-workflow.py \
+  tests/fixtures/ffmpeg_h264_640x360.mkv "$output_dir/result.mp4" \
+  --upload-first
 ```
 
-Upload and task submission have separate idempotency keys. This example derives stable keys from the file digest: retries with the same file return the existing input and task rather than processing twice. Use new keys when you intentionally want a new run; an expired/released upload cannot be recreated with its old key. If waiting times out, keep querying the printed `job_id`.
-
-### Upload and submit in one request
-
-`POST /v1/jobs/upload` accepts multipart data, with the `job` JSON part first and its declared file parts afterward. The response returns a `job_id` once upload and task acceptance finish; processing remains asynchronous.
-
-This optional example uses the project's Python 3.14 environment and requires uv: run `uv sync --frozen`, save it as `multipart-example.py`, then execute `.venv/bin/python multipart-example.py` with `sample.mp4` present. Reuse its key for retries with the same request; choose a new key for another task.
-
-```python
-import json
-from pathlib import Path
-
-import httpx
-
-config = json.loads(Path("deploy/local/media-config.json").read_text())
-token = config["service_token"]
-headers = {"Authorization": "Bearer " + token} if token else {}
-headers["Idempotency-Key"] = "readme-multipart-video-001"
-job = {
-    "inputs": {"source": {"kind": "upload", "part": "source"}},
-    "steps": [{
-        "id": "encode", "operation": "video.transcode.v1",
-        "inputs": {"video": {"source": "source"}},
-    }],
-    "outputs": {"video": {"step": "encode", "output": "video"}},
-}
-with Path("sample.mp4").open("rb") as stream, httpx.Client(timeout=300) as client:
-    response = client.post(
-        config["public_base_url"].rstrip("/") + "/v1/jobs/upload",
-        headers=headers,
-        files=[
-            ("job", (None, json.dumps(job), "application/json")),
-            ("source", ("sample.mp4", stream, "application/octet-stream")),
-        ],
-    )
-    response.raise_for_status()
-    print(response.json()["job_id"])
-```
-
-Query `GET /v1/jobs/{job_id}` and download the output through the artifact endpoints as shown above. You can also upload once with `POST /v1/files`, query `GET /v1/files/{file_id}`, and reuse the input in several tasks.
-
-## Connect a remote MCP client
-
-Use the Streamable HTTP endpoint at `public_base_url + /mcp` (locally, `http://localhost:8080/mcp`). Set the service Bearer header in the client's connection settings, and set the same header separately for file HTTP requests. The Token is never a tool argument or part of a download URL.
-
-Discover the tools with `tools/list`. For example, call `transcode_video` with the following arguments, substituting the real uploaded `file_id`:
+Both modes complete the same upload → process → download workflow. When building your own HTTP client, the multipart `job` part has this shape (a request-body reference, not a standalone command):
 
 ```json
 {
-  "source": {"kind": "uploaded_file", "file_id": "<file_id returned by HTTP upload>"},
-  "idempotency_key": "readme-mcp-video-001"
+  "inputs": {"source": {"kind": "upload", "part": "source"}},
+  "steps": [{
+    "id": "process",
+    "operation": "video.transcode.v1",
+    "inputs": {"video": {"source": "source"}}
+  }],
+  "outputs": {"result": {"step": "process", "output": "video"}}
 }
 ```
 
-The tool returns `job_id`. Call `get_job` with `{"job_id":"<returned job_id>"}` until it finishes, then `get_artifact` with the returned `artifact_id` to obtain download information. Media tools name their declared output `result`, so its ID is under `outputs.result.artifact_id`.
+Send `job` first, then the `source` file part, with an `Idempotency-Key` header. For upload-first submission, replace the input with `{"kind":"uploaded_file","file_id":"<returned file_id>"}`. See the [HTTP contract](docs/api/v1-contract.md) for the endpoints and [client source](examples/http-workflow.py) for a complete implementation.
 
-The six media tools are `probe_media`, `transcode_video`, `transcode_audio`, `extract_audio`, `extract_frames` and `resize_image`. Other tools cover capabilities, task graphs, cancellation, input release, artifacts and leases. See the [MCP contract](docs/api/v1-contract.md#远程-mcp) for their arguments.
+## Use remote MCP
 
-File bytes travel through HTTP: **upload → `file_id` → MCP processing/query → `artifact_id` → download**. MCP also accepts the other input types below. Only remote MCP is provided; the server cannot read paths on the client's computer.
+With [uv](https://docs.astral.sh/uv/) installed, this command runs the complete MCP client with the SDK version pinned by the project:
 
-## Adjust media parameters
+```sh
+output_dir=$(mktemp -d)
+printf 'Output directory: %s\n' "$output_dir"
+uv run --frozen python examples/mcp-workflow.py \
+  tests/fixtures/ffmpeg_h264_640x360.mkv "$output_dir/result.mp4"
+```
 
-All six tools work without `params`. Video defaults to H.264/MP4 with CRF 23 and keeps source dimensions and frame timing. Audio defaults to AAC and prefers the source sample rate and channels, choosing compatible values when necessary. Images keep their dimensions and become JPEG at quality 90; frame extraction defaults to the first frame; media probing returns format and stream information.
+The client uploads over HTTP, calls the remote `transcode_video` tool, waits through MCP, and downloads over HTTP. It uses the same private configuration and Token for both transports. There is no local stdio server to configure.
 
-To customize a result, add only the values you want to change. For example, call `transcode_video` with these arguments to fit within 1920×1080 without enlarging, use CRF 20, and encode mono AAC at 44.1 kHz:
+To connect another MCP client, use the Streamable HTTP endpoint at `public_base_url + /mcp` (locally `http://localhost:8080/mcp`) and configure the service Bearer header in its connection settings. File HTTP requests need the same header. **MCP alone cannot upload a path from your computer:** the client needs HTTP file-transfer capability, or an input URL/shared file the service can access.
+
+For reference, these are the arguments to `transcode_video` after HTTP upload; replace the placeholders with the returned `file_id` and a key for this request:
 
 ```json
 {
-  "source": {"kind": "uploaded_file", "file_id": "<file_id returned by HTTP upload>"},
-  "params": {
-    "resize": {"width": 1920, "height": 1080},
-    "rate_control": {"mode": "crf", "value": 20},
-    "audio": {"sample_rate": 44100, "channels": 1}
-  },
-  "idempotency_key": "readme-mcp-custom-video-001"
+  "source": {"kind": "uploaded_file", "file_id": "<returned file_id>"},
+  "idempotency_key": "<key for this request>"
 }
 ```
 
-For HTTP, use the same `params` object in a `video.transcode.v1` step in `POST /v1/jobs` or the multipart `job` part. Each tool has one parameter contract; no additional version selector is needed.
+The tool returns `job_id`. Call `get_job` until it finishes, then use `outputs.result.artifact_id` with `get_artifact` to obtain download information. The runnable client handles these steps for you. Discover all tools through `tools/list`; the six media tools share their parameter models with HTTP, and the remaining tools manage tasks, files, artifacts and leases. See the [MCP contract](docs/api/v1-contract.md#远程-mcp).
 
-Presets are optional shortcuts. `{"preset":"web_720p_v1"}` selects 720p/30 fps with AAC stereo; `aac_stereo_128k_v1` selects AAC 128 kbps/48 kHz/stereo, and `wav_mono_16k_v1` selects 16 kHz mono PCM. Explicit parameters override a selected preset. With no preset, source dimensions and timing are preserved. To request a fixed frame rate, use `frame_rate: {"mode":"constant","value":"30000/1001"}`.
+## Try the six operations
 
-For audio, `auto` sample rate and channels prefer the source values and fall back to compatible values. Use `source` when retaining the exact source value is required; unsupported combinations then fail. Automatic bitrate depends on codec and output channels, and explicit bitrates are checked strictly. Audio `mode: "copy"` preserves the selected track's encoding and cannot be combined with resampling, quality settings or trimming. JPEG/WebP use format-specific quality; PNG uses `compression_level`.
+Both clients accept the same `--operation` and `--params` options. The default operation is `transcode_video`; all six work without `--params`.
 
-Query `steps[].effective_params` on the task and `media.effective_params` on the artifact to see accepted and resolved settings. Resolved audio bitrate is under `resolved.rate_control` (`resolved.audio.rate_control` for video); it is a target, so AAC file averages may differ. `media.streams[].frame_rate` is the container's nominal rate, especially for WebM; use the effective frame-rate strategy and decoded timestamps when checking actual timing.
+| `--operation` | Sample source under `tests/fixtures/` | Destination and default result |
+| --- | --- | --- |
+| `probe_media` | `ffmpeg_h264_640x360.mkv` | `report.json`: format and stream information |
+| `transcode_video` | `ffmpeg_h264_640x360.mkv` | `result.mp4`: H.264, CRF 23, source dimensions and timing |
+| `transcode_audio` | `222.mp3` | `result.m4a`: AAC, compatible sample rate/channels/bitrate chosen automatically |
+| `extract_audio` | `ffmpeg_h264_640x360.mkv` | `result.m4a`: first audio track, converted to AAC |
+| `extract_frames` | `ffmpeg_h264_640x360.mkv` | `frames/`: first frame as JPEG quality 90, plus `manifest.json` |
+| `resize_image` | `haojiao.jpg` | `result.jpg`: original dimensions, JPEG quality 90 |
 
-Available software codecs depend on the running image. For example, Opus outputs 48 kHz and the current AV1 encoder requires at least 64×64 pixels. See the [parameter contract](docs/design/media-parameters.md) for all six operations, detailed defaults, compatible combinations and frame/image controls.
+For example, download a frame collection with one command:
+
+```sh
+output_dir=$(mktemp -d)
+printf 'Output directory: %s\n' "$output_dir"
+python3 examples/http-workflow.py \
+  tests/fixtures/ffmpeg_h264_640x360.mkv "$output_dir/frames" \
+  --operation extract_frames
+```
+
+Use `uv run --frozen python examples/mcp-workflow.py` instead of `python3 examples/http-workflow.py` to run the same operation through MCP.
+
+### Adjust only what you need
+
+A parameters file contains just the values to override. This complete example fits the video within 1920×1080 without enlarging it, uses CRF 20, and encodes mono AAC at 44.1 kHz:
+
+```sh
+output_dir=$(mktemp -d)
+printf 'Output directory: %s\n' "$output_dir"
+cat > "$output_dir/params.json" <<'JSON'
+{
+  "resize": {"width": 1920, "height": 1080},
+  "rate_control": {"mode": "crf", "value": 20},
+  "audio": {"sample_rate": 44100, "channels": 1}
+}
+JSON
+python3 examples/http-workflow.py \
+  tests/fixtures/ffmpeg_h264_640x360.mkv "$output_dir/result.mp4" \
+  --params "$output_dir/params.json"
+```
+
+The same file works with the MCP client. In your own requests, put this object in the HTTP step's `params` or the MCP tool's `params`.
+
+Presets are optional shortcuts: `{"preset":"web_720p_v1"}` selects 720p/30 fps with stereo AAC; `aac_stereo_128k_v1` selects AAC 128 kbps/48 kHz/stereo; `wav_mono_16k_v1` selects 16 kHz mono PCM. Explicit settings override the selected preset. Without a preset, video preserves source dimensions and timing. Audio `auto` prefers source sample rate/channels and falls back to compatible values; `source` requires exact preservation. Audio copy mode preserves the original encoding and cannot be combined with encoding settings or trimming.
+
+Query `GET /v1/capabilities` or MCP `list_capabilities` for available encoders, schemas, defaults and limits. Accepted settings appear in task `steps[].effective_params`; resolved output settings appear in artifact `media.effective_params`. Full codec, size, frame-rate, bitrate, sample-rate and quality controls are documented in the [parameter contract](docs/design/media-parameters.md).
+
+### Waiting, retries and downloads
+
+The clients print a request ID and then the accepted `job_id`. Each invocation creates a new request by default. Reuse an explicit `--request-id` only to retry the same complete request, including source, operation, parameters and upload mode. Use a new ID when changing any of them.
+
+The default wait is 600 seconds; change it with `--wait-seconds`. A wait timeout leaves processing running. To resume, run the same client with `--job-id` and the printed ID; it skips upload and submission. `SOURCE DESTINATION` are still required, but the source is not opened during resume. Use `--help` for all options. `--base-url` overrides the connection URL; `--config` selects a private client JSON.
+
+A destination file or frame directory must not already exist. Downloads are streamed and checked against the advertised size and SHA-256 before a completed file appears. Frame collections include `manifest.json` with successful and failed members. A `partial` result saves available members and exits with status 2; a failed task or transfer exits nonzero. The clients do not overwrite existing files or treat an incomplete transfer as a complete result.
 
 ## Choose an input and consume results
 

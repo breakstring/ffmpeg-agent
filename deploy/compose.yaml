@@ -30,6 +30,8 @@ services:
       - ALL
     security_opt:
       - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health/ready', timeout=2).close()"]
     cpus: "2.0"
     mem_limit: 2g
     pids_limit: 128

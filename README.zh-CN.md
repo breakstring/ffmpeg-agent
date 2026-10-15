@@ -17,230 +17,159 @@
 
 ## 使用 Docker Compose 启动
 
-需要 Docker、Compose 和 Python 3。在仓库根目录运行以下命令，无需在宿主机安装服务的 Python 依赖。已有 `.env` 时保留它，跳过复制命令。
+需要 Docker、Compose 和 Python 3。在仓库根目录运行以下命令；已有配置会保留，可以重复执行：
 
 ```sh
-cp .env.example .env
-python3 deploy/generate-config.py
-docker compose up -d --build
-docker compose logs -f media
+if [ ! -f .env ]; then cp .env.example .env; fi
+if [ ! -f deploy/local/media-config.json ]; then
+  python3 deploy/generate-config.py
+fi
+docker compose up -d --build --wait
 ```
 
-用 Ctrl+C 退出日志查看，再检查服务是否就绪：
+Compose 会等待服务就绪。生成器将随机服务 Token 写入 `deploy/local/media-config.json`；保持其父目录仅当前用户可访问（`0700`）。下面的示例会自动读取这个文件，无需将 Token 复制到命令中。
 
-```sh
-curl --fail http://127.0.0.1:8080/health/ready
-```
-
-生成器将随机服务 Token 写入 `deploy/local/media-config.json`，拒绝覆盖已有配置；已有该文件时跳过生成即可。保持其父目录仅当前用户可访问（`0700`）。
-
-在 `.env` 中设置镜像名称、宿主机监听地址、端口、配置文件位置和容器资源限制；在私有 JSON 中设置 Token、公开地址、存储和服务限额。Token 只保存在私有 JSON，不放入 `.env`、命令行参数或 Git。HTTP、MCP、上传和下载统一通过 `Authorization: Bearer ...` 校验；将 `service_token` 显式设为 `null` 即开放这些入口。
+在 `.env` 中设置公开地址、端口和容器资源；在私有 JSON 中设置 Token、公开 URL、存储和服务限额。HTTP、MCP、上传和下载通过相同 Bearer 头校验；将 `service_token` 设为 `null` 即开放这些入口。
 
 | `.env` 变量 | 默认值 | 用途 |
 | --- | --- | --- |
 | `MEDIA_IMAGE` | `ffmpeg-agent:v1-local` | 本地镜像名称 |
 | `MEDIA_BIND_ADDRESS` / `MEDIA_PORT` | `127.0.0.1` / `8080` | 宿主机公开地址和端口 |
-| `MEDIA_CONFIG_PATH` | `./deploy/local/media-config.json` | 私有 JSON 路径，相对于仓库根目录 |
+| `MEDIA_CONFIG_PATH` | `./deploy/local/media-config.json` | 私有服务 JSON 路径，相对于仓库根目录 |
 | `MEDIA_CPUS` / `MEDIA_MEMORY` / `MEDIA_PIDS_LIMIT` | `2.0` / `2g` / `128` | 容器 CPU、内存和进程数限制 |
 
-私有 JSON 中，`service_token` 控制鉴权，`public_base_url` 决定客户端和产物 URL，`worker_concurrency` 设置逻辑任务并发数（1～4，默认 1）。修改 `MEDIA_PORT` 时，同时更新 `public_base_url` 和就绪检查 URL，否则示例与返回的产物 URL 仍指向 8080 端口。
+如果使用自定义 `MEDIA_CONFIG_PATH`，生成或保留对应配置，并通过 `--config` 将路径传给示例。修改端口时，同时更新 JSON 中的 `public_base_url`。`worker_concurrency` 设置逻辑任务并发数（1～4，默认 1）。
 
-默认服务仅在宿主机的 8080 端口可访问。远程使用时提供 HTTPS 入口，将 `public_base_url` 设为客户端可达的地址，并转发正确的公开 Host 头。MCP 按该地址检查 Host 和 Origin。以下客户端示例读取此 JSON；从另一台机器调用时，准备私有的客户端配置副本。
+默认服务仅在宿主机可访问。远程使用时提供 HTTPS 入口，将 `public_base_url` 设为客户端可达地址，并转发正确的公开 Host 头；MCP 按该地址检查 Host 和 Origin。远程客户端只需一份包含 `public_base_url` 和 `service_token` 的私有 JSON，通过 `--config` 指定即可，无需复制服务端的存储或部署配置。Token 不放入命令行参数或 Git。
 
 ## 上传、处理和下载
 
-下面的 Python 3 标准库示例以分块方式上传和下载，不将整个视频读入内存。它会将 `sample.mp4` 转为 H.264/MP4，保留源尺寸和帧时间节奏，等待任务完成，再验证结果长度与 SHA-256。运行期间保持输入文件不变。
+仓库提供完整客户端，负责上传本地文件、等待处理，再下载并验证结果。下面的命令使用已有示例素材和新的临时输出目录，可以直接复制，也可以重复运行。上传期间保持源文件不变。
 
-将代码保存为 `example.py`，准备好 `sample.mp4`，执行：
+### HTTP：上传时直接提交处理
+
+这个 Python 3 标准库客户端无需安装额外依赖。默认将视频转为 H.264/MP4，保留源尺寸和帧时间节奏：
 
 ```sh
-python3 example.py sample.mp4 result.mp4
+output_dir=$(mktemp -d)
+printf 'Output directory: %s\n' "$output_dir"
+python3 examples/http-workflow.py \
+  tests/fixtures/ffmpeg_h264_640x360.mkv "$output_dir/result.mp4"
 ```
 
-输出文件不能已存在。如果修改了 `MEDIA_CONFIG_PATH`，同时修改示例中的配置路径。
+它向 `POST /v1/jobs/upload` 发送一次 multipart 请求，轮询返回的任务，再保存经过校验的 MP4。无需指定编码参数、手动传递 ID 或挂载共享卷。
 
-```python
-import hashlib
-import http.client
-import json
-import sys
-import time
-import urllib.parse
-import urllib.request
-from pathlib import Path
+### HTTP：先上传，再提交处理
 
-source, destination = map(Path, sys.argv[1:3])
-config = json.loads(Path("deploy/local/media-config.json").read_text())
-base = config["public_base_url"].rstrip("/")
-token = config["service_token"]
-auth = {"Authorization": "Bearer " + token} if token else {}
+加上 `--upload-first`，即可演示先调用 `POST /v1/files`，再调用 `POST /v1/jobs`。客户端还会打印 `file_id`，上传文件有效期间可以让其他任务复用：
 
-
-def api(method, path, body=None, extra=None):
-    data = json.dumps(body).encode() if body is not None else None
-    headers = {**auth, **(extra or {})}
-    if data is not None:
-        headers["Content-Type"] = "application/json"
-    request = urllib.request.Request(base + path, data=data, headers=headers, method=method)
-    with urllib.request.urlopen(request, timeout=30) as response:
-        return json.load(response) if response.status != 204 else None
-
-
-hasher = hashlib.sha256()
-with source.open("rb") as stream:
-    for chunk in iter(lambda: stream.read(1024 * 1024), b""):
-        hasher.update(chunk)
-source_digest = hasher.hexdigest()
-url = urllib.parse.urlsplit(base)
-connection_type = http.client.HTTPSConnection if url.scheme == "https" else http.client.HTTPConnection
-connection = connection_type(url.hostname, url.port, timeout=300)
-try:
-    connection.putrequest("POST", url.path.rstrip("/") + "/v1/files")
-    headers = {
-        **auth,
-        "Content-Type": "application/octet-stream",
-        "Content-Length": str(source.stat().st_size),
-        "X-File-Sha256": source_digest,
-        "Idempotency-Key": "readme-file-" + source_digest,
-    }
-    for name, value in headers.items():
-        connection.putheader(name, value)
-    connection.endheaders()
-    with source.open("rb") as stream:
-        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
-            connection.send(chunk)
-    response = connection.getresponse()
-    if response.status not in (200, 201):
-        raise RuntimeError("Upload HTTP status: " + str(response.status))
-    uploaded = json.loads(response.read())
-finally:
-    connection.close()
-
-job = api("POST", "/v1/jobs", {
-    "inputs": {"source": {"kind": "uploaded_file", "file_id": uploaded["file_id"]}},
-    "steps": [{
-        "id": "encode", "operation": "video.transcode.v1",
-        "inputs": {"video": {"source": "source"}},
-    }],
-    "outputs": {"video": {"step": "encode", "output": "video"}},
-}, {"Idempotency-Key": "readme-video-" + source_digest})
-print("file_id:", uploaded["file_id"], "job_id:", job["job_id"])
-deadline = time.monotonic() + 600
-while job["status"] not in {"succeeded", "partial", "failed", "canceled"}:
-    if time.monotonic() >= deadline:
-        raise TimeoutError("Keep polling the same job_id; do not submit a duplicate job")
-    time.sleep(1)
-    job = api("GET", "/v1/jobs/" + job["job_id"])
-if job["status"] != "succeeded":
-    raise RuntimeError("Task status: " + job["status"])
-artifact_id = job["outputs"]["video"]["artifact_id"]
-lease = api("POST", f"/v1/artifacts/{artifact_id}/leases", {"duration_seconds": 900})
-try:
-    headers = {"X-Artifact-Lease-Id": lease["lease_id"]}
-    artifact = api("GET", f"/v1/artifacts/{artifact_id}", extra=headers)
-    request = urllib.request.Request(artifact["access"]["http"]["content"], headers={**auth, **headers})
-    digest, size = hashlib.sha256(), 0
-    with urllib.request.urlopen(request, timeout=300) as response, destination.open("xb") as output:
-        for chunk in iter(lambda: response.read(1024 * 1024), b""):
-            output.write(chunk)
-            digest.update(chunk)
-            size += len(chunk)
-        if int(response.headers["Content-Length"]) != size:
-            raise RuntimeError("Incomplete HTTP download")
-    if size != artifact["size_bytes"] or digest.hexdigest() != artifact["sha256"]:
-        raise RuntimeError("Artifact integrity check failed")
-finally:
-    api("DELETE", "/v1/leases/" + lease["lease_id"])
-print("Download verified")
+```sh
+output_dir=$(mktemp -d)
+printf 'Output directory: %s\n' "$output_dir"
+python3 examples/http-workflow.py \
+  tests/fixtures/ffmpeg_h264_640x360.mkv "$output_dir/result.mp4" \
+  --upload-first
 ```
 
-上传和任务提交使用各自的幂等键。此示例以文件摘要生成稳定键，同一文件重试会返回已有输入与任务，避免重复处理。需要主动发起新处理时更换键；已到期或已 release 的上传文件不能通过旧键重新创建。等待超时后，继续查询打印出的 `job_id`。
-
-### 一个请求上传并提交任务
-
-`POST /v1/jobs/upload` 接收 multipart 数据，第一个 part 必须是 `job` JSON，后面才是它声明的文件 part。上传完成、任务接受后返回 `job_id`，媒体处理仍异步执行。
-
-以下可选示例使用项目的 Python 3.14 环境，需要 uv：先执行 `uv sync --frozen`，将代码保存为 `multipart-example.py`，准备好 `sample.mp4` 后执行 `.venv/bin/python multipart-example.py`。相同请求重试复用原键；另一项任务使用新键。
-
-```python
-import json
-from pathlib import Path
-
-import httpx
-
-config = json.loads(Path("deploy/local/media-config.json").read_text())
-token = config["service_token"]
-headers = {"Authorization": "Bearer " + token} if token else {}
-headers["Idempotency-Key"] = "readme-multipart-video-001"
-job = {
-    "inputs": {"source": {"kind": "upload", "part": "source"}},
-    "steps": [{
-        "id": "encode", "operation": "video.transcode.v1",
-        "inputs": {"video": {"source": "source"}},
-    }],
-    "outputs": {"video": {"step": "encode", "output": "video"}},
-}
-with Path("sample.mp4").open("rb") as stream, httpx.Client(timeout=300) as client:
-    response = client.post(
-        config["public_base_url"].rstrip("/") + "/v1/jobs/upload",
-        headers=headers,
-        files=[
-            ("job", (None, json.dumps(job), "application/json")),
-            ("source", ("sample.mp4", stream, "application/octet-stream")),
-        ],
-    )
-    response.raise_for_status()
-    print(response.json()["job_id"])
-```
-
-通过 `GET /v1/jobs/{job_id}` 查询状态，再按上一示例通过产物接口下载。也可以先用 `POST /v1/files` 上传一次，通过 `GET /v1/files/{file_id}` 查询，再让多个任务复用该输入。
-
-## 连接远程 MCP 客户端
-
-使用 `public_base_url + /mcp` 的 Streamable HTTP 入口，本机为 `http://localhost:8080/mcp`。在客户端连接设置中配置服务 Bearer 头，同时为文件 HTTP 请求单独配置相同头。Token 不作为工具参数，也不进入下载 URL。
-
-通过 `tools/list` 发现工具。例如，使用下列参数调用 `transcode_video`，将 `file_id` 替换为实际上传返回的值：
+两种方式都会完成上传 → 处理 → 下载。编写自己的 HTTP 客户端时，multipart 中的 `job` 结构如下，这是请求体说明，不是独立可执行命令：
 
 ```json
 {
-  "source": {"kind": "uploaded_file", "file_id": "<file_id returned by HTTP upload>"},
-  "idempotency_key": "readme-mcp-video-001"
+  "inputs": {"source": {"kind": "upload", "part": "source"}},
+  "steps": [{
+    "id": "process",
+    "operation": "video.transcode.v1",
+    "inputs": {"video": {"source": "source"}}
+  }],
+  "outputs": {"result": {"step": "process", "output": "video"}}
 }
 ```
 
-工具返回 `job_id`。用 `{"job_id":"<returned job_id>"}` 调用 `get_job` 等待完成，再用返回的 `artifact_id` 调用 `get_artifact` 获取下载信息。媒体工具声明的输出名固定为 `result`，因此产物 ID 位于 `outputs.result.artifact_id`。
+先发送 `job` part，再发送 `source` 文件 part，并设置 `Idempotency-Key` 请求头。先上传后提交时，将输入替换为 `{"kind":"uploaded_file","file_id":"<returned file_id>"}`。接口说明见 [HTTP 合同](docs/api/v1-contract.md)，完整实现见[客户端源码](examples/http-workflow.py)。
 
-六个媒体工具为 `probe_media`、`transcode_video`、`transcode_audio`、`extract_audio`、`extract_frames` 和 `resize_image`。其他工具提供能力查询、任务图、取消、输入释放、产物和租约管理。参数见 [MCP 合同](docs/api/v1-contract.md#远程-mcp)。
+## 使用远程 MCP
 
-文件字节通过 HTTP 传输：**上传 → `file_id` → MCP 处理与查询 → `artifact_id` → 下载**。MCP 也接受下表的其他输入类型。仅提供远程 MCP，服务不能读取客户端电脑上的文件路径。
+安装 [uv](https://docs.astral.sh/uv/) 后，以下命令使用项目锁定版本的 SDK 运行完整 MCP 客户端：
 
-## 按需调整媒体参数
+```sh
+output_dir=$(mktemp -d)
+printf 'Output directory: %s\n' "$output_dir"
+uv run --frozen python examples/mcp-workflow.py \
+  tests/fixtures/ffmpeg_h264_640x360.mkv "$output_dir/result.mp4"
+```
 
-六个工具都可以省略 `params`。视频默认转为 H.264/MP4、CRF 23，保留源尺寸和帧时间节奏；音频默认 AAC，采样率和声道优先保持源值，必要时选择兼容值。图片默认保留尺寸、转为 JPEG quality 90；抽帧默认取首帧；探测默认返回格式和轨道信息。
+客户端通过 HTTP 上传，调用远程 `transcode_video` 工具，通过 MCP 等待任务，再经 HTTP 下载。两种传输使用相同的私有配置和 Token，无需配置本地 stdio 服务。
 
-需要自定义时，只传希望改变的值。例如，使用以下参数调用 `transcode_video`：等比装入 1920×1080、不放大，采用 CRF 20，并将音轨转为 44.1 kHz 单声道 AAC：
+接入其他 MCP 客户端时，使用 `public_base_url + /mcp` 的 Streamable HTTP 入口，本机为 `http://localhost:8080/mcp`；在连接设置中配置服务 Bearer 头，文件 HTTP 请求也使用相同的头。**仅有 MCP 不能上传你电脑上的文件路径**：客户端需要具备 HTTP 文件传输能力，或者使用服务可访问的输入 URL／共享文件。
+
+下面仅用于说明 HTTP 上传后 `transcode_video` 的工具参数；调用时替换实际 `file_id` 和本次请求的幂等键：
 
 ```json
 {
-  "source": {"kind": "uploaded_file", "file_id": "<file_id returned by HTTP upload>"},
-  "params": {
-    "resize": {"width": 1920, "height": 1080},
-    "rate_control": {"mode": "crf", "value": 20},
-    "audio": {"sample_rate": 44100, "channels": 1}
-  },
-  "idempotency_key": "readme-mcp-custom-video-001"
+  "source": {"kind": "uploaded_file", "file_id": "<returned file_id>"},
+  "idempotency_key": "<key for this request>"
 }
 ```
 
-使用 HTTP 时，将同一 `params` 对象放入 `POST /v1/jobs` 或 multipart `job` 的 `video.transcode.v1` 步骤。每个工具只有一套参数合同，不需要额外选择版本。
+工具返回 `job_id`。用 `get_job` 等待完成，再将 `outputs.result.artifact_id` 传给 `get_artifact` 获取下载信息。可执行客户端会处理这些步骤。通过 `tools/list` 发现全部工具；六个媒体工具与 HTTP 共用参数模型，其余工具管理任务、文件、产物和租约。详见 [MCP 合同](docs/api/v1-contract.md#远程-mcp)。
 
-预设是可选快捷设置。`{"preset":"web_720p_v1"}` 选择 720p/30 fps 和双声道 AAC；`aac_stereo_128k_v1` 选择 AAC 128 kbps/48 kHz/双声道；`wav_mono_16k_v1` 选择 16 kHz 单声道 PCM。显式参数可以覆盖选定预设。未选预设时保留源尺寸和时间节奏；需要固定帧率可传 `frame_rate: {"mode":"constant","value":"30000/1001"}`。
+## 试用六种能力
 
-音频采样率和声道的 `auto` 会优先保持源值，不兼容时选兼容值；必须严格保持时传 `source`，不支持就明确失败。自动码率按编码和实际输出声道计算，显式码率严格校验。音频 `mode: "copy"` 保留所选音轨编码，不能同时要求重采样、质量调整或裁剪。JPEG/WebP 使用各自的质量参数，PNG 使用 `compression_level`。
+两个客户端接受相同的 `--operation` 和 `--params`。默认操作为 `transcode_video`，六种能力都可以省略 `--params`。
 
-通过任务的 `steps[].effective_params` 和产物的 `media.effective_params` 查看接受时及解析后的设置。音频解析码率位于 `resolved.rate_control`（视频内音轨位于 `resolved.audio.rate_control`）；它是目标值，AAC 成品平均码率可能不同。`media.streams[].frame_rate` 是容器标称帧率，尤其 WebM 不能据此推断实际帧间隔；验证实际时间节奏需结合有效帧率策略与解码帧时间戳。
+| `--operation` | `tests/fixtures/` 下的示例输入 | 目标与默认结果 |
+| --- | --- | --- |
+| `probe_media` | `ffmpeg_h264_640x360.mkv` | `report.json`：格式和轨道信息 |
+| `transcode_video` | `ffmpeg_h264_640x360.mkv` | `result.mp4`：H.264、CRF 23、源尺寸和时间节奏 |
+| `transcode_audio` | `222.mp3` | `result.m4a`：AAC，自动选择兼容采样率／声道／码率 |
+| `extract_audio` | `ffmpeg_h264_640x360.mkv` | `result.m4a`：提取首条音轨并转为 AAC |
+| `extract_frames` | `ffmpeg_h264_640x360.mkv` | `frames/`：首帧 JPEG quality 90，加 `manifest.json` |
+| `resize_image` | `haojiao.jpg` | `result.jpg`：原尺寸、JPEG quality 90 |
 
-可用软件编码取决于运行镜像。例如，Opus 输出 48 kHz，当前 AV1 编码器要求至少 64×64 像素。六类能力的完整参数、默认值、兼容组合及抽帧/图片控制见[参数合同](docs/design/media-parameters.md)。
+例如，用一条命令下载抽帧集合：
+
+```sh
+output_dir=$(mktemp -d)
+printf 'Output directory: %s\n' "$output_dir"
+python3 examples/http-workflow.py \
+  tests/fixtures/ffmpeg_h264_640x360.mkv "$output_dir/frames" \
+  --operation extract_frames
+```
+
+将 `python3 examples/http-workflow.py` 替换为 `uv run --frozen python examples/mcp-workflow.py`，即可通过 MCP 执行相同操作。
+
+### 只调整需要的参数
+
+参数文件只需包含希望覆盖的值。下面的完整示例将视频等比装入 1920×1080 且不放大，采用 CRF 20，并将音轨转为 44.1 kHz 单声道 AAC：
+
+```sh
+output_dir=$(mktemp -d)
+printf 'Output directory: %s\n' "$output_dir"
+cat > "$output_dir/params.json" <<'JSON'
+{
+  "resize": {"width": 1920, "height": 1080},
+  "rate_control": {"mode": "crf", "value": 20},
+  "audio": {"sample_rate": 44100, "channels": 1}
+}
+JSON
+python3 examples/http-workflow.py \
+  tests/fixtures/ffmpeg_h264_640x360.mkv "$output_dir/result.mp4" \
+  --params "$output_dir/params.json"
+```
+
+同一个参数文件也适用于 MCP 客户端。编写自己的请求时，将这个对象放入 HTTP 步骤的 `params` 或 MCP 工具的 `params`。
+
+预设是可选快捷设置：`{"preset":"web_720p_v1"}` 选择 720p/30 fps 和双声道 AAC；`aac_stereo_128k_v1` 选择 AAC 128 kbps/48 kHz/双声道；`wav_mono_16k_v1` 选择 16 kHz 单声道 PCM。显式参数覆盖选定预设。未选预设时视频保留源尺寸和时间节奏。音频 `auto` 优先保持源采样率／声道，不兼容时自动调整；`source` 要求严格保持。音频复制模式保留原编码，不能同时调整编码参数或裁剪。
+
+通过 `GET /v1/capabilities` 或 MCP `list_capabilities` 获取可用编码器、schema、默认值和限制。任务的 `steps[].effective_params` 展示接受的设置，产物的 `media.effective_params` 展示解析后的输出设置。编码、尺寸、帧率、码率、采样率和质量的完整控制见[参数合同](docs/design/media-parameters.md)。
+
+### 等待、重试和下载
+
+客户端先打印请求 ID，再打印已接受的 `job_id`。默认每次执行都会创建新请求；只有重试完全相同的请求时才显式复用 `--request-id`，包括源文件、操作、参数及上传方式。改变其中任何一项时使用新 ID。
+
+默认等待 600 秒，可用 `--wait-seconds` 调整。等待超时不会取消后台处理；在相同客户端命令后加 `--job-id` 和已打印的 ID，即可跳过上传与提交，继续等待和下载。恢复时仍需填写 `SOURCE DESTINATION`，但不会读取源文件。`--help` 列出完整选项；`--base-url` 覆盖连接地址，`--config` 指定私有客户端 JSON。
+
+目标文件或抽帧目录不能已存在。下载采用流式传输，大小和 SHA-256 校验通过后才形成完整文件。抽帧集合包含 `manifest.json`，记录成功与失败成员；`partial` 会保存可用成员并以状态码 2 退出。任务失败或传输失败会以非零状态退出；客户端不会覆盖已有文件，也不会将下载不完整的文件当作成功结果。
 
 ## 选择输入和使用结果
 

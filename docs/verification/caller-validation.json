@@ -1,0 +1,49 @@
+{
+  "recorded_at": "2026-10-15T10:02:18.010279+00:00",
+  "status": "passed",
+  "checks": [
+    {
+      "command": "uv run ruff check .",
+      "exit_code": 0
+    },
+    {
+      "command": "uv run pyright",
+      "exit_code": 0,
+      "summary": "0 errors, 0 warnings, 0 informations"
+    },
+    {
+      "command": "uv run pytest -q",
+      "exit_code": 0,
+      "summary": "477 passed in 57.30s"
+    },
+    {
+      "command": "docker compose --env-file .env.example config --quiet",
+      "exit_code": 0
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0
+    },
+    {
+      "bilingual_code_blocks": 8,
+      "shell_blocks": 6,
+      "local_links": 20,
+      "request_models": 2,
+      "passed": true
+    },
+    {
+      "source_fixtures": 6,
+      "size_and_sha256_unchanged": true
+    }
+  ],
+  "example_sha256": {
+    "client_common.py": "c9c4911fd933c534f3843eebf10852c56d3d78d737e92cb0bd16cb30d74fefbe",
+    "http-workflow.py": "5f759c7a4046aa9d13227cd45e378454b4d90565b29c1512080b2f54f78d66cf",
+    "mcp-workflow.py": "086ad96aaf2dd43d921d7863a88599a561b3859ff3e687c0a47a0cb5f6ed8bb8"
+  },
+  "readme_sha256": {
+    "README.md": "f315c024fb43c8cb68ee593dbf76340b1c29f134fcf5cb998990a6341442acad",
+    "README.zh-CN.md": "e3105bda492dabce676bcf165f0fee34d63b64dfa05cd39b0f199817881c8622"
+  },
+  "scope": "本机完整测试和客户端示例验收；生产媒体源码未变化，容器矩阵和 README 构建分别记录实际镜像。"
+}
