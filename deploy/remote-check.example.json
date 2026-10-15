@@ -2,10 +2,10 @@
   "service_url": "https://media.example.internal",
   "caller_token": "REPLACE_IN_PRIVATE_COPY_ONLY",
   "source": {
-    "url": "https://controlled-source.example.internal/Feline_Apocalypse.mp4",
+    "url": "https://controlled-source.example.internal/video_h264_aac_square.mp4",
     "headers": {}
   },
-  "fixture_path": "tests/fixtures/Feline_Apocalypse.mp4",
+  "fixture_path": "tests/fixtures/video_h264_aac_square.mp4",
   "media_host_evidence": "deploy/local/media-host.json",
   "distinct_physical_hosts_confirmed": false
 }

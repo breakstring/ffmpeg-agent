@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
-FIXTURE_SHA256 = "c29e17b6fa7293a62dddc2e3a7201eaccc43964b8f0cb6699a5dec4785e26527"
+FIXTURE_NAME = "video_h264_aac_square.mp4"
 TERMINAL = {"succeeded", "partial", "failed", "canceled"}
 
 
@@ -25,6 +25,16 @@ class VerificationError(RuntimeError):
 
 def digest(value: bytes) -> str:
     return hashlib.sha256(value).hexdigest()
+
+
+def fixture_identity(path: Path) -> dict:
+    manifest = json.loads(
+        (Path(__file__).resolve().parents[1] / "tests/fixtures/checksums.json").read_text()
+    )
+    expected = next(item for item in manifest if item["name"] == FIXTURE_NAME)
+    assert path.stat().st_size == expected["size_bytes"], "fixture_size_mismatch"
+    assert digest(path.read_bytes()) == expected["sha256"], "fixture_sha_mismatch"
+    return expected
 
 
 def command(*args: str) -> str:
@@ -146,7 +156,8 @@ def verify(config_path: Path, output: Path, local_smoke: bool) -> dict:
     if not local_smoke and base.scheme != "https":
         raise VerificationError("真实跨宿主机验收通过受控 HTTPS 入口传递认证头")
     fixture = Path(config["fixture_path"])
-    assert digest(fixture.read_bytes()) == FIXTURE_SHA256, "必须使用仓库 Feline fixture"
+    expected_fixture = fixture_identity(fixture)
+    fixture_sha256 = expected_fixture["sha256"]
     media_host = json.loads(Path(config["media_host_evidence"]).read_text())
     business_host = host_identity()
     if not local_smoke:
@@ -165,8 +176,8 @@ def verify(config_path: Path, output: Path, local_smoke: bool) -> dict:
         "kind": "http_file",
         "url": config["source"]["url"],
         "headers": config["source"].get("headers", {}),
-        "expected_size_bytes": fixture.stat().st_size,
-        "expected_sha256": FIXTURE_SHA256,
+        "expected_size_bytes": expected_fixture["size_bytes"],
+        "expected_sha256": fixture_sha256,
     }
     if "expires_at" in config["source"]:
         source["expires_at"] = config["source"]["expires_at"]
@@ -235,7 +246,7 @@ def verify(config_path: Path, output: Path, local_smoke: bool) -> dict:
         with output.open("rb") as f:
             assert f.read(64) == prefix
         decoded = check_video(output)
-        assert digest(fixture.read_bytes()) == FIXTURE_SHA256
+        assert digest(fixture.read_bytes()) == fixture_sha256
         assert client.json("DELETE", f"/v1/leases/{lease_id}")[0] == 204
         lease_id = None
         assert client.json("POST", artifact_path + "/release")[0] == 200
@@ -250,7 +261,7 @@ def verify(config_path: Path, output: Path, local_smoke: bool) -> dict:
             "media_host": media_host,
             "service_engine": capabilities["engine"],
             "job_id": job_id, "artifact_id": artifact_id,
-            "input_sha256": FIXTURE_SHA256,
+            "input_sha256": fixture_sha256,
             "output_sha256": hasher.hexdigest(), "output_size_bytes": downloaded,
             "elapsed_seconds": time.monotonic() - started,
             "output_media": decoded,

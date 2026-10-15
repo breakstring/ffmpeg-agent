@@ -54,7 +54,7 @@ This Python 3 standard-library client needs no extra packages. By default, it co
 output_dir=$(mktemp -d)
 printf 'Output directory: %s\n' "$output_dir"
 python3 examples/http-workflow.py \
-  tests/fixtures/ffmpeg_h264_640x360.mkv "$output_dir/result.mp4"
+  tests/fixtures/video_h264_640x360.mkv "$output_dir/result.mp4"
 ```
 
 It sends one multipart request to `POST /v1/jobs/upload`, polls the returned task, and saves the verified MP4. You do not need to supply encoding parameters, handle IDs manually, or mount a shared volume.
@@ -67,7 +67,7 @@ Add `--upload-first` to use `POST /v1/files` followed by `POST /v1/jobs`. The cl
 output_dir=$(mktemp -d)
 printf 'Output directory: %s\n' "$output_dir"
 python3 examples/http-workflow.py \
-  tests/fixtures/ffmpeg_h264_640x360.mkv "$output_dir/result.mp4" \
+  tests/fixtures/video_h264_640x360.mkv "$output_dir/result.mp4" \
   --upload-first
 ```
 
@@ -95,7 +95,7 @@ With [uv](https://docs.astral.sh/uv/) installed, this command runs the complete 
 output_dir=$(mktemp -d)
 printf 'Output directory: %s\n' "$output_dir"
 uv run --frozen python examples/mcp-workflow.py \
-  tests/fixtures/ffmpeg_h264_640x360.mkv "$output_dir/result.mp4"
+  tests/fixtures/video_h264_640x360.mkv "$output_dir/result.mp4"
 ```
 
 The client uploads over HTTP, calls the remote `transcode_video` tool, waits through MCP, and downloads over HTTP. It uses the same private configuration and Token for both transports. There is no local stdio server to configure.
@@ -119,12 +119,12 @@ Both clients accept the same `--operation` and `--params` options. The default o
 
 | `--operation` | Sample source under `tests/fixtures/` | Destination and default result |
 | --- | --- | --- |
-| `probe_media` | `ffmpeg_h264_640x360.mkv` | `report.json`: format and stream information |
-| `transcode_video` | `ffmpeg_h264_640x360.mkv` | `result.mp4`: H.264, CRF 23, source dimensions and timing |
-| `transcode_audio` | `222.mp3` | `result.m4a`: AAC, compatible sample rate/channels/bitrate chosen automatically |
-| `extract_audio` | `ffmpeg_h264_640x360.mkv` | `result.m4a`: first audio track, converted to AAC |
-| `extract_frames` | `ffmpeg_h264_640x360.mkv` | `frames/`: first frame as JPEG quality 90, plus `manifest.json` |
-| `resize_image` | `haojiao.jpg` | `result.jpg`: original dimensions, JPEG quality 90 |
+| `probe_media` | `video_h264_640x360.mkv` | `report.json`: format and stream information |
+| `transcode_video` | `video_h264_640x360.mkv` | `result.mp4`: H.264, CRF 23, source dimensions and timing |
+| `transcode_audio` | `audio_mp3_mono_22050.mp3` | `result.m4a`: AAC, compatible sample rate/channels/bitrate chosen automatically |
+| `extract_audio` | `video_h264_640x360.mkv` | `result.m4a`: first audio track, converted to AAC |
+| `extract_frames` | `video_h264_640x360.mkv` | `frames/`: first frame as JPEG quality 90, plus `manifest.json` |
+| `resize_image` | `image_jpeg_portrait_odd.jpg` | `result.jpg`: original dimensions, JPEG quality 90 |
 
 For example, download a frame collection with one command:
 
@@ -132,7 +132,7 @@ For example, download a frame collection with one command:
 output_dir=$(mktemp -d)
 printf 'Output directory: %s\n' "$output_dir"
 python3 examples/http-workflow.py \
-  tests/fixtures/ffmpeg_h264_640x360.mkv "$output_dir/frames" \
+  tests/fixtures/video_h264_640x360.mkv "$output_dir/frames" \
   --operation extract_frames
 ```
 
@@ -153,7 +153,7 @@ cat > "$output_dir/params.json" <<'JSON'
 }
 JSON
 python3 examples/http-workflow.py \
-  tests/fixtures/ffmpeg_h264_640x360.mkv "$output_dir/result.mp4" \
+  tests/fixtures/video_h264_640x360.mkv "$output_dir/result.mp4" \
   --params "$output_dir/params.json"
 ```
 

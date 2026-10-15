@@ -18,7 +18,7 @@ from media_service.errors import ServiceError
 from media_service.models import HttpFile, JobCreate
 from media_service.state import State, uid
 
-MEDIA = (Path(__file__).resolve().parents[1] / "fixtures" / "222.mp3").read_bytes()
+MEDIA = (Path(__file__).resolve().parents[1] / "fixtures" / "audio_mp3_mono_22050.mp3").read_bytes()
 
 
 @dataclass

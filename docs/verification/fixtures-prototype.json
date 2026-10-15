@@ -1,0 +1,202 @@
+{
+  "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+  "architecture": "arm64",
+  "python": "3.14.7",
+  "pillow": "12.3.0",
+  "ffmpeg": "ffmpeg version 9.0.1 Copyright (c) 2000-2026 the FFmpeg developers",
+  "ffprobe": "ffprobe version 9.0.1 Copyright (c) 2007-2026 the FFmpeg developers",
+  "checks": {
+    "six_fixture_hashes_and_fd_probe": "passed",
+    "opened_fd_survives_path_replacement": "passed",
+    "path_rejections": 7,
+    "external_and_invalid_media_rejected": "passed",
+    "nested_file_protocol_blocked_even_if_demuxer_allowed": "passed",
+    "rotation_sar_odd_metadata": {
+      "rotation_output": [
+        48,
+        64
+      ],
+      "sar": "2:1",
+      "odd_input": [
+        65,
+        49
+      ]
+    },
+    "known_pts_extraction": {
+      "known_pts.mp4": {
+        "normalized_frame_pts_ms": [
+          0,
+          200,
+          400,
+          600
+        ],
+        "results": [
+          {
+            "index": 0,
+            "requested_time_ms": 0,
+            "actual_time_ms": 0
+          },
+          {
+            "index": 1,
+            "requested_time_ms": 201,
+            "actual_time_ms": 400
+          },
+          {
+            "index": 2,
+            "requested_time_ms": 600,
+            "actual_time_ms": 600
+          },
+          {
+            "index": 3,
+            "requested_time_ms": 601,
+            "actual_time_ms": null
+          },
+          {
+            "index": 4,
+            "requested_time_ms": 800,
+            "actual_time_ms": null
+          },
+          {
+            "index": 5,
+            "requested_time_ms": 201,
+            "actual_time_ms": 400
+          }
+        ]
+      },
+      "nonzero_start.mp4": {
+        "normalized_frame_pts_ms": [
+          0,
+          200,
+          400,
+          600
+        ],
+        "results": [
+          {
+            "index": 0,
+            "requested_time_ms": 0,
+            "actual_time_ms": 0
+          },
+          {
+            "index": 1,
+            "requested_time_ms": 201,
+            "actual_time_ms": 400
+          },
+          {
+            "index": 2,
+            "requested_time_ms": 600,
+            "actual_time_ms": 600
+          },
+          {
+            "index": 3,
+            "requested_time_ms": 601,
+            "actual_time_ms": null
+          },
+          {
+            "index": 4,
+            "requested_time_ms": 800,
+            "actual_time_ms": null
+          },
+          {
+            "index": 5,
+            "requested_time_ms": 201,
+            "actual_time_ms": 400
+          }
+        ]
+      },
+      "variable_pts.mp4": {
+        "normalized_frame_pts_ms": [
+          0,
+          200,
+          600,
+          800
+        ],
+        "results": [
+          {
+            "index": 0,
+            "requested_time_ms": 0,
+            "actual_time_ms": 0
+          },
+          {
+            "index": 1,
+            "requested_time_ms": 201,
+            "actual_time_ms": 600
+          },
+          {
+            "index": 2,
+            "requested_time_ms": 600,
+            "actual_time_ms": 600
+          },
+          {
+            "index": 3,
+            "requested_time_ms": 601,
+            "actual_time_ms": 800
+          },
+          {
+            "index": 4,
+            "requested_time_ms": 800,
+            "actual_time_ms": 800
+          },
+          {
+            "index": 5,
+            "requested_time_ms": 201,
+            "actual_time_ms": 600
+          }
+        ]
+      }
+    },
+    "web_720p_v1": [
+      {
+        "source": "video_h264_aac_square.mp4",
+        "width": 720,
+        "height": 720,
+        "frame_rate": "30/1"
+      },
+      {
+        "source": "video_h264_high_bitrate_1080p.mp4",
+        "width": 1280,
+        "height": 720,
+        "frame_rate": "30/1"
+      },
+      {
+        "source": "video_hevc_640x360.mp4",
+        "width": 640,
+        "height": 360,
+        "frame_rate": "30/1"
+      },
+      {
+        "source": "video_h264_640x360.mkv",
+        "width": 640,
+        "height": 360,
+        "frame_rate": "30/1"
+      }
+    ],
+    "audio_presets_and_missing_track": "passed",
+    "image_orientation_alpha_limits_modes": "passed",
+    "portrait_odd_image_resize_and_output_metadata": {
+      "source": "image_jpeg_portrait_odd.jpg",
+      "output_size": [
+        480,
+        640
+      ],
+      "output_metadata_removed": true
+    },
+    "linear_rgb_icc_to_srgb": {
+      "source": "linear_rgb.png",
+      "input_pixel": [
+        128,
+        64,
+        32
+      ],
+      "output_pixel": [
+        188,
+        137,
+        99
+      ],
+      "output_size": [
+        8,
+        8
+      ],
+      "output_metadata_removed": true
+    }
+  }
+}

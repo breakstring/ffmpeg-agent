@@ -54,7 +54,7 @@ Compose 会等待服务就绪。生成器将随机服务 Token 写入 `deploy/lo
 output_dir=$(mktemp -d)
 printf 'Output directory: %s\n' "$output_dir"
 python3 examples/http-workflow.py \
-  tests/fixtures/ffmpeg_h264_640x360.mkv "$output_dir/result.mp4"
+  tests/fixtures/video_h264_640x360.mkv "$output_dir/result.mp4"
 ```
 
 它向 `POST /v1/jobs/upload` 发送一次 multipart 请求，轮询返回的任务，再保存经过校验的 MP4。无需指定编码参数、手动传递 ID 或挂载共享卷。
@@ -67,7 +67,7 @@ python3 examples/http-workflow.py \
 output_dir=$(mktemp -d)
 printf 'Output directory: %s\n' "$output_dir"
 python3 examples/http-workflow.py \
-  tests/fixtures/ffmpeg_h264_640x360.mkv "$output_dir/result.mp4" \
+  tests/fixtures/video_h264_640x360.mkv "$output_dir/result.mp4" \
   --upload-first
 ```
 
@@ -95,7 +95,7 @@ python3 examples/http-workflow.py \
 output_dir=$(mktemp -d)
 printf 'Output directory: %s\n' "$output_dir"
 uv run --frozen python examples/mcp-workflow.py \
-  tests/fixtures/ffmpeg_h264_640x360.mkv "$output_dir/result.mp4"
+  tests/fixtures/video_h264_640x360.mkv "$output_dir/result.mp4"
 ```
 
 客户端通过 HTTP 上传，调用远程 `transcode_video` 工具，通过 MCP 等待任务，再经 HTTP 下载。两种传输使用相同的私有配置和 Token，无需配置本地 stdio 服务。
@@ -119,12 +119,12 @@ uv run --frozen python examples/mcp-workflow.py \
 
 | `--operation` | `tests/fixtures/` 下的示例输入 | 目标与默认结果 |
 | --- | --- | --- |
-| `probe_media` | `ffmpeg_h264_640x360.mkv` | `report.json`：格式和轨道信息 |
-| `transcode_video` | `ffmpeg_h264_640x360.mkv` | `result.mp4`：H.264、CRF 23、源尺寸和时间节奏 |
-| `transcode_audio` | `222.mp3` | `result.m4a`：AAC，自动选择兼容采样率／声道／码率 |
-| `extract_audio` | `ffmpeg_h264_640x360.mkv` | `result.m4a`：提取首条音轨并转为 AAC |
-| `extract_frames` | `ffmpeg_h264_640x360.mkv` | `frames/`：首帧 JPEG quality 90，加 `manifest.json` |
-| `resize_image` | `haojiao.jpg` | `result.jpg`：原尺寸、JPEG quality 90 |
+| `probe_media` | `video_h264_640x360.mkv` | `report.json`：格式和轨道信息 |
+| `transcode_video` | `video_h264_640x360.mkv` | `result.mp4`：H.264、CRF 23、源尺寸和时间节奏 |
+| `transcode_audio` | `audio_mp3_mono_22050.mp3` | `result.m4a`：AAC，自动选择兼容采样率／声道／码率 |
+| `extract_audio` | `video_h264_640x360.mkv` | `result.m4a`：提取首条音轨并转为 AAC |
+| `extract_frames` | `video_h264_640x360.mkv` | `frames/`：首帧 JPEG quality 90，加 `manifest.json` |
+| `resize_image` | `image_jpeg_portrait_odd.jpg` | `result.jpg`：原尺寸、JPEG quality 90 |
 
 例如，用一条命令下载抽帧集合：
 
@@ -132,7 +132,7 @@ uv run --frozen python examples/mcp-workflow.py \
 output_dir=$(mktemp -d)
 printf 'Output directory: %s\n' "$output_dir"
 python3 examples/http-workflow.py \
-  tests/fixtures/ffmpeg_h264_640x360.mkv "$output_dir/frames" \
+  tests/fixtures/video_h264_640x360.mkv "$output_dir/frames" \
   --operation extract_frames
 ```
 
@@ -153,7 +153,7 @@ cat > "$output_dir/params.json" <<'JSON'
 }
 JSON
 python3 examples/http-workflow.py \
-  tests/fixtures/ffmpeg_h264_640x360.mkv "$output_dir/result.mp4" \
+  tests/fixtures/video_h264_640x360.mkv "$output_dir/result.mp4" \
   --params "$output_dir/params.json"
 ```
 

@@ -125,7 +125,7 @@ def cleanup(owner: str, volumes: list[str]) -> None:
 
 def run(image: str, workers: int, jobs: int) -> dict:
     root = Path(__file__).resolve().parents[1]
-    fixture = root / "tests/fixtures/Feline_Apocalypse.mp4"
+    fixture = root / "tests/fixtures/video_h264_aac_square.mp4"
     digest = hashlib.sha256(fixture.read_bytes()).hexdigest()
     owner = uuid4().hex
     name = f"ffmpeg-benchmark-{owner[:12]}"
@@ -144,7 +144,7 @@ def run(image: str, workers: int, jobs: int) -> dict:
                 docker("volume", "create", "--label", f"{LABEL}={owner}", volume)
             copy_code = (
                 "import hashlib,shutil,sys; from pathlib import Path; "
-                "source=Path('/fixture.mp4'); target=Path('/media/input/Feline_Apocalypse.mp4'); "
+                "source=Path('/fixture.mp4'); target=Path('/media/input/video_h264_aac_square.mp4'); "
                 "shutil.copyfile(source,target); target.chmod(0o444); "
                 "assert hashlib.sha256(target.read_bytes()).hexdigest()==sys.argv[1]"
             )

@@ -1,0 +1,237 @@
+{
+  "schema_version": 1,
+  "generator": "scripts/generate_fixtures.py",
+  "generator_sha256": "1840732838bce6f038f016ad1a2fec72a034b02e860e5650cd0aba233e13fc81",
+  "engine_image_id": "sha256:7eeda466adad958b13d4b91a980c9254fcd590b642c879c436c6f009da648a06",
+  "versions": {
+    "ffmpeg": "ffmpeg version 7.1.5-0+deb13u1 Copyright (c) 2000-2026 the FFmpeg developers",
+    "ffprobe": "ffprobe version 7.1.5-0+deb13u1 Copyright (c) 2007-2026 the FFmpeg developers",
+    "python": "3.14.8",
+    "pillow": "12.3.0",
+    "littlecms": "2.19"
+  },
+  "parameters": {
+    "seed": 20261015,
+    "encoder_threads": 1,
+    "square_crf": 24,
+    "square_noise_strength": 3,
+    "high_bitrate_noise_strength": 20,
+    "high_bitrate_target": "35M",
+    "jpeg_quality": 92,
+    "jpeg_subsampling": 0,
+    "mp3_segments_hz": [
+      440,
+      880,
+      0,
+      1320
+    ],
+    "mp3_segment_seconds": 2,
+    "stereo_channels_hz": [
+      440,
+      880
+    ],
+    "fade_seconds": 0.025,
+    "labels": "Pillow builtin font; frame 0000-0899 and seconds+frame/30"
+  },
+  "media": {
+    "video_h264_aac_square.mp4": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "index": 0,
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 720,
+          "height": 720,
+          "pix_fmt": "yuv420p",
+          "r_frame_rate": "30/1",
+          "avg_frame_rate": "30/1",
+          "time_base": "1/15360",
+          "start_time": "0.000000",
+          "duration": "30.000000",
+          "bit_rate": "1586377",
+          "nb_frames": "900",
+          "nb_read_frames": "900"
+        },
+        {
+          "index": 1,
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "sample_rate": "44100",
+          "channels": 2,
+          "channel_layout": "stereo",
+          "r_frame_rate": "0/0",
+          "avg_frame_rate": "0/0",
+          "time_base": "1/44100",
+          "start_time": "0.000000",
+          "duration": "30.000000",
+          "bit_rate": "128524",
+          "nb_frames": "1293",
+          "nb_read_frames": "1292"
+        }
+      ],
+      "format": {
+        "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+        "duration": "30.000000",
+        "bit_rate": "1723960"
+      }
+    },
+    "audio_mp3_mono_22050.mp3": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "index": 0,
+          "codec_name": "mp3",
+          "codec_type": "audio",
+          "sample_rate": "22050",
+          "channels": 1,
+          "channel_layout": "mono",
+          "r_frame_rate": "0/0",
+          "avg_frame_rate": "0/0",
+          "time_base": "1/14112000",
+          "start_time": "0.050113",
+          "duration": "8.071837",
+          "bit_rate": "128000",
+          "nb_read_frames": "308"
+        }
+      ],
+      "format": {
+        "format_name": "mp3",
+        "duration": "8.071837",
+        "bit_rate": "128456"
+      }
+    },
+    "image_jpeg_portrait_odd.jpg": {
+      "format": "JPEG",
+      "width": 1279,
+      "height": 1706,
+      "mode": "RGB",
+      "icc_profile": false
+    },
+    "video_h264_high_bitrate_1080p.mp4": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "index": 0,
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 1920,
+          "height": 1080,
+          "pix_fmt": "yuv420p",
+          "r_frame_rate": "30/1",
+          "avg_frame_rate": "30/1",
+          "time_base": "1/15360",
+          "start_time": "0.000000",
+          "duration": "1.200000",
+          "bit_rate": "58496660",
+          "nb_frames": "36",
+          "nb_read_frames": "36"
+        },
+        {
+          "index": 1,
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "sample_rate": "44100",
+          "channels": 1,
+          "channel_layout": "mono",
+          "r_frame_rate": "0/0",
+          "avg_frame_rate": "0/0",
+          "time_base": "1/44100",
+          "start_time": "0.000000",
+          "duration": "1.200000",
+          "bit_rate": "120128",
+          "nb_frames": "53",
+          "nb_read_frames": "52"
+        }
+      ],
+      "format": {
+        "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+        "duration": "1.200000",
+        "bit_rate": "58636206"
+      }
+    },
+    "video_hevc_640x360.mp4": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "index": 0,
+          "codec_name": "hevc",
+          "codec_type": "video",
+          "width": 640,
+          "height": 360,
+          "pix_fmt": "yuv420p",
+          "r_frame_rate": "24/1",
+          "avg_frame_rate": "24/1",
+          "time_base": "1/12288",
+          "start_time": "0.000000",
+          "duration": "1.000000",
+          "bit_rate": "217984",
+          "nb_frames": "24",
+          "nb_read_frames": "24"
+        },
+        {
+          "index": 1,
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "sample_rate": "44100",
+          "channels": 1,
+          "channel_layout": "mono",
+          "r_frame_rate": "0/0",
+          "avg_frame_rate": "0/0",
+          "time_base": "1/44100",
+          "start_time": "0.000000",
+          "duration": "1.000000",
+          "bit_rate": "97589",
+          "nb_frames": "45",
+          "nb_read_frames": "44"
+        }
+      ],
+      "format": {
+        "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+        "duration": "1.000000",
+        "bit_rate": "355184"
+      }
+    },
+    "video_h264_640x360.mkv": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "index": 0,
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 640,
+          "height": 360,
+          "pix_fmt": "yuv420p",
+          "r_frame_rate": "24/1",
+          "avg_frame_rate": "24/1",
+          "time_base": "1/1000",
+          "start_time": "0.000000",
+          "nb_read_frames": "24"
+        },
+        {
+          "index": 1,
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "sample_rate": "44100",
+          "channels": 1,
+          "channel_layout": "mono",
+          "r_frame_rate": "0/0",
+          "avg_frame_rate": "0/0",
+          "time_base": "1/1000",
+          "start_time": "-0.023000",
+          "nb_read_frames": "45"
+        }
+      ],
+      "format": {
+        "format_name": "matroska,webm",
+        "duration": "1.023000",
+        "bit_rate": "485286"
+      }
+    }
+  }
+}

@@ -286,7 +286,7 @@ async def test_frames_deployment_limit_before_output(engine, visual_sources, sam
 async def test_frames_default_range_preserves_fractional_last_frame(engine):
     product, _ = await run_media(
         engine,
-        FIXTURES / "ffmpeg_hevc_640x360.mp4",
+        FIXTURES / "video_hevc_640x360.mp4",
         "video.extract_frames.v1",
         {"sampling": {"mode": "count", "count": 2}},
     )
@@ -346,7 +346,7 @@ async def test_frames_cancel_reaps_image_worker_closes_descriptor_and_removes_te
 async def test_probe_sections_selected_stream_and_count(engine):
     product, directory = await run_media(
         engine,
-        FIXTURES / "ffmpeg_h264_640x360.mkv",
+        FIXTURES / "video_h264_640x360.mkv",
         "media.probe.v1",
         {"sections": ["streams"], "stream_indices": [0], "count_frames": True},
     )
@@ -358,7 +358,7 @@ async def test_probe_sections_selected_stream_and_count(engine):
     assert product.media["effective_params"]["resolved"]["stream_indices"] == [0]
     with pytest.raises(ServiceError, match="UNSUPPORTED_MEDIA"):
         await run_media(
-            engine, FIXTURES / "ffmpeg_h264_640x360.mkv", "media.probe.v1", {"stream_indices": [31]}
+            engine, FIXTURES / "video_h264_640x360.mkv", "media.probe.v1", {"stream_indices": [31]}
         )
 
 
@@ -388,7 +388,7 @@ async def test_probe_technical_tags_chapters_do_not_leak_source_fields(engine, v
 
 
 async def test_probe_default_keeps_v1_report_shape(engine):
-    source = FIXTURES / "ffmpeg_h264_640x360.mkv"
+    source = FIXTURES / "video_h264_640x360.mkv"
     old, old_directory = await run_media(engine, source, "media.probe.v1", {})
     new, new_directory = await run_media(engine, source, "media.probe.v1", {})
     assert json.loads((old_directory / old.files[0]).read_text()) == json.loads(

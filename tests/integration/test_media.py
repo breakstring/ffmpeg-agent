@@ -1,4 +1,5 @@
 import asyncio
+import io
 import json
 import os
 import runpy
@@ -8,7 +9,7 @@ import wave
 from pathlib import Path
 
 import pytest
-from PIL import Image
+from PIL import Image, ImageCms
 
 from media_service.config import Caller, Settings, Storage
 from media_service.errors import ServiceError
@@ -110,12 +111,12 @@ async def test_inspect_freezes_preset_content(engine: MediaEngine, monkeypatch: 
 
 async def test_probe_keeps_normalized_report_contract(engine: MediaEngine):
     product, directory = await run_media(
-        engine, FIXTURES / "Feline_Apocalypse.mp4", "media.probe.v1"
+        engine, FIXTURES / "video_h264_aac_square.mp4", "media.probe.v1"
     )
     assert product.files == ["report.json"] and product.media["type"] == "json"
     report = json.loads((directory / "report.json").read_text())
     assert product.media["effective_params"]["sections"] == ["format", "streams"]
-    assert report["type"] == "video" and report["duration_ms"] == 30834
+    assert report["type"] == "video" and report["duration_ms"] == 30000
     assert report["streams"][0]["width"] == 720
     assert "tags" not in report["streams"][0]
 
@@ -123,10 +124,10 @@ async def test_probe_keeps_normalized_report_contract(engine: MediaEngine):
 @pytest.mark.parametrize(
     "name,size",
     [
-        ("Feline_Apocalypse.mp4", (720, 720)),
-        ("ffmpeg_high_bitrate_1080p.mp4", (1280, 720)),
-        ("ffmpeg_hevc_640x360.mp4", (640, 360)),
-        ("ffmpeg_h264_640x360.mkv", (640, 360)),
+        ("video_h264_aac_square.mp4", (720, 720)),
+        ("video_h264_high_bitrate_1080p.mp4", (1280, 720)),
+        ("video_hevc_640x360.mp4", (640, 360)),
+        ("video_h264_640x360.mkv", (640, 360)),
     ],
 )
 async def test_video_preset_real_formats(engine: MediaEngine, name: str, size: tuple[int, int]):
@@ -153,7 +154,7 @@ async def test_audio_presets(
     engine: MediaEngine, preset: str, codec: str, rate: int, channels: int
 ):
     product, _ = await run_media(
-        engine, FIXTURES / "222.mp3", "audio.transcode.v1", {"preset": preset}
+        engine, FIXTURES / "audio_mp3_mono_22050.mp3", "audio.transcode.v1", {"preset": preset}
     )
     stream = product.media["streams"][0]
     assert (stream["codec"], stream["sample_rate"], stream["channels"]) == (codec, rate, channels)
@@ -250,10 +251,10 @@ async def test_invalid_and_external_media_fail(engine: MediaEngine, boundaries: 
         await run_media(engine, boundaries / name, "media.probe.v1")
 
 
-async def test_real_display_p3_image_resize_and_strip_metadata(engine: MediaEngine):
+async def test_portrait_odd_image_resize_and_output_metadata(engine: MediaEngine):
     product, directory = await run_media(
         engine,
-        FIXTURES / "haojiao.jpg",
+        FIXTURES / "image_jpeg_portrait_odd.jpg",
         "image.resize.v1",
         {"width": 640, "height": 640, "format": "png"},
     )
@@ -263,6 +264,33 @@ async def test_real_display_p3_image_resize_and_strip_metadata(engine: MediaEngi
         "srgb",
     )
     with Image.open(directory / product.files[0]) as image:
+        assert not image.getexif() and not image.info.get("icc_profile")
+
+
+async def test_linear_rgb_icc_conversion_and_metadata_removal(engine: MediaEngine, boundaries: Path):
+    source = boundaries / "linear_rgb.png"
+    with Image.open(source) as image:
+        assert image.getpixel((0, 0)) == (128, 64, 32)
+        assert image.info.get("icc_profile")
+        profile = ImageCms.ImageCmsProfile(io.BytesIO(image.info["icc_profile"]))
+        assert ImageCms.isIntentSupported(
+            profile, ImageCms.Intent.PERCEPTUAL, ImageCms.Direction.INPUT
+        ) == 1
+    product, directory = await run_media(
+        engine,
+        source,
+        "image.resize.v1",
+        {"width": 8, "height": 8, "format": "png"},
+    )
+    assert product.media["color_space"] == "srgb"
+    with Image.open(directory / product.files[0]) as image:
+        assert image.format == "PNG" and image.size == (8, 8)
+        pixel = image.getpixel((0, 0))
+        assert isinstance(pixel, tuple) and len(pixel) == 3
+        assert all(
+            abs(actual - expected) <= 1
+            for actual, expected in zip(pixel, (188, 137, 99), strict=True)
+        )
         assert not image.getexif() and not image.info.get("icc_profile")
 
 

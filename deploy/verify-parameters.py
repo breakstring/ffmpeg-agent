@@ -108,7 +108,7 @@ CASES = (
         },
     },
 )
-FIXTURES = {"video": "ffmpeg_h264_640x360.mkv", "audio": "222.mp3", "image": "haojiao.jpg"}
+FIXTURES = {"video": "video_h264_640x360.mkv", "audio": "audio_mp3_mono_22050.mp3", "image": "image_jpeg_portrait_odd.jpg"}
 
 
 def safe_parameters(value: Any, secrets: tuple[str, ...]) -> None:

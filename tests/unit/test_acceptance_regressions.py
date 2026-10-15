@@ -31,7 +31,7 @@ def request(source=None, *, frames=False):
     input_port, output_port = ("video", "frames") if frames else ("audio", "audio")
     return JobCreate.model_validate({
         "inputs": {"main": source or {
-            "kind": "shared_file", "storage_id": "input", "key": "222.mp3",
+            "kind": "shared_file", "storage_id": "input", "key": "audio_mp3_mono_22050.mp3",
         }},
         "steps": [{
             "id": "process", "operation": operation,
@@ -54,7 +54,7 @@ async def product(state, job, *, partial=False, publisher=None):
     source.mkdir(parents=True)
     if partial:
         name = "frame-0.jpg"
-        (source / name).write_bytes((state.settings.storages["input"].root / "haojiao.jpg").read_bytes())
+        (source / name).write_bytes((state.settings.storages["input"].root / "image_jpeg_portrait_odd.jpg").read_bytes())
         result = Product(
             kind="collection", media={"type": "collection"}, files=[name], status="partial",
             items=[
@@ -65,7 +65,7 @@ async def product(state, job, *, partial=False, publisher=None):
         )
     else:
         name = "audio.mp3"
-        (source / name).write_bytes((state.settings.storages["input"].root / "222.mp3").read_bytes())
+        (source / name).write_bytes((state.settings.storages["input"].root / "audio_mp3_mono_22050.mp3").read_bytes())
         result = Product(kind="file", media={"type": "audio"}, files=[name])
     await state.step_start(job["id"], job["current_attempt"], "process")
     return await (publisher or Publisher(state)).publish(job, "process", result, source, True)

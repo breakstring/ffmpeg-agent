@@ -20,12 +20,12 @@ harness = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(harness)
 
 CASES = {
-    "probe_media": ("ffmpeg_h264_640x360.mkv", "json"),
-    "transcode_video": ("ffmpeg_h264_640x360.mkv", "mp4"),
-    "transcode_audio": ("222.mp3", "m4a"),
-    "extract_audio": ("ffmpeg_h264_640x360.mkv", "m4a"),
-    "extract_frames": ("ffmpeg_h264_640x360.mkv", "frames"),
-    "resize_image": ("haojiao.jpg", "jpg"),
+    "probe_media": ("video_h264_640x360.mkv", "json"),
+    "transcode_video": ("video_h264_640x360.mkv", "mp4"),
+    "transcode_audio": ("audio_mp3_mono_22050.mp3", "m4a"),
+    "extract_audio": ("video_h264_640x360.mkv", "m4a"),
+    "extract_frames": ("video_h264_640x360.mkv", "frames"),
+    "resize_image": ("image_jpeg_portrait_odd.jpg", "jpg"),
 }
 
 
@@ -98,7 +98,7 @@ async def verify_mode(image: str, authenticated: bool, http_python: str, record:
             script = "mcp-workflow.py" if route == "mcp" else "http-workflow.py"
             request_id = "example-retry-" + route
             arguments = [sys.executable if route == "mcp" else http_python,
-                         str(ROOT / "examples" / script), str(ROOT / "tests/fixtures/haojiao.jpg"),
+                         str(ROOT / "examples" / script), str(ROOT / "tests/fixtures/image_jpeg_portrait_odd.jpg"),
                          str(work / f"{route}-retry-first.jpg"), "--config", str(client_config),
                          "--operation", "resize_image", "--request-id", request_id]
             if route == "upload_first":
@@ -115,7 +115,7 @@ async def verify_mode(image: str, authenticated: bool, http_python: str, record:
             target = work / f"{route}-partial"
             await execute([sys.executable if route == "mcp" else http_python,
                            str(ROOT / "examples" / script),
-                           str(ROOT / "tests/fixtures/ffmpeg_h264_640x360.mkv"), str(target),
+                           str(ROOT / "tests/fixtures/video_h264_640x360.mkv"), str(target),
                            "--config", str(client_config), "--operation", "extract_frames",
                            "--params", str(partial_params)], expected=2)
             assert inspect_output("extract_frames", target) == {"saved_members": 1, "failed_members": 1}

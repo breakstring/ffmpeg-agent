@@ -56,7 +56,7 @@ def assert_stopped(pid: int):
 
 
 async def test_real_ffprobe_and_ffmpeg_read_verified_fd(executor: Executor, tmp_path: Path):
-    fd = safe_open(FIXTURES, "ffmpeg_hevc_640x360.mp4", 100_000)
+    fd = safe_open(FIXTURES, "video_hevc_640x360.mp4", 100_000)
     try:
         inputs = [
             "-protocol_whitelist",

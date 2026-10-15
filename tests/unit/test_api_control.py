@@ -21,7 +21,7 @@ from media_service.state import State
 
 def request_body() -> dict:
     return {
-        "inputs": {"main": {"kind": "shared_file", "storage_id": "input", "key": "222.mp3"}},
+        "inputs": {"main": {"kind": "shared_file", "storage_id": "input", "key": "audio_mp3_mono_22050.mp3"}},
         "steps": [
             {
                 "id": "probe",
@@ -344,7 +344,7 @@ async def test_disconnected_incomplete_request_is_not_accepted(settings):
 async def publish_result(service, *, collection=False):
     body = request_body()
     if collection:
-        body["inputs"]["main"]["key"] = "Feline_Apocalypse.mp4"
+        body["inputs"]["main"]["key"] = "video_h264_aac_square.mp4"
         body["steps"] = [
             {
                 "id": "frames",
@@ -365,7 +365,7 @@ async def publish_result(service, *, collection=False):
         files = ["frame-0.jpg", "frame-1.jpg"]
         items = []
         for index, key in enumerate(files):
-            shutil.copyfile(service.settings.storages["input"].root / "haojiao.jpg", source / key)
+            shutil.copyfile(service.settings.storages["input"].root / "image_jpeg_portrait_odd.jpg", source / key)
             items.append(
                 {
                     "index": index,

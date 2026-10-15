@@ -13,7 +13,7 @@ from media_service.state import State
 def probe_request():
     return JobCreate.model_validate(
         {
-            "inputs": {"main": {"kind": "shared_file", "storage_id": "input", "key": "222.mp3"}},
+            "inputs": {"main": {"kind": "shared_file", "storage_id": "input", "key": "audio_mp3_mono_22050.mp3"}},
             "steps": [
                 {
                     "id": "probe",

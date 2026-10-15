@@ -63,7 +63,7 @@ def stream(product, kind):
 
 async def test_explicit_video_preset_preserves_fixed_specs(engine):
     result, directory = await run(
-        engine, "ffmpeg_high_bitrate_1080p.mp4", {"preset": "web_720p_v1"}
+        engine, "video_h264_high_bitrate_1080p.mp4", {"preset": "web_720p_v1"}
     )
     video, audio = stream(result, "video"), stream(result, "audio")
     assert (video["codec"], video["width"], video["height"], video["frame_rate"]) == (
@@ -79,7 +79,7 @@ async def test_explicit_video_preset_preserves_fixed_specs(engine):
 
 
 async def test_default_video_preserves_dimensions_and_source_audio(engine):
-    product, _ = await run(engine, "ffmpeg_high_bitrate_1080p.mp4", {})
+    product, _ = await run(engine, "video_h264_high_bitrate_1080p.mp4", {})
     video, audio = stream(product, "video"), stream(product, "audio")
     assert (video["width"], video["height"], video["frame_rate"]) == (1920, 1080, "30/1")
     assert (audio["codec"], audio["sample_rate"], audio["channels"]) == ("aac", 44100, 1)
@@ -96,7 +96,7 @@ async def test_default_video_preserves_dimensions_and_source_audio(engine):
 async def test_video_software_codecs_and_container_defaults(engine, codec, container):
     result, _ = await run(
         engine,
-        "ffmpeg_h264_640x360.mkv",
+        "video_h264_640x360.mkv",
         {
             "codec": codec,
             "speed": "fast",
@@ -128,7 +128,7 @@ async def test_video_software_codecs_and_container_defaults(engine, codec, conta
     ],
 )
 async def test_video_dimension_modes(engine, resize, dimensions):
-    result, _ = await run(engine, "ffmpeg_h264_640x360.mkv", {"resize": resize})
+    result, _ = await run(engine, "video_h264_640x360.mkv", {"resize": resize})
     video = stream(result, "video")
     assert (video["width"], video["height"]) == dimensions
 
@@ -137,7 +137,7 @@ async def test_odd_source_cover_does_not_upscale_during_even_rounding(engine, mo
     source_dir = engine.settings.work_dir / "odd-source"
     source_dir.mkdir()
     source = source_dir / "odd.mkv"
-    fd = safe_open(FIXTURES, "ffmpeg_h264_640x360.mkv", engine.settings.max_input_bytes)
+    fd = safe_open(FIXTURES, "video_h264_640x360.mkv", engine.settings.max_input_bytes)
     try:
         await engine._ffmpeg(
             fd,
@@ -182,7 +182,7 @@ async def test_odd_source_cover_does_not_upscale_during_even_rounding(engine, mo
 async def test_video_bitrate_range_and_source_frame_rate(engine):
     result, _ = await run(
         engine,
-        "ffmpeg_h264_640x360.mkv",
+        "video_h264_640x360.mkv",
         {
             "rate_control": {
                 "mode": "bitrate",
@@ -204,7 +204,7 @@ async def test_video_bitrate_range_and_source_frame_rate(engine):
 async def test_alternative_video_codecs_accept_target_bitrate(engine, codec):
     product, _ = await run(
         engine,
-        "ffmpeg_h264_640x360.mkv",
+        "video_h264_640x360.mkv",
         {
             "codec": codec,
             "speed": "fast",
@@ -220,7 +220,7 @@ async def test_alternative_video_codecs_accept_target_bitrate(engine, codec):
 async def test_webm_default_audio_changes_to_opus(engine):
     product, _ = await run(
         engine,
-        "ffmpeg_h264_640x360.mkv",
+        "video_h264_640x360.mkv",
         {
             "codec": "vp9",
             "speed": "fast",
@@ -234,7 +234,7 @@ async def test_webm_default_audio_changes_to_opus(engine):
 async def test_video_max_frame_rate_drops_without_duplication(engine):
     result, directory = await run(
         engine,
-        "ffmpeg_h264_640x360.mkv",
+        "video_h264_640x360.mkv",
         {
             "frame_rate": {"mode": "max", "value": "10/1"},
             "audio": {"mode": "drop"},
@@ -254,7 +254,7 @@ async def test_video_max_frame_rate_drops_without_duplication(engine):
 async def test_source_frame_rate_preserves_irregular_timestamps(engine):
     source_dir = engine.settings.work_dir / "irregular"
     source_dir.mkdir()
-    fd = safe_open(FIXTURES, "ffmpeg_h264_640x360.mkv", engine.settings.max_input_bytes)
+    fd = safe_open(FIXTURES, "video_h264_640x360.mkv", engine.settings.max_input_bytes)
     try:
         await engine._ffmpeg(
             fd,
@@ -305,7 +305,7 @@ async def test_source_frame_rate_preserves_irregular_timestamps(engine):
 
 
 async def test_video_copy_audio_keeps_source_properties(engine):
-    result, _ = await run(engine, "ffmpeg_h264_640x360.mkv", {"audio": {"mode": "copy"}})
+    result, _ = await run(engine, "video_h264_640x360.mkv", {"audio": {"mode": "copy"}})
     audio = stream(result, "audio")
     assert (audio["codec"], audio["sample_rate"], audio["channels"]) == ("aac", 44100, 1)
 
@@ -368,7 +368,7 @@ async def test_video_copy_audio_keeps_source_properties(engine):
     ],
 )
 async def test_audio_encoding_parameters(engine, params, codec, rate, channels):
-    result, directory = await run(engine, "222.mp3", params, "audio")
+    result, directory = await run(engine, "audio_mp3_mono_22050.mp3", params, "audio")
     audio = stream(result, "audio")
     assert (audio["codec"], audio["sample_rate"], audio["channels"]) == (codec, rate, channels)
     assert (directory / result.files[0]).stat().st_size > 0
@@ -379,11 +379,11 @@ async def test_audio_encoding_parameters(engine, params, codec, rate, channels):
 
 async def test_extract_audio_copy_and_encode(engine):
     copied, directory = await run(
-        engine, "ffmpeg_h264_640x360.mkv", {"mode": "copy", "container": "m4a"}, "extract"
+        engine, "video_h264_640x360.mkv", {"mode": "copy", "container": "m4a"}, "extract"
     )
     encoded, _ = await run(
         engine,
-        "ffmpeg_h264_640x360.mkv",
+        "video_h264_640x360.mkv",
         {"codec": "pcm", "sample_rate": 16000, "channels": 1},
         "extract",
     )
@@ -392,7 +392,7 @@ async def test_extract_audio_copy_and_encode(engine):
     assert stream(encoded, "audio")["codec"] == "pcm_s16le"
     assert stream(encoded, "audio")["sample_rate"] == 16000
     packets = []
-    for path in (FIXTURES / "ffmpeg_h264_640x360.mkv", directory / copied.files[0]):
+    for path in (FIXTURES / "video_h264_640x360.mkv", directory / copied.files[0]):
         fd = safe_open(path.parent, path.name, engine.settings.max_input_bytes)
         try:
             result = await engine.executor.run(
@@ -434,19 +434,19 @@ async def test_extract_audio_copy_and_encode(engine):
 )
 async def test_source_dependent_rejections(engine, params, operation, error):
     with pytest.raises(ServiceError, match=error):
-        await run(engine, "ffmpeg_h264_640x360.mkv", params, operation)
+        await run(engine, "video_h264_640x360.mkv", params, operation)
 
 
 async def test_opus_source_rate_rejected_instead_of_resampled(engine):
     with pytest.raises(ServiceError, match="UNSUPPORTED_MEDIA"):
-        await run(engine, "222.mp3", {"codec": "opus", "sample_rate": "source"}, "audio")
+        await run(engine, "audio_mp3_mono_22050.mp3", {"codec": "opus", "sample_rate": "source"}, "audio")
 
 
 async def test_mp3_source_rate_rejects_incompatible_bitrate(engine):
     with pytest.raises(ServiceError, match="UNSUPPORTED_MEDIA"):
         await run(
             engine,
-            "222.mp3",
+            "audio_mp3_mono_22050.mp3",
             {
                 "codec": "mp3",
                 "sample_rate": "source",
@@ -459,7 +459,7 @@ async def test_mp3_source_rate_rejects_incompatible_bitrate(engine):
 async def test_mp3_source_rate_resolves_omitted_bitrate_after_probe(engine):
     product, _ = await run(
         engine,
-        "222.mp3",
+        "audio_mp3_mono_22050.mp3",
         {
             "codec": "mp3",
             "sample_rate": "source",
@@ -479,7 +479,7 @@ async def test_mp3_source_rate_resolves_omitted_bitrate_after_probe(engine):
 async def test_aac_source_properties_resolve_omitted_bitrate_after_probe(engine):
     source, directory = await run(
         engine,
-        "222.mp3",
+        "audio_mp3_mono_22050.mp3",
         {
             "codec": "pcm",
             "sample_rate": 8000,
@@ -523,7 +523,7 @@ async def test_aac_source_properties_resolve_omitted_bitrate_after_probe(engine)
 async def test_mp3_bitrate_is_preserved(engine, sample_rate, bitrate):
     product, _ = await run(
         engine,
-        "222.mp3",
+        "audio_mp3_mono_22050.mp3",
         {
             "codec": "mp3",
             "sample_rate": sample_rate,
@@ -548,7 +548,7 @@ async def test_mp3_bitrate_is_preserved(engine, sample_rate, bitrate):
 async def test_audio_channel_layout_is_encoded_and_verified(engine, codec, layout, channels):
     product, _ = await run(
         engine,
-        "222.mp3",
+        "audio_mp3_mono_22050.mp3",
         {
             "codec": codec,
             "channel_layout": layout,
@@ -565,7 +565,7 @@ async def test_audio_channel_layout_is_encoded_and_verified(engine, codec, layou
 async def test_opus_unsupported_source_channels_rejected(engine):
     source, directory = await run(
         engine,
-        "222.mp3",
+        "audio_mp3_mono_22050.mp3",
         {
             "codec": "pcm",
             "channels": 4,
@@ -583,7 +583,7 @@ async def test_opus_unsupported_source_channels_rejected(engine):
 async def test_auto_channels_fall_back_to_stereo_when_codec_requires(engine, codec, rate, bitrate):
     source, directory = await run(
         engine,
-        "222.mp3",
+        "audio_mp3_mono_22050.mp3",
         {
             "codec": "pcm",
             "channels": 4,
@@ -603,7 +603,7 @@ async def test_auto_channels_fall_back_to_stereo_when_codec_requires(engine, cod
 async def test_auto_sample_rate_falls_back_to_supported_rate(engine):
     source, directory = await run(
         engine,
-        "222.mp3",
+        "audio_mp3_mono_22050.mp3",
         {
             "codec": "pcm",
             "sample_rate": 12345,
@@ -631,6 +631,6 @@ async def test_video_output_pixel_limit_checked_before_encoding(engine):
     with pytest.raises(ServiceError, match="OUTPUT_LIMIT"):
         await run(
             engine,
-            "ffmpeg_h264_640x360.mkv",
+            "video_h264_640x360.mkv",
             {"resize": {"width": 1280, "height": 720, "allow_upscale": True}},
         )

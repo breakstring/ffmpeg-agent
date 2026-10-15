@@ -43,7 +43,7 @@ async def service(settings):
 
 async def test_dag_independent_branches_skipped_dependency_partial_collection(service):
     request = JobCreate.model_validate({
-        "inputs": {"main": source("ffmpeg_h264_640x360.mkv"), "missing": source("missing.mp4")},
+        "inputs": {"main": source("video_h264_640x360.mkv"), "missing": source("missing.mp4")},
         "steps": [
             {"id": "failed", "operation": "video.transcode.v1", "inputs": {"video": {"source": "missing"}}},
             {"id": "skipped", "operation": "media.probe.v1", "inputs": {"media": {"step": "failed", "output": "video"}}},
@@ -68,7 +68,7 @@ async def test_dag_independent_branches_skipped_dependency_partial_collection(se
 
 
 async def test_all_failed_frame_items_are_explicit_without_fake_artifact(service):
-    request = single("video.extract_frames.v1", "video", "frames", source("ffmpeg_h264_640x360.mkv"), {"sampling": {"mode": "timestamps", "timestamps_ms": [999999, 888888, 999999]}})
+    request = single("video.extract_frames.v1", "video", "frames", source("video_h264_640x360.mkv"), {"sampling": {"mode": "timestamps", "timestamps_ms": [999999, 888888, 999999]}})
     job_id, _ = await service.accept("test", "no-frames", request)
     job = await finished(service, job_id)
     assert job["status"] == "failed"
@@ -89,7 +89,7 @@ async def test_cancel_after_committed_output_keeps_immutable_binding(service):
 
     service.publisher.checkpoint_hook = hook
     request = JobCreate.model_validate({
-        "inputs": {"main": source("222.mp3")},
+        "inputs": {"main": source("audio_mp3_mono_22050.mp3")},
         "steps": [
             {"id": "report", "operation": "media.probe.v1", "inputs": {"media": {"source": "main"}}},
             {"id": "audio", "operation": "audio.transcode.v1", "inputs": {"audio": {"source": "main"}}},
@@ -113,7 +113,7 @@ async def test_cancel_after_committed_output_keeps_immutable_binding(service):
 
 
 async def test_pending_internal_artifact_reference_survives_retirement(service):
-    request = single("audio.transcode.v1", "audio", "audio", source("222.mp3"))
+    request = single("audio.transcode.v1", "audio", "audio", source("audio_mp3_mono_22050.mp3"))
     first_id, _ = await service.accept("test", "first-audio", request)
     first = await finished(service, first_id)
     artifact_id = first["outputs"]["result"]["artifact_id"]
@@ -128,7 +128,7 @@ async def test_pending_internal_artifact_reference_survives_retirement(service):
             await gate.wait()
 
     service.publisher.checkpoint_hook = hook
-    blocker, _ = await service.accept("test", "blocker", single("media.probe.v1", "media", "report", source("222.mp3")))
+    blocker, _ = await service.accept("test", "blocker", single("media.probe.v1", "media", "report", source("audio_mp3_mono_22050.mp3")))
     await asyncio.wait_for(blocked.wait(), 5)
     downstream, _ = await service.accept("test", "reuse", single("media.probe.v1", "media", "report", {"kind": "artifact", "artifact_id": artifact_id}))
     assert (await service.state.job("test", downstream))["status"] == "queued"
@@ -151,7 +151,7 @@ async def test_two_real_media_jobs_cancel_one_does_not_stop_other(settings):
     app = Service(settings)
     await app.start()
     try:
-        request = single("video.transcode.v1", "video", "video", source("Feline_Apocalypse.mp4"))
+        request = single("video.transcode.v1", "video", "video", source("video_h264_aac_square.mp4"))
         first, _ = await app.accept("test", "cancel-one", request)
         second, _ = await app.accept("test", "keep-one", request)
         until = time.monotonic() + 10

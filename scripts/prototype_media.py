@@ -9,6 +9,7 @@ import json
 import os
 import platform
 import re
+import runpy
 import shutil
 import stat
 import subprocess
@@ -204,6 +205,10 @@ def generate(destination: Path) -> None:
     # 小图用于以低于其像素数的测试限额检验拒绝，避免普通测试制造巨型图片。
     Image.new("RGB", (101, 100)).save(destination / "pixel_limit.png")
     image.save(destination / "icc.jpg", icc_profile=b"unsupported-test-profile")
+    fixture_generator = runpy.run_path(str(ROOT / "scripts" / "generate_fixtures.py"))
+    Image.new("RGB", (16, 16), (128, 64, 32)).save(
+        destination / "linear_rgb.png", icc_profile=fixture_generator["linear_rgb_icc"]()
+    )
     rows = [
         {
             "name": path.name,
@@ -284,7 +289,7 @@ def image_resize(
 
 
 def verify(destination: Path) -> dict:
-    from PIL import Image
+    from PIL import Image, ImageCms
     from PIL import __version__ as pillow_version
 
     checks: dict = {}
@@ -301,7 +306,7 @@ def verify(destination: Path) -> dict:
     fd = safe_open(destination, a.name)
     try:
         a.rename(destination / "old_inode.mp4")
-        shutil.copyfile(fixtures / "Feline_Apocalypse.mp4", a)
+        shutil.copyfile(fixtures / "video_h264_aac_square.mp4", a)
         report = json.loads(
             run(
                 ["ffprobe", "-v", "error", *input_args(fd), "-show_streams", "-of", "json"],
@@ -440,10 +445,10 @@ def verify(destination: Path) -> dict:
     checks["known_pts_extraction"] = pts
     transcodes = []
     for name in [
-        "Feline_Apocalypse.mp4",
-        "ffmpeg_high_bitrate_1080p.mp4",
-        "ffmpeg_hevc_640x360.mp4",
-        "ffmpeg_h264_640x360.mkv",
+        "video_h264_aac_square.mp4",
+        "video_h264_high_bitrate_1080p.mp4",
+        "video_hevc_640x360.mp4",
+        "video_h264_640x360.mkv",
     ]:
         path = fixtures / name
         output = destination / (path.stem + "-web.mp4")
@@ -520,7 +525,7 @@ def verify(destination: Path) -> dict:
         )
     checks["web_720p_v1"] = transcodes
     for suffix, codec, rate, channels in [("m4a", "aac", 48000, 2), ("wav", "pcm_s16le", 16000, 1)]:
-        for input_path in [fixtures / "222.mp3", destination / "two_audio_tracks.mp4"]:
+        for input_path in [fixtures / "audio_mp3_mono_22050.mp3", destination / "two_audio_tracks.mp4"]:
             output = destination / (input_path.stem + "-audio." + suffix)
             source = safe_open(input_path.parent, input_path.name)
             try:
@@ -590,10 +595,33 @@ def verify(destination: Path) -> dict:
             continue
         raise AssertionError("image boundary accepted")
     assert image_resize(
-        fixtures / "haojiao.jpg", destination / "haojiao-small.png", size=(640, 640), fit="contain"
+        fixtures / "image_jpeg_portrait_odd.jpg", destination / "portrait-odd-small.png", size=(640, 640), fit="contain"
     ) == {"width": 480, "height": 640}
-    with Image.open(destination / "haojiao-small.png") as resized:
+    with Image.open(destination / "portrait-odd-small.png") as resized:
         assert not resized.info.get("icc_profile") and not resized.getexif()
+    with Image.open(destination / "linear_rgb.png") as source:
+        source_pixel = source.getpixel((0, 0))
+        assert isinstance(source_pixel, tuple)
+        assert source_pixel == (128, 64, 32)
+        assert source.info.get("icc_profile")
+        source_profile = ImageCms.ImageCmsProfile(io.BytesIO(source.info["icc_profile"]))
+        assert ImageCms.isIntentSupported(
+            source_profile, ImageCms.Intent.PERCEPTUAL, ImageCms.Direction.INPUT
+        ) == 1
+    assert image_resize(
+        destination / "linear_rgb.png",
+        destination / "linear-rgb-to-srgb.png",
+        size=(8, 8),
+        fit="contain",
+    ) == {"width": 8, "height": 8}
+    with Image.open(destination / "linear-rgb-to-srgb.png") as converted:
+        output_pixel = converted.getpixel((0, 0))
+        assert isinstance(output_pixel, tuple) and len(output_pixel) == 3
+        assert all(
+            abs(actual - expected) <= 1
+            for actual, expected in zip(output_pixel, (188, 137, 99), strict=True)
+        )
+        assert not converted.info.get("icc_profile") and not converted.getexif()
     assert image_resize(
         destination / "static.webp", destination / "cover.png", size=(10, 10), fit="cover"
     ) == {"width": 10, "height": 10}
@@ -605,9 +633,16 @@ def verify(destination: Path) -> dict:
         upscale=True,
     ) == {"width": 80, "height": 40}
     checks["image_orientation_alpha_limits_modes"] = "passed"
-    checks["display_p3_icc_to_srgb"] = {
-        "source": "haojiao.jpg",
+    checks["portrait_odd_image_resize_and_output_metadata"] = {
+        "source": "image_jpeg_portrait_odd.jpg",
         "output_size": [480, 640],
+        "output_metadata_removed": True,
+    }
+    checks["linear_rgb_icc_to_srgb"] = {
+        "source": "linear_rgb.png",
+        "input_pixel": list(source_pixel),
+        "output_pixel": list(output_pixel),
+        "output_size": [8, 8],
         "output_metadata_removed": True,
     }
     return {

@@ -469,6 +469,6 @@ API、调度器和 Worker 均在本容器，Worker 并发与每个媒体子进�
 
 ### 技术选择与实施入口
 
-[技术选型](technology-selection-v1.md)已确定 Python/FastAPI、SQLite、单容器可配置 Worker、媒体引擎和默认配置基线；[实施计划](../plans/v1-implementation-plan.md)保留 P0～P12 并新增 P13～P17；[参数合同](media-parameters.md)定义六类能力的通用默认与可调范围，实施计划同时记录从项目外已授权的内部测试素材目录复制到本仓库的六个媒体样例及其复用边界。
+[技术选型](technology-selection-v1.md)已确定 Python/FastAPI、SQLite、单容器可配置 Worker、媒体引擎和默认配置基线；[实施计划](../plans/v1-implementation-plan.md)保留 P0～P12 并新增 P13～P17；[参数合同](media-parameters.md)定义六类能力的通用默认与可调范围。当前六个基础媒体由本仓库脚本生成，方法、媒体属性和摘要见 [fixture 说明](../../tests/fixtures/README.md)；本次迁移前的验收仍绑定原复制素材，不追溯改写。
 
 实施先冻结操作 schema、时间/画面语义、预设、实际依赖与镜像版本，再完成真实媒体和容量验证。本文记录设计基线，不代表验收通过；已实现、已验证和未验证项以[实施进度](../plans/v1-implementation-progress.md)中的实际证据为准。

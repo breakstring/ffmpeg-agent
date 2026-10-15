@@ -280,7 +280,7 @@ async def verify(image: str, report: dict) -> None:
     assert re.fullmatch(r"sha256:[0-9a-f]{64}", image), "exact_image_id_required"
     info = json.loads(await asyncio.to_thread(docker, "image", "inspect", image))[0]
     assert info["Id"] == image, "image_identity_mismatch"
-    fixture = ROOT / "tests/fixtures/ffmpeg_h264_640x360.mkv"
+    fixture = ROOT / "tests/fixtures/video_h264_640x360.mkv"
     content = fixture.read_bytes()
     digest = hashlib.sha256(content).hexdigest()
     manifest = json.loads((ROOT / "tests/fixtures/checksums.json").read_text())

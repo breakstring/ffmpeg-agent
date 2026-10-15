@@ -107,7 +107,7 @@ def main() -> None:
     parser.add_argument("--report", type=Path)
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
-    fixture = root / "tests/fixtures/ffmpeg_h264_640x360.mkv"
+    fixture = root / "tests/fixtures/video_h264_640x360.mkv"
     assert fixture.is_file(), "缺少基础 fixture"
     owner = uuid.uuid4().hex
     name = f"ffmpeg-agent-verify-{owner[:12]}"

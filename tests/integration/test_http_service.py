@@ -58,7 +58,7 @@ def probe(source):
 
 @pytest.mark.asyncio
 async def test_actual_tcp_http_source_job_range_and_secret_removal(settings):
-    data = (settings.storages["input"].root / "222.mp3").read_bytes()
+    data = (settings.storages["input"].root / "audio_mp3_mono_22050.mp3").read_bytes()
     seen = []
 
     async def source(request):
@@ -113,7 +113,7 @@ async def test_real_tcp_backpressure_disconnect_releases_only_after_send_stops(s
     service = Service(settings)
     async with serve(service) as (_, port):
         await service.scheduler.stop()
-        request = JobCreate.model_validate(probe({"kind": "shared_file", "storage_id": "input", "key": "222.mp3"}))
+        request = JobCreate.model_validate(probe({"kind": "shared_file", "storage_id": "input", "key": "audio_mp3_mono_22050.mp3"}))
         job_id, _ = await service.state.accept("test", "tcp-backpressure", request, service.engine)
         job = await service.state.claim()
         assert job is not None

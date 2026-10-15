@@ -47,7 +47,7 @@ def main() -> None:
         raise AssertionError("媒体服务未就绪")
 
     name = f"client-{uuid4().hex}.mp3"
-    fixture = Path("/fixtures/222.mp3")
+    fixture = Path("/fixtures/audio_mp3_mono_22050.mp3")
     source = Path("/business/input") / name
     staging = source.with_suffix(".tmp")
     with fixture.open("rb") as incoming, staging.open("xb") as output:

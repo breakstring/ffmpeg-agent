@@ -85,7 +85,7 @@ python3 deploy/verify-http-remote.py host --image ffmpeg-agent:v1-local \
   --report deploy/local/media-host.json
 ```
 
-两侧都使用本仓库的 `Feline_Apocalypse.mp4`；业务侧受控文件服务必须让媒体节点能够 GET 到同一字节内容。媒体配置的 `source_rules` 为真实来源指定精确 `host`、`ports`、`schemes` 和允许的 `networks`（私网目标需显式列出精确目标网段）。更新配置后重启媒体容器，并确认来源响应的 Content-Length 与仓库素材一致。
+两侧都使用本仓库的 `video_h264_aac_square.mp4`；业务侧受控文件服务必须让媒体节点能够 GET 到同一字节内容。媒体配置的 `source_rules` 为真实来源指定精确 `host`、`ports`、`schemes` 和允许的 `networks`（私网目标需显式列出精确目标网段）。更新配置后重启媒体容器，并确认来源响应的 Content-Length 与仓库素材一致。
 
 在**业务实际宿主机**准备私有配置，不在命令行传 token 或签名 URL：
 
@@ -142,7 +142,7 @@ docker build --build-arg BUILD_REVISION=local-verification -t ffmpeg-agent:v1-lo
 
 该脚本验证六个操作及六个媒体工具的共享参数、默认值、幂等重放、有效参数一致性、文件/抽帧成员的 HEAD/Range/SHA 下载，并解码检查实际编码、尺寸、音频规格和帧时间。只读取本项目 fixture，使用独立容器和私有卷，结束后只清理本次创建的资源；报告不能代替另一架构或两台实际宿主机的验收。执行结果和未验证条件记录在[实施进度](../docs/plans/v1-implementation-progress.md)。
 
-2026-10-13 的原生 Linux arm64 实测如下。每组用 `Feline_Apocalypse.mp4` 执行 8 次 `video.transcode.v1` / `web_720p_v1`，限制为 2 CPU / 2 GiB / 128 PID。完整数据及镜像 ID 在 [`capacity-arm64.json`](capacity-arm64.json)。
+以下为旧素材的历史容量基线；2026-10-15 已迁移到本仓库生成的专用素材，这些吞吐数据不代表新素材。2026-10-13 的原生 Linux arm64 实测如下。每组用 `Feline_Apocalypse.mp4` 执行 8 次 `video.transcode.v1` / `web_720p_v1`，限制为 2 CPU / 2 GiB / 128 PID。完整数据及镜像 ID 在 [`capacity-arm64.json`](capacity-arm64.json)。
 
 | Worker | 吞吐 jobs/min | 排队平均 / 最大 s | GET job p95 ms | 取消并确认停止 s | 进程 RSS 峰值 MiB | 容器内存峰值 MiB | 平均 CPU | work 分配峰值 MiB |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |

@@ -83,7 +83,7 @@ async def test_remote_mcp_upload_job_download_and_optional_token(settings, authe
                         "Authorization": "Bearer invalid"
                     })
                     assert denied.status_code == 401
-            data = (settings.storages["input"].root / "222.mp3").read_bytes()
+            data = (settings.storages["input"].root / "audio_mp3_mono_22050.mp3").read_bytes()
             upload = await client.post("/v1/files", content=data, headers={
                 "Content-Type": "application/octet-stream", "Idempotency-Key": "mcp-upload",
                 "X-File-Sha256": hashlib.sha256(data).hexdigest(),
@@ -200,7 +200,7 @@ async def test_remote_mcp_cancel_waits_for_input_release(settings):
             "idempotency_key": "cancel-mcp",
             "definition": {
                 "inputs": {"main": {"kind": "shared_file", "storage_id": "input",
-                                    "key": "222.mp3"}},
+                                    "key": "audio_mp3_mono_22050.mp3"}},
                 "steps": [{"id": "p", "operation": "media.probe.v1",
                            "inputs": {"media": {"source": "main"}}}],
                 "outputs": {"report": {"step": "p", "output": "report"}},
@@ -232,7 +232,7 @@ async def test_remote_mcp_modern_discovery_and_legacy_caller_isolation(settings)
                     listed = await session.list_tools()
                     assert len(listed.tools) == 19
                     accepted = await session.call_tool("probe_media", {
-                        "source": {"kind": "shared_file", "storage_id": "input", "key": "222.mp3"},
+                        "source": {"kind": "shared_file", "storage_id": "input", "key": "audio_mp3_mono_22050.mp3"},
                         "idempotency_key": "modern-caller", "params": {},
                     })
                     assert not accepted.is_error

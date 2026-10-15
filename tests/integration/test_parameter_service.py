@@ -134,7 +134,7 @@ async def test_http_and_remote_mcp_discovery_share_parameter_documentation(setti
 async def test_http_upload_and_mcp_resize_share_parameters_and_download(settings):
     settings.service_token = None
     service = Service(settings)
-    fixture = settings.storages["input"].root / "haojiao.jpg"
+    fixture = settings.storages["input"].root / "image_jpeg_portrait_odd.jpg"
     data = fixture.read_bytes()
     digest = hashlib.sha256(data).hexdigest()
     params = {"width": 128, "height": 128, "fit": "pad", "background": "#224466",
@@ -204,7 +204,7 @@ async def test_all_media_tools_discover_and_reject_the_same_invalid_parameters(s
          "image": {"format": "png", "quality": 80}},
         {"format": "png", "quality": 80},
     )
-    source = {"kind": "shared_file", "storage_id": "input", "key": "haojiao.jpg"}
+    source = {"kind": "shared_file", "storage_id": "input", "key": "image_jpeg_portrait_odd.jpg"}
     async with serve(service) as base, remote_session(base, {}) as session:
         async with httpx.AsyncClient(base_url=base) as client:
             listed = await session.list_tools()
@@ -245,7 +245,7 @@ async def test_all_media_tools_discover_and_reject_the_same_invalid_parameters(s
 async def test_multipart_parameters_and_mcp_omitted_params_and_single_dimension(settings):
     settings.service_token = None
     service = Service(settings)
-    data = (settings.storages["input"].root / "haojiao.jpg").read_bytes()
+    data = (settings.storages["input"].root / "image_jpeg_portrait_odd.jpg").read_bytes()
     async with serve(service) as base, remote_session(base, {}) as session:
         async with httpx.AsyncClient(base_url=base) as client:
             job = definition("image.resize.v1", {"kind": "upload", "part": "main"},
@@ -265,7 +265,7 @@ async def test_multipart_parameters_and_mcp_omitted_params_and_single_dimension(
             assert content.status_code == 200
             with Image.open(io.BytesIO(content.content)) as image:
                 assert image.format == "WEBP" and image.width == 96
-            source = {"kind": "shared_file", "storage_id": "input", "key": "haojiao.jpg"}
+            source = {"kind": "shared_file", "storage_id": "input", "key": "image_jpeg_portrait_odd.jpg"}
             default_probe = await session.call_tool("probe_media", {
                 "source": source, "idempotency_key": "default-probe",
             })
@@ -289,7 +289,7 @@ async def test_multipart_parameters_and_mcp_omitted_params_and_single_dimension(
 async def test_http_and_mcp_expose_frame_members_with_media_and_partial_errors(settings):
     settings.service_token = None
     service = Service(settings)
-    source = {"kind": "shared_file", "storage_id": "input", "key": "ffmpeg_h264_640x360.mkv"}
+    source = {"kind": "shared_file", "storage_id": "input", "key": "video_h264_640x360.mkv"}
     async with serve(service) as base, remote_session(base, {}) as session:
         accepted = await session.call_tool("extract_frames", {
             "source": source, "idempotency_key": "frame-members-metadata",

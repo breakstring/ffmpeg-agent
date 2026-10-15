@@ -11,7 +11,7 @@ from media_service.models import JobCreate
 from media_service.service import Service
 
 
-def probe_request(key="222.mp3"):
+def probe_request(key="audio_mp3_mono_22050.mp3"):
     return {
         "inputs": {"main": {"kind": "shared_file", "storage_id": "input", "key": key}},
         "steps": [
@@ -63,7 +63,7 @@ async def test_real_probe_immutable_publication_and_restart(settings):
         final = await restarted.state.job("test", job_id)
         assert final["outputs"]["report"]["artifact_id"] == artifact_id
         assert path.read_bytes() == data
-        assert settings.storages["input"].root.joinpath("222.mp3").exists()
+        assert settings.storages["input"].root.joinpath("audio_mp3_mono_22050.mp3").exists()
     finally:
         await restarted.close()
 

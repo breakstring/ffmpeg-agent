@@ -27,6 +27,35 @@ P0～P12 既有交付证据保留；P13～P17 通用媒体参数及简单默认�
 | P16 HTTP/MCP 一致 | CFK-797 | 完成 | 六能力最简及自定义调用，multipart、错误、有效参数、集合成员及机器合同 |
 | P17 参数化验收 | CFK-798 | 完成当前环境范围 | 本机/精确镜像各 456 项、48 个生产 HTTP/MCP 任务、8 项故障矩阵通过 |
 
+## 专用素材迁移与内容回归验证
+
+2026-10-15，CFK-807：按用户确认方案，以[本仓库生成器](../../scripts/generate_fixtures.py)离线生成六个专用媒体，删除原复制的六个文件。基础素材包含奇数宽度纵向图板、分段单声道 MP3、30 秒带帧号及左右声道标记的主视频、高码率 1080p 视频、HEVC 与 Matroska 视频，共 **15,764,123 字节**。方法、用途、属性、大小和 SHA-256 见 [素材说明](../../tests/fixtures/README.md)、[摘要清单](../../tests/fixtures/checksums.json)及[生成记录](../../tests/fixtures/manifest.json)。
+
+素材使用精确镜像 `sha256:7eeda466adad958b13d4b91a980c9254fcd590b642c879c436c6f009da648a06` 生成，FFmpeg 7.1.5、Python 3.14.8、Pillow 12.3.0；完整解码全部六文件，并核对编码、尺寸、帧数、声道、时长、时间基、HEVC PTS 和高码率下限。固定参数及种子用于重新生成相同用途的输入，不承诺编码文件跨构建或重建逐字节一致。
+
+同步测试、部署验收脚本、双语 README 和当前素材约定。远程验收脚本改为从当前摘要清单读取输入身份，实测接受当前文件、拒绝同尺寸篡改与错误长度。旧报告里的文件名、摘要和容量数据保留历史含义，不改写为新素材验收。
+
+新增 **11 项真实内容回归**，边界输入只在独立临时目录生成：
+
+- 合法线性 RGB ICC 的像素 `(128,64,32)` 实际转换为 sRGB `(188,137,99)`，并清除输出元数据。
+- 分段双声道 PCM 验证裁剪后的换音点、16kHz 重采样、左右声道内容及单声道混音。
+- 四帧纯色视频将 next/previous/nearest 的抽帧时间绑定到实际颜色，覆盖乱序、重复和平局；另核对视频裁剪首末帧内容。
+- 四象限 JPEG 验证 EXIF 2/3/6/8 的镜像、旋转方向、尺寸与元数据清除。详见[内容测试](../../tests/integration/test_media_semantics.py)。
+
+本轮验收固定精确镜像 `sha256:fc108171c589ad80d5376fcb9bc6e5ef42c83eb2a18e43d6692b6b58002f9373`，原生 Linux arm64、FFmpeg 7.1.5。镜像内 27 份服务源码摘要与工作区逐项相等；本轮未修改生产服务代码，见[镜像核对](../verification/fixtures-image.json)。
+
+| 验证 | 实际结果 | 证据 |
+| --- | --- | --- |
+| Ruff / Pyright / diff / 素材身份与文档 | 全部通过；101 个本地链接、19 个 shell 块及双语 8 个相同代码块检查通过 | [本机检查](../verification/fixtures-validation.json) |
+| 本机完整 pytest | **512 passed in 73.14s**；FFmpeg 9.0.1 | 同上 |
+| 固定镜像完整 pytest | **512 passed in 135.55s**；`MEDIA_TEST_ENGINE_SERIES=7.1`、非 root、只读根 | [容器测试](../verification/fixtures-tests-arm64.json) |
+| 真实媒体原型 | 六素材摘要、FD/路径边界、抽帧时间、音视频预设、图片与 ICC 转换通过 | [原型结果](../verification/fixtures-prototype.json) |
+| 六能力 HTTP/MCP | **48 个任务通过**，Token 开/关、默认/自定义参数、实际产物、HEAD/Range/SHA 与幂等 | [参数闭环](../verification/fixtures-parameters-arm64.json) |
+| 三通路调用示例 | **36 个默认流程**、6 次恢复、6 组同键重试（12 次执行）、4 个 partial 流程通过 | [示例实跑](../verification/fixtures-examples-arm64.json) |
+| 容器故障与恢复 | **8/8 通过**，含执行强停、发布四窗口、取消恢复、热重启拒绝及孤儿进程保护 | [故障矩阵](../verification/fixtures-faults-arm64.json) |
+
+容器完整套件首轮暴露验收脚本未挂载 `examples/`，导致 21 项已有客户端测试在准备阶段缺文件；补上只读挂载后重跑全部 512 项通过。所有本轮验收容器与卷均已清理，标签核对残留为 0。新素材容量基准、原生 amd64 和真实两宿主机验收未运行；旧容量数字只作为历史基线，不扩张为新输入的性能保证。
+
 ## 调用方体验与可运行示例
 
 2026-10-15 从上传、处理到下载重新核对 HTTP 与远程 MCP。服务端接口已能完成闭环，本次补充完整客户端与使用说明：

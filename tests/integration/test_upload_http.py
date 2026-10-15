@@ -67,7 +67,7 @@ async def test_raw_upload_larger_than_json_limit_replay_and_authenticated_metada
 
 
 async def test_multipart_job_real_probe_and_replay_after_uploaded_file_deleted(settings):
-    data = (settings.storages["input"].root / "222.mp3").read_bytes()
+    data = (settings.storages["input"].root / "audio_mp3_mono_22050.mp3").read_bytes()
     files = [("job", (None, json.dumps(definition()), "application/json")),
              ("main", ("source.mp3", data, "audio/mpeg"))]
     async with running(settings) as (client, service):

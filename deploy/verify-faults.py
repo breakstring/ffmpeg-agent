@@ -82,7 +82,7 @@ class Harness:
 
     def submit(self, video: bool = False):
         fixture = ROOT / "tests/fixtures" / (
-            "Feline_Apocalypse.mp4" if video else "ffmpeg_h264_640x360.mkv"
+            "video_h264_aac_square.mp4" if video else "video_h264_640x360.mkv"
         )
         port, output = ("video", "video") if video else ("media", "report")
         body = {
