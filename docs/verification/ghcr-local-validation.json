@@ -1,0 +1,107 @@
+{
+  "date": "2026-10-16",
+  "issue": "CFK-815",
+  "status": "local_validation_passed",
+  "source_revision": "2b34935578f3d3217829e3b2605f5fb5e12a1205",
+  "scope": "README与技能安装指南、GHCR工作流和容器测试视图修正；服务实现与当前运行实例未修改。",
+  "reference_repository": "https://github.com/breakstring/echarts-agent",
+  "github_preflight": {
+    "repository": "breakstring/ffmpeg-agent",
+    "visibility": "public",
+    "viewer_permission": "ADMIN",
+    "actions_enabled": true,
+    "allowed_actions": "all",
+    "default_workflow_permissions": "read",
+    "ghcr_package_query_status": 404
+  },
+  "checks": {
+    "ruff": "passed",
+    "pyright": {
+      "errors": 0,
+      "warnings": 0
+    },
+    "git_diff_check": "passed",
+    "actionlint": {
+      "version": "1.7.12",
+      "official_archive_checksum_verified": true,
+      "exit_code": 0
+    },
+    "documentation": {
+      "readme_and_consumer_shell_blocks": 50,
+      "consumer_cli_invocations": 24,
+      "readme_and_consumer_local_links": 60,
+      "remaining_missing_deploy_links": 0,
+      "standalone_clients_without_site_packages": 2,
+      "existing_skill_install_refused": true,
+      "private_directory_mode": "0700",
+      "private_config_mode": "0600",
+      "existing_private_config_refused": true
+    },
+    "compose": {
+      "compose": [
+        {
+          "image": "ffmpeg-agent:v1-local",
+          "config_valid": true,
+          "selected_image_matches": true
+        },
+        {
+          "image": "ghcr.io/breakstring/ffmpeg-agent:latest",
+          "config_valid": true,
+          "selected_image_matches": true
+        }
+      ],
+      "new_deploy_shell_blocks_valid": 8
+    },
+    "container_pytest": {
+      "status": "passed",
+      "image_id": "sha256:c23c8b4c22d32bd564be488045d31dffe35f94032d80f9d14a08d686cba6d085",
+      "architecture": "arm64",
+      "recorded_at": "2026-10-16T03:43:33.765498+00:00",
+      "engine_series": "7.1",
+      "checks": [
+        "non_root",
+        "readonly_root",
+        "locked_test_dependencies",
+        "full_pytest_suite",
+        "consumer_skill_packages",
+        "source_from_tested_image"
+      ],
+      "exit_code": 0,
+      "pytest_summary": "772 passed in 153.06s (0:02:33)",
+      "elapsed_seconds": 278.8199247090088
+    },
+    "independent_review": "工作流触发、权限、测试镜像保存/恢复身份校验、src来源和文档事实已独立只读复核，无阻塞问题。",
+    "known_credential_matches_in_changed_files": 0
+  },
+  "publishing_contract": {
+    "image": "ghcr.io/breakstring/ffmpeg-agent",
+    "platforms": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "main_tags": [
+      "main",
+      "latest",
+      "sha-<full-commit-sha>"
+    ],
+    "stable_tag_tags": [
+      "X.Y.Z",
+      "sha-<full-commit-sha>"
+    ],
+    "stable_tag_matches_pyproject": true,
+    "pull_requests_publish": false,
+    "docs_only_push_builds": false,
+    "production_image_rebuilt_after_verification": false,
+    "release_package_permission": "publish job only, GITHUB_TOKEN packages:write",
+    "immutable_reference": "registry manifest digest, not a mutable tag"
+  },
+  "remote_execution": {
+    "status": "not_yet_run",
+    "note": "本报告只记录首次推送前的本地证据；远端Actions、原生amd64、GHCR发布、Package可见性与匿名拉取须另行读回。"
+  },
+  "limitations": [
+    "当前完整测试仅为本机arm64镜像执行，不代替GitHub原生双架构验证。",
+    "APT为活动仓库，固定包不再可取时构建会失败；不得静默解除锁定。",
+    "此项不包括生产部署、Git版本tag创建或两台真实宿主机验收。"
+  ]
+}

@@ -1,0 +1,199 @@
+name: 验证与发布容器
+
+on:
+  pull_request:
+    paths-ignore: ['**/*.md', 'docs/**', '.cfkanban-scope.json']
+  push:
+    branches: [main]
+    tags: ['v*']
+    paths-ignore: ['**/*.md', 'docs/**', '.cfkanban-scope.json']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: container-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  validate:
+    name: 原生验证 (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    env:
+      IMAGE: ffmpeg-agent:ci-${{ matrix.arch }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: '0.12.8'
+          python-version: '3.14.8'
+          enable-cache: true
+      - name: 检查源码和消费者技能
+        run: |
+          uv sync --frozen
+          uv run --frozen ruff check .
+          uv run --frozen pyright
+          uv run --frozen python scripts/sync-consumer-skills.py --check
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: 构建当前架构的生产镜像
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          platforms: linux/${{ matrix.arch }}
+          load: true
+          tags: ${{ env.IMAGE }}
+          build-args: BUILD_REVISION=${{ github.sha }}
+          labels: |
+            org.opencontainers.image.title=ffmpeg-agent
+            org.opencontainers.image.description=Media processing over HTTP, MCP and A2A
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha,scope=container-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=container-${{ matrix.arch }}
+          provenance: false
+      - name: 在精确镜像中执行完整测试
+        run: |
+          mkdir -p "$RUNNER_TEMP/reports"
+          uv run --frozen python deploy/verify-tests.py --image "$IMAGE" \
+            --report "$RUNNER_TEMP/reports/tests.json" \
+            --log "$RUNNER_TEMP/reports/tests.log"
+      - name: 验证六类媒体的 HTTP 与 MCP 真实产物
+        run: |
+          image_id=$(docker image inspect --format '{{.Id}}' "$IMAGE")
+          uv run --frozen python deploy/verify-parameters.py --image "$image_id" \
+            --report "$RUNNER_TEMP/reports/parameters.json"
+      - name: 保存已验证镜像供发布
+        if: >-
+          github.repository == 'breakstring/ffmpeg-agent' &&
+          github.event_name != 'pull_request' &&
+          (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+        run: |
+          mkdir -p "$RUNNER_TEMP/release"
+          docker save "$IMAGE" | gzip > "$RUNNER_TEMP/release/image.tar.gz"
+          cp "$RUNNER_TEMP/reports/tests.json" "$RUNNER_TEMP/release/tests.json"
+      - name: 上传已验证镜像
+        if: >-
+          github.repository == 'breakstring/ffmpeg-agent' &&
+          github.event_name != 'pull_request' &&
+          (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: image-${{ matrix.arch }}
+          path: ${{ runner.temp }}/release/
+          compression-level: 0
+          retention-days: 1
+          if-no-files-found: error
+      - name: 保存验证报告
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: reports-${{ matrix.arch }}
+          path: ${{ runner.temp }}/reports/
+          retention-days: 14
+
+  publish:
+    name: 发布已验证的多架构镜像
+    needs: validate
+    if: >-
+      github.repository == 'breakstring/ffmpeg-agent' &&
+      github.event_name != 'pull_request' &&
+      (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    concurrency:
+      group: ghcr-publish
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: 确认发布标签
+        id: meta
+        env:
+          REPOSITORY: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          image="ghcr.io/${REPOSITORY,,}"
+          tags=("$image:sha-$GITHUB_SHA")
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo '只接受稳定 vX.Y.Z 标签'; exit 1; }
+            version="${GITHUB_REF_NAME#v}"
+            package_version=$(python3 -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')
+            [[ "$version" == "$package_version" ]] || { echo '标签必须匹配 pyproject.toml 版本'; exit 1; }
+            tags+=("$image:$version")
+          else
+            tags+=("$image:main" "$image:latest")
+          fi
+          {
+            echo "image=$image"
+            echo 'tags<<TAGS'
+            printf '%s\n' "${tags[@]}"
+            echo 'TAGS'
+          } >> "$GITHUB_OUTPUT"
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: image-*
+          path: release
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: 推送相同镜像并合并架构清单
+        env:
+          IMAGE: ${{ steps.meta.outputs.image }}
+          TAGS: ${{ steps.meta.outputs.tags }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          sources=()
+          for arch in amd64 arm64; do
+            directory="release/image-$arch"
+            gzip --decompress --stdout "$directory/image.tar.gz" | docker load
+            local_image="ffmpeg-agent:ci-$arch"
+            expected=$(jq -er '.image_id' "$directory/tests.json")
+            actual=$(docker image inspect --format '{{.Id}}' "$local_image")
+            [[ "$actual" == "$expected" ]]
+            [[ $(docker image inspect --format '{{.Architecture}}' "$local_image") == "$arch" ]]
+            [[ $(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$local_image") == "$GITHUB_SHA" ]]
+            jq -e --arg arch "$arch" '.status == "passed" and .architecture == $arch' "$directory/tests.json"
+            target="$IMAGE:sha-$GITHUB_SHA-$arch"
+            docker tag "$local_image" "$target"
+            docker push "$target"
+            reference=$(docker image inspect --format '{{json .RepoDigests}}' "$target" |
+              jq -er --arg image "$IMAGE" '[.[] | select(startswith($image + "@"))][0]')
+            [[ "$reference" =~ @sha256:[a-f0-9]{64}$ ]]
+            sources+=("$reference")
+          done
+          arguments=()
+          while IFS= read -r tag; do arguments+=(--tag "$tag"); done <<< "$TAGS"
+          docker buildx imagetools create "${arguments[@]}" "${sources[@]}"
+          docker buildx imagetools inspect "$IMAGE:sha-$GITHUB_SHA" \
+            --format '{{json .Manifest}}' > "$RUNNER_TEMP/published-manifest.json"
+          jq -e '[.manifests[].platform | .os + "/" + .architecture] | sort == ["linux/amd64", "linux/arm64"]' \
+            "$RUNNER_TEMP/published-manifest.json"
+          digest=$(jq -er '.digest' "$RUNNER_TEMP/published-manifest.json")
+          echo "已发布：$IMAGE@$digest" >> "$GITHUB_STEP_SUMMARY"
+      - name: 保存发布清单
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: published-manifest
+          path: ${{ runner.temp }}/published-manifest.json
+          retention-days: 90

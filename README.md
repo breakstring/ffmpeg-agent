@@ -4,6 +4,8 @@
 
 Process media from applications or remote AI agents through HTTP and MCP. Upload a file, submit an asynchronous task, and download the result. Shared volumes are optional for clients; you can combine them with HTTP transfers.
 
+**Already have a service?** [Install the consumer skills](#connect-your-agent-to-an-existing-service). **Need to run your own service?** [Build and start it with Docker](#start-with-docker-compose).
+
 | Capability | What you can do |
 | --- | --- |
 | Media inspection | Inspect media, select report sections and optionally count frames |
@@ -19,15 +21,44 @@ Optional natural-language tasks turn a description into a validated media plan u
 
 ## Connect your Agent to an existing service
 
-Consumers do not need Docker, FFmpeg or server source. Install [`ffmpeg-agent-connect`](skills/ffmpeg-agent-connect/SKILL.md) for connection and capability checks, and use [`ffmpeg-agent-media`](skills/ffmpeg-agent-media/SKILL.md) for uploads, processing, recovery and downloads. Each skill bundles the same independent client, requiring only Python 3.10+, a service URL and service Token. The model key stays on the server.
+Consumers need **Python 3.10+**, a reachable service URL and its service Token. No extra Python packages, Docker, FFmpeg, server source or model key are needed at runtime. Both skills include the same standalone standard-library client and can be installed independently.
 
-Agents already connected through remote MCP can use native tools with HTTP file transfers. Natural-language A2A delegation and plain HTTP are also supported. See the [consumer skills guide](docs/usage/consumer-skills.md) for installation, private configuration, native MCP handoff and complete examples.
+| Skill | Use it for |
+| --- | --- |
+| [`ffmpeg-agent-connect`](skills/ffmpeg-agent-connect/SKILL.md) | First connection, authentication and capability checks, troubleshooting |
+| [`ffmpeg-agent-media`](skills/ffmpeg-agent-media/SKILL.md) | Uploading, processing, resuming tasks, downloading and verifying results |
+
+**Install and connect:** copy this prompt to your Agent, replacing the URL with one reachable from its execution environment:
+
+```text
+Install ffmpeg-agent-connect and ffmpeg-agent-media from https://github.com/breakstring/ffmpeg-agent/tree/main/skills.
+Use this host's skill installation mechanism and install both complete directories, including scripts, references and agents metadata.
+Then use ffmpeg-agent-connect to connect to https://media.example.com. Reuse my private consumer configuration; if it is missing, guide me to configure the service URL and Token in a private local file, without pasting the Token into chat.
+Check the available protocols and media capabilities. Prefer the host's existing native remote MCP connection, and transfer local files over HTTP. Verify upload, media processing and a checked download using a small file I select.
+```
+
+For manual installation, use the [complete commands and host directory table](docs/usage/consumer-skills.md#install-the-complete-skills). Install the whole skill directory, not just `SKILL.md`, then refresh skills or start a new session as your host requires.
+
+**Start processing:** after connecting, give your Agent the file and desired result:
+
+```text
+Use ffmpeg-agent-media to convert this video to an H.264 MP4 no wider than 1280 pixels, preserving the source timing. Save it to a new output directory, verify the download, and retain the task state so I can resume if the wait times out.
+```
+
+Structured HTTP/MCP operations do not need a server model; your Agent can translate the request into supported parameters. Server-side natural-language planning and A2A are optional. Native MCP tools submit and query tasks; **local file bytes still travel over HTTP**. Installing a skill does not by itself register a native MCP connection. See the [consumer guide](docs/usage/consumer-skills.md) for private configuration, native MCP handoff and runnable examples.
 
 ## Start with Docker Compose
 
-You need Docker with Compose and Python 3. Run the commands below from the repository root.
+You need Git, Docker with Compose v2 and Python 3.10+ on the host for configuration and client scripts. Python 3.14, FFmpeg and media dependencies run inside the image; they do not need to be installed on the host.
 
-### First-time setup and startup
+```sh
+git clone https://github.com/breakstring/ffmpeg-agent.git
+cd ffmpeg-agent
+```
+
+Run all deployment commands below from this repository root.
+
+### First-time configuration
 
 Initialize the configuration before starting the service for the first time:
 
@@ -37,23 +68,69 @@ python3 deploy/generate-config.py
 
 The generator only prepares `.env` and `deploy/local/media-config.json`; it does not start the service. It fills missing settings, preserves your existing valid Token and configuration, and migrates legacy JSON credentials and feature switches into `.env`. The random service Token is stored only in `.env`, with mode `0600`. Keep `deploy/local` private (`0700`); the examples read `.env` automatically, so Tokens do not need to appear in commands.
 
+### Build the image locally
+
 Review `.env` and adjust any settings you need (see below), then build the image and start the service:
 
 ```sh
 docker compose up -d --build --wait
 ```
 
-Compose waits for the service to become ready.
+Compose builds the local image `ffmpeg-agent:v1-local`, starts one service instance and waits for it to become ready. To run the build separately:
+
+```sh
+docker build -t ffmpeg-agent:v1-local .
+docker compose up -d --no-build --wait
+```
+
+These commands use the default `MEDIA_IMAGE` in `.env`. If you changed it, use the same image name for the build and startup. The container runs as a non-root user with a read-only root filesystem; Compose provides persistent state, work and output volumes. Do not scale the service or share its SQLite state between instances.
+
+Check the container and authenticated service connection, then try the [upload → process → download example](#upload-process-and-download):
+
+```sh
+docker compose ps
+python3 skills/ffmpeg-agent-connect/scripts/media_client.py --env-file .env check --protocol all
+```
+
+By default, the service is available at `http://localhost:8080` on this host. Disabled A2A is expected until you enable it. A connection check does not replace actually processing a file.
+
+### Use a prebuilt GHCR image
+
+The configured image repository is `ghcr.io/breakstring/ffmpeg-agent`. After its first successful publication, it will provide Linux AMD64 and ARM64 images. Package visibility is separate from repository visibility; anonymous pulls require the GHCR package to be Public. See [publishing and package visibility](deploy/README.md#ghcr-镜像发布).
+
+This is an alternative to the local build above. Run the first-time configuration step, then set this non-secret value in `.env`:
+
+```dotenv
+MEDIA_IMAGE=ghcr.io/breakstring/ffmpeg-agent:latest
+```
+
+Once the image has been published, pull and start it without building locally:
+
+```sh
+docker compose pull media
+docker compose up -d --no-build --wait media
+```
+
+Use the same two commands to update a registry deployment after draining active tasks and backing up its state. Keep `--no-build` when using a GHCR image; `--build` is for your local source image.
+
+| Image reference | Meaning |
+| --- | --- |
+| `:main` / `:latest` | Most recent successful publication from `main`; moving tags |
+| `:sha-<full-40-character-commit>` | Image associated with a specific source commit |
+| `:X.Y.Z` | Version published from the matching `vX.Y.Z` Git tag, once released |
+| `@sha256:<digest>` | Immutable manifest reference; preferred for repeatable deployments |
+
+The release workflow validates both architectures before publishing the tested images. Tags in this table describe the publication scheme, not a promise that a particular release already exists. Choose an actual published tag or digest from the [package page](https://github.com/breakstring/ffmpeg-agent/pkgs/container/ffmpeg-agent).
 
 ### Routine startup
 
-After initialization, start the service with the existing configuration:
+After initialization and a successful build or pull, start with the existing configuration:
 
 ```sh
-docker compose up -d --wait
+docker compose up -d --no-build --wait
 ```
 
-You do not need to run `generate-config.py` again for routine startup. When source code, dependencies or the Dockerfile change, add `--build` to rebuild the image.
+You do not need to run `generate-config.py` again for routine startup. For a local source image, add `--build` when source code, dependencies or the Dockerfile change. For a registry image, use the pull/start commands above.
 
 ### Configuration and legacy migration
 
@@ -65,7 +142,8 @@ Configure the service Bearer Token, model key, model settings and feature switch
 | `MEDIA_LLM_ENABLED` / `MEDIA_A2A_ENABLED` | `false` / `false` | Enable natural-language planning and optional A2A |
 | `MEDIA_LLM_API_KEY` / `MEDIA_LLM_MODEL` / `MEDIA_LLM_BASE_URL` | Empty | Provider key, model ID and OpenAI-compatible API address |
 | `MEDIA_PUBLIC_BASE_URL` | `http://localhost:8080` | Address reachable by clients; also used for MCP Host/Origin validation |
-| `MEDIA_IMAGE` | `ffmpeg-agent:v1-local` | Local image name |
+| `MEDIA_IMAGE` | `ffmpeg-agent:v1-local` | Local image or published registry image reference |
+| `MEDIA_PLANNING_TIMEOUT_SECONDS` | `300` | Natural-language planning budget; media execution separately uses JSON `task_timeout_seconds` (default `3600`) |
 | `MEDIA_BIND_ADDRESS` / `MEDIA_PORT` | `127.0.0.1` / `8080` | Published host address and port |
 | `MEDIA_CONFIG_PATH` | `./deploy/local/media-config.json` | Structural service JSON path, relative to the repository root |
 | `MEDIA_CPUS` / `MEDIA_MEMORY` / `MEDIA_PIDS_LIMIT` | `2.0` / `2g` / `128` | Container CPU, memory and process limits |

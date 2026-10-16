@@ -11,30 +11,75 @@
 
 两个技能都自带相同的独立客户端。安装任意一个完整目录即可运行，不依赖另一个技能、服务端源码、Docker、FFmpeg 或额外 Python 包；客户端最低 Python 3.10。
 
-## 安装与私有配置
+## 安装完整技能
 
-从可信的项目分发内容取得 `skills/ffmpeg-agent-connect/` 和/或 `skills/ffmpeg-agent-media/`，将完整目录复制到宿主 Agent 文档规定的技能目录。保留 `SKILL.md`、`references/`、`agents/` 和完整 `scripts/`；只复制 `SKILL.md` 不能运行客户端。不同宿主的技能安装目录、发现和启用方式不同，应按宿主实际支持的 Agent Skills 机制安装。没有技能加载功能的宿主仍可使用附带的命令行客户端。
+可以直接将 [README 中的安装话术](../../README.zh-CN.md#让你的-agent-使用已部署的服务)交给 Agent，也可以手工安装。从本仓库取得 `skills/ffmpeg-agent-connect/` 和 `skills/ffmpeg-agent-media/`，保留 `SKILL.md`、`references/`、`agents/` 和完整 `scripts/`；只复制 `SKILL.md` 不能运行客户端。
 
-在消费者自己的私有目录创建配置文件，只填写以下两项，由服务管理员提供地址和 Token：
+| 本地宿主 | 个人技能目录 | 项目技能目录 |
+| --- | --- | --- |
+| Codex | `~/.agents/skills/` | 用户工作项目中的 `.agents/skills/` |
+| Claude Code | `~/.claude/skills/` | 用户工作项目中的 `.claude/skills/` |
+| 其他 Agent Skills 宿主 | 以宿主文档为准 | 以宿主文档为准 |
 
-```dotenv
-MEDIA_PUBLIC_BASE_URL=https://media.example.com
-MEDIA_SERVICE_TOKEN=<service-token-from-administrator>
-```
+上述路径用于本机技能发现；云端宿主的安装方式可能不同。依据：[Codex Skills](https://learn.chatgpt.com/docs/build-skills)、[Claude Code Skills](https://code.claude.com/docs/en/skills)，核对日期为 2026-10-16。
 
-URL 是服务根地址，不加 `/mcp` 或 `/a2a`。远程连接使用 HTTPS，本机回环调试可用 HTTP。管理员明确部署为开放模式时填 `MEDIA_SERVICE_TOKEN=null`，不要留空。消费者不需要服务端模型 Key 或部署 JSON，不要复制服务端整份 `.env`。进程中同名环境变量优先于此文件，连接前应核对是否存在其他环境配置的覆盖。
-
-通过本机私有编辑器填写 Token，不把它粘贴到 Agent 对话、命令参数或可公开文件。Unix 上将私有目录权限设为 `0700`、配置文件设为 `0600`；其他系统使用等效权限。不要 `source` 此文件。状态文件也包含本地路径、文件引用和任务标识，需私有保存且不提交 Git。
-
-后续命令可从任意目录运行。先把这三个变量改成实际的绝对路径；工作目录需要预先创建，例子中的各个输出子目录必须不存在：
+macOS/Linux 可使用以下命令下载并将两个完整目录安装到 Codex；安装时需要 Git 和 Python 3.10+，已有同名技能时会停止，不覆盖。Claude Code 将第一行改成 `skills_root="$HOME/.claude/skills"`；项目级安装则改成该项目技能目录的绝对路径。
 
 ```sh
-skill_dir="/absolute/path/to/ffmpeg-agent-media"
-consumer_env="/absolute/path/to/private/consumer.env"
-consumer_run="/absolute/path/to/private/media-run"
+skills_root="$HOME/.agents/skills"
+skill_source=$(mktemp -d)
+git clone --depth 1 https://github.com/breakstring/ffmpeg-agent.git "$skill_source/ffmpeg-agent"
+python3 - "$skill_source/ffmpeg-agent/skills" "$skills_root" <<'PYTHON'
+from pathlib import Path
+import shutil
+import sys
+
+source, target = map(Path, sys.argv[1:])
+names = ("ffmpeg-agent-connect", "ffmpeg-agent-media")
+if any((target / name).exists() or (target / name).is_symlink() for name in names):
+    raise SystemExit("Skill already exists; review the installed version before updating.")
+target.mkdir(parents=True, exist_ok=True)
+for name in names:
+    shutil.copytree(source / name, target / name)
+PYTHON
+python3 "$skills_root/ffmpeg-agent-connect/scripts/media_client.py" --help
 ```
 
-也可以把 `skill_dir` 指向 `ffmpeg-agent-connect`，客户端行为相同。命令只传配置文件路径，不传 Token。完整选项见 `python3 "$skill_dir/scripts/media_client.py" --help`。
+安装后应存在 `skills_root/ffmpeg-agent-media/SKILL.md` 和 `skills_root/ffmpeg-agent-media/scripts/media_client.py`，connect 的结构相同。按宿主要求刷新技能或重新启动会话。更新已有技能前先检查版本和本地修改，不要将新客户端直接混入旧版本目录。安装后的技能不依赖下载的仓库，无需构建服务端或运行 `uv sync`；不支持技能加载的宿主仍可直接执行 CLI。
+
+## 配置私有服务连接
+
+由服务管理员提供服务根地址和服务 Token，在客户端实际运行的机器上创建私有配置文件。以下 macOS/Linux 命令创建模板，已有同名配置时拒绝覆盖：
+
+```sh
+consumer_private="$HOME/.config/ffmpeg-agent"
+mkdir -p "$consumer_private"
+chmod 700 "$consumer_private"
+consumer_env="$consumer_private/consumer.env"
+(
+  umask 077
+  set -C
+  cat > "$consumer_env" <<'ENV'
+MEDIA_PUBLIC_BASE_URL=https://media.example.com
+MEDIA_SERVICE_TOKEN=<service-token-from-administrator>
+ENV
+)
+```
+
+**连接前，通过本机私有编辑器打开此文件，替换两项占位值。** 不要把 Token 粘贴到 Agent 对话或命令参数。已有私有配置时复用其路径即可；其他系统填写同样的两项配置，并设置等效私有权限。
+
+URL 是服务根地址，不加 `/mcp` 或 `/a2a`，且必须从 Agent 的实际执行环境可达。远程 Agent 或容器中的 `127.0.0.1` 指向它自己，不是用户电脑。远程连接使用 HTTPS，本机回环调试可用 HTTP。管理员明确部署为开放模式时填 `MEDIA_SERVICE_TOKEN=null`，不要留空。
+
+消费者不需要服务端模型 Key 或部署 JSON；不要复制服务端整份 `.env`，不要打印消费者配置或 `source` 此文件。进程中同名环境变量优先于文件，连接前应核对是否存在其他环境配置的覆盖。状态文件也包含本地路径、文件引用和任务标识，需私有保存且不提交 Git。
+
+完成安装和配置后，在同一终端继续设置：
+
+```sh
+skill_dir="$skills_root/ffmpeg-agent-media"
+consumer_run=$(mktemp -d "$consumer_private/run.XXXXXX")
+```
+
+如果复用已有安装或打开了新终端，先将 `skill_dir`、`consumer_env` 和 `consumer_run` 设为对应绝对路径。新任务创建新的私有工作目录，下文的各个输出子目录必须不存在。也可以把 `skill_dir` 指向 `ffmpeg-agent-connect`，客户端行为相同。命令只传配置文件路径，不传 Token；完整选项见 `python3 "$skill_dir/scripts/media_client.py" --help`。
 
 ## 首次连接
 

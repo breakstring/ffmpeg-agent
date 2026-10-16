@@ -8,6 +8,15 @@
 
 以下命令均在仓库根目录执行。
 
+第一次取得项目时：
+
+```sh
+git clone https://github.com/breakstring/ffmpeg-agent.git
+cd ffmpeg-agent
+```
+
+部署需要 Docker Engine/Desktop（含 Compose v2）和 Python 3.10+。Python 仅用于生成本机配置；FFmpeg、服务端 Python 3.14 和服务依赖都在镜像中。只连接别人已部署的服务时，无需 Docker，直接[安装消费者技能](../docs/usage/consumer-skills.zh-CN.md)。
+
 ### 首次初始化并启动
 
 首次部署时，先准备配置：
@@ -24,6 +33,55 @@ docker compose ps
 curl --fail http://127.0.0.1:8080/health/live
 curl --fail http://127.0.0.1:8080/health/ready
 ```
+
+也可以把构建和启动分开，便于先检查镜像构建结果：
+
+```sh
+docker compose build media
+docker compose up -d --no-build --wait media
+```
+
+### 使用 GHCR 预构建镜像
+
+首次发布且 Package 设为 Public 后，可直接拉取 `ghcr.io/breakstring/ffmpeg-agent`；首次发布是否完成以 [Actions](https://github.com/breakstring/ffmpeg-agent/actions/workflows/container.yml) 和 [Packages](https://github.com/breakstring/ffmpeg-agent/pkgs/container/ffmpeg-agent) 的实际结果为准。发布工作流支持 `linux/amd64` 和 `linux/arm64`，Docker 按宿主架构选择镜像。
+
+先运行上述配置生成器，再编辑 `.env` 中已有的 `MEDIA_IMAGE` 行：
+
+```dotenv
+MEDIA_IMAGE=ghcr.io/breakstring/ffmpeg-agent:latest
+```
+
+随后执行：
+
+```sh
+docker compose pull media
+docker compose up -d --no-build --wait media
+docker compose ps
+curl --fail http://127.0.0.1:8080/health/ready
+```
+
+`--no-build` 确保运行拉取的镜像；不要给这条路径加 `--build`。无需在本机安装 FFmpeg、uv 或模型 SDK。若需要返回本地源码构建，将 `MEDIA_IMAGE` 改回 `ffmpeg-agent:v1-local`，再运行 `docker compose build media`。
+
+| 标签 | 含义 |
+| --- | --- |
+| `latest`、`main` | 最近成功发布的 main 构建，会随 main 更新移动 |
+| `sha-<完整40位提交SHA>` | 对应提交的多架构镜像，用于定位源码版本 |
+| `X.Y.Z` | 推送匹配 `pyproject.toml` 版本的稳定 `vX.Y.Z` Git 标签后发布；不会自动创建 Git 标签 |
+| `@sha256:<digest>` | 固定精确发布清单；需要可复现升级与回退时优先使用 |
+
+例如，把 `MEDIA_IMAGE` 设置为从发布摘要读到的 `ghcr.io/breakstring/ffmpeg-agent@sha256:<digest>`，即可固定镜像。`sha-…` 和版本号仍是 Registry 标签，只有 digest 直接绑定不可变内容。
+
+### 更新、停止与查看状态
+
+升级前停止新提交并等待正在处理的任务完成，按下文备份一致的状态、文件与配置。GHCR 部署更新时执行 `docker compose pull media`，再执行 `docker compose up -d --no-build --wait media`；源码部署则重新 `docker compose build media` 后启动。固定 digest 的部署需要先把 `.env` 的 `MEDIA_IMAGE` 改为新 digest。
+
+```sh
+docker compose ps
+docker compose logs --tail 100 media
+docker compose stop media
+```
+
+`stop` 保留卷，下次 `docker compose up -d --no-build --wait media` 继续使用已有数据。不要用 `docker compose down -v` 作为日常停止方式。
 
 ### 日常启动
 
@@ -43,10 +101,10 @@ docker compose up -d --wait
 
 `.env` 是服务 Bearer Token、模型配置、功能开关与 Compose 参数的统一入口，变量说明见 [`.env.example`](../.env.example)。Compose 显式把对应环境变量传给服务，进程环境变量优先于文件；结构 JSON 仅保留存储、来源规则、任务限额等结构项，不再接受认证或规划配置。需要自定义文件时，使用 `python3 deploy/generate-config.py --env-file <环境文件路径> --output <结构JSON路径>`，并让 `MEDIA_CONFIG_PATH` 对应实际结构 JSON 路径；Compose 通过 `docker compose --env-file <环境文件路径> ...` 选择同一文件。根目录 Compose 的相对路径按仓库解析；单独使用旧 `-f deploy/compose.yaml` 时相对配置路径按 deploy 目录解析，建议外部配置使用绝对路径。
 
-修改 `.env` 后执行下列命令重新创建容器，不能只 restart 沿用旧容器环境：
+确认没有活动任务后，修改 `.env` 或结构 JSON 并执行下列命令重新创建容器，不能只 restart 沿用旧容器环境：
 
 ```sh
-docker compose up -d --force-recreate --wait media
+docker compose up -d --no-build --force-recreate --wait media
 ```
 
 不要执行 `source .env`，值中含 `$` 时用单引号避免 Compose 插值。检查 Compose 结构时仅使用 `docker compose config --quiet`；完整展开配置和容器环境检查可能包含凭据，不应输出到终端、日志或报告。直接运行 Python 服务默认读取 `.env`，可用 `MEDIA_ENV_FILE` 指定其他文件；结构 JSON 由 `MEDIA_CONFIG_FILE` 指定。两种启动方式都将进程环境变量置于文件值之前。
@@ -56,6 +114,29 @@ docker compose up -d --force-recreate --wait media
 默认仅向宿主机 `127.0.0.1:8080` 映射端口。跨机部署通过实际受控 HTTPS 入口提供服务，把 `.env` 中的 `MEDIA_PUBLIC_BASE_URL` 改为远端调用方可达地址；监听映射由 `MEDIA_BIND_ADDRESS` 和 `MEDIA_PORT` 配置。实际源服务的 hostname、端口、scheme 和允许目标网段加入对应调用方的 `source_rules`；空列表表示默认禁止 HTTP 来源。不可用全网段通配代替部署时的明确目标。
 
 默认 1 个 Worker、2 CPU、2 GiB 内存、128 PID、64 MiB `/tmp`、60 秒容器停止宽限期。配置中的 `max_work_bytes`、存储 `quota_bytes` 和磁盘余量控制持久工作/输出区域；Compose 的内存限制不构成磁盘配额。`max_frame_count` 默认 100，可按容量调整每次抽帧请求上限；`max_frame_rate` 默认 240 fps，只限制显式 constant/max 帧率，source 模式保留源帧时间节奏。这两项在服务 JSON 中配置，并通过 capabilities 公开。提高 Worker 数量之前先完成目标宿主机实测。构建参数 `BUILD_REVISION` 记录交付版本，不修改冻结操作或预设含义。
+
+模型规划预算在 `.env` 的 `MEDIA_PLANNING_TIMEOUT_SECONDS`，默认 300 秒；媒体任务预算在结构 JSON 的 `task_timeout_seconds`，默认 3600 秒。客户端的 `--wait-seconds` 只影响一次等待，不会取消服务端任务。具体配置见[自然语言与 A2A 指南](../docs/usage/agent.zh-CN.md)。
+
+## GHCR 镜像发布
+
+[容器工作流](../.github/workflows/container.yml)使用官方 Actions 的固定提交 SHA。验证 job 仅有 `contents: read`，只有发布 job 增加 `packages: write`，登录 GHCR 使用该次工作流的 `GITHUB_TOKEN`，无需新建或保存个人 PAT、模型 Key 或服务 Token。源码仓库的 Actions 必须允许这些官方 Actions；仓库默认只读 Token 权限可以保持不变。
+
+| 事件 | 行为 |
+| --- | --- |
+| Pull request | 两种架构验证，不登录或推送 GHCR |
+| main push，或 main 上手动运行 | 两种架构验证成功后发布 `main`、`latest` 与提交 SHA 标签 |
+| `vX.Y.Z` tag push | 验证并确认版本与 `pyproject.toml` 相同，发布 `X.Y.Z` 与提交 SHA 标签 |
+| Fork 仓库 | 可运行验证，发布 job 固定限定 `breakstring/ffmpeg-agent` |
+
+仅修改 Markdown、`docs/` 或项目跟踪绑定的提交不会触发镜像构建；可以从 main 手动运行。版本标签仍触发验证与发布。
+
+每个架构使用对应的原生 GitHub runner：`ubuntu-24.04`（amd64）和 `ubuntu-24.04-arm`（arm64）。先检查 Ruff、Pyright 和技能生成副本，再构建生产镜像，在精确镜像 ID 内执行完整 pytest，并通过 HTTP/MCP 验证六类真实媒体操作。测试只用项目 fixture、临时状态和模拟模型，不调用付费模型服务。
+
+通过的镜像以 `docker save` 传给发布 job；发布前核对镜像 ID、架构、源码 revision 与测试报告，随后推送并合并清单，不在发布阶段重新构建。Actions 保存分架构测试报告及最终清单 digest；镜像传递文件保留 1 天、验证报告 14 天、发布清单 90 天。报告不能替代两台业务宿主机的网络与权限验收。
+
+首次创建的 GHCR Package 可能为 Private，即使源码仓库公开。发布成功后，到 Package settings 检查可见性和关联仓库；确认对外分发时将其设置为 Public，再从未登录的客户端验证拉取。公开后应按 GitHub 当前规则处理可见性，不能假定可以改回 Private。参考 [GitHub GHCR 文档](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)与[包权限说明](https://docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility)。
+
+基础镜像 digest、uv、Python 依赖和各架构系统包版本已固定；APT 下载源仍是 Debian 活动仓库。若固定版本不再可取，构建会失败，应核对并重新验证基线，不能为让发布变绿而静默删除版本约束。没有成功的 Actions 结果和清单，不把文档里的目标架构当作已发布或已验证证据。
 
 ## 上传与远程 MCP
 

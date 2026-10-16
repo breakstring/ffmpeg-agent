@@ -28,8 +28,12 @@ def main() -> int:
         "--init", "--read-only", "--user", "10001:10001",
         # 仅此验证 venv 在 tmpfs；动态扩展需要 exec，服务 Compose 不更改。
         "--tmpfs", "/tmp:rw,exec,nosuid,nodev,size=1536m",
+        "--tmpfs", "/verification:rw,noexec,nosuid,nodev,size=16m,uid=10001,gid=10001,mode=0700",
     ]
-    for part in ("tests", "scripts", "examples", "deploy", "pyproject.toml", ".env.example"):
+    for part in (
+        "tests", "scripts", "examples", "deploy", "consumer", "skills",
+        "pyproject.toml", ".env.example",
+    ):
         command += ["--mount", f"type=bind,src={root / part},dst=/verification/{part},readonly"]
     command += [
         "--env", "MEDIA_TEST_ENGINE_SERIES=7.1",
@@ -37,14 +41,19 @@ def main() -> int:
         "--env", "UV_PROJECT_ENVIRONMENT=/tmp/verification-venv",
         image["Id"], "sh", "-c",
         "uv sync --frozen --no-install-project --python /usr/local/bin/python "
+        # 打包检查需要源码视图；从待测镜像复制，禁止用宿主源码替代镜像实现。
+        "&& cp -R /app/src /verification/src "
         "&& cd /verification && /tmp/verification-venv/bin/python -m pytest -q "
-        "-o cache_dir=/tmp/pytest-cache",
+        "-o pythonpath=/app/src -o cache_dir=/tmp/pytest-cache",
     ]
     started = time.monotonic()
     report = {
         "status": "failed", "image_id": image["Id"], "architecture": image["Architecture"],
         "recorded_at": datetime.now(UTC).isoformat(), "engine_series": "7.1",
-        "checks": ["non_root", "readonly_root", "locked_test_dependencies", "full_pytest_suite"],
+        "checks": [
+            "non_root", "readonly_root", "locked_test_dependencies", "full_pytest_suite",
+            "consumer_skill_packages", "source_from_tested_image",
+        ],
     }
     try:
         with args.log.open("w") as log:

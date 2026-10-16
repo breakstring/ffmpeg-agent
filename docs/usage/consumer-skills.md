@@ -11,30 +11,75 @@ When an administrator has already deployed the service, consumers only need the 
 
 Both skills include the same standalone client. Either complete directory works without the other skill, server source, Docker, FFmpeg or extra Python packages. Python 3.10 or newer is required.
 
-## Install and configure
+## Install the complete skills
 
-Obtain `skills/ffmpeg-agent-connect/` and/or `skills/ffmpeg-agent-media/` from a trusted project distribution. Copy each complete directory to the skill location documented by your Agent host. Keep `SKILL.md`, `references/`, `agents/` and all of `scripts/`; copying only `SKILL.md` does not install the client. Hosts differ in their support for Agent Skills, installation locations and discovery. Follow your host's documented mechanism. A host without skill loading can still use the bundled CLI.
+You can ask your Agent to install both skills using the [copyable README prompt](../../README.md#connect-your-agent-to-an-existing-service), or install them manually. Obtain `skills/ffmpeg-agent-connect/` and `skills/ffmpeg-agent-media/` from this repository. Keep `SKILL.md`, `references/`, `agents/` and all of `scripts/`; copying only `SKILL.md` does not install the client.
 
-Create a private consumer configuration file containing only these two settings, supplied by the service administrator:
+| Local host | Personal skill directory | Project skill directory |
+| --- | --- | --- |
+| Codex | `~/.agents/skills/` | `.agents/skills/` in your working project |
+| Claude Code | `~/.claude/skills/` | `.claude/skills/` in your working project |
+| Other Agent Skills hosts | Use the host's documented location | Use the host's documented location |
 
-```dotenv
-MEDIA_PUBLIC_BASE_URL=https://media.example.com
-MEDIA_SERVICE_TOKEN=<service-token-from-administrator>
-```
+The paths above describe local skill discovery; cloud hosts can have different installation mechanisms. Sources: [Codex skills](https://learn.chatgpt.com/docs/build-skills) and [Claude Code skills](https://code.claude.com/docs/en/skills), checked on 2026-10-16.
 
-Use the service root URL, without `/mcp` or `/a2a`. Use HTTPS for remote services; HTTP is suitable for local loopback testing. If the administrator explicitly selected open access, set `MEDIA_SERVICE_TOKEN=null`; do not leave it empty. Consumers do not need the model key or deployment JSON. Do not copy the server's entire `.env`. Process environment variables with the same names override this file; check for another environment's overrides before connecting.
-
-Fill the Token in a private local editor, never in Agent chat, command arguments or public files. On Unix, use `0700` for the private directory and `0600` for the configuration file; use equivalent private permissions elsewhere. Do not `source` the file. State files contain local paths, file references and task IDs, so keep them private and out of Git too.
-
-The following commands work from any directory. Replace these values with actual absolute paths. Create the private working directory first; output subdirectories used below must not exist:
+On macOS/Linux, these commands download a copy and install both complete directories for Codex. They require Git and Python 3.10+ for installation, and refuse to overwrite existing skills. For Claude Code, change the first line to `skills_root="$HOME/.claude/skills"`; for a project installation, use its absolute skill-directory path.
 
 ```sh
-skill_dir="/absolute/path/to/ffmpeg-agent-media"
-consumer_env="/absolute/path/to/private/consumer.env"
-consumer_run="/absolute/path/to/private/media-run"
+skills_root="$HOME/.agents/skills"
+skill_source=$(mktemp -d)
+git clone --depth 1 https://github.com/breakstring/ffmpeg-agent.git "$skill_source/ffmpeg-agent"
+python3 - "$skill_source/ffmpeg-agent/skills" "$skills_root" <<'PYTHON'
+from pathlib import Path
+import shutil
+import sys
+
+source, target = map(Path, sys.argv[1:])
+names = ("ffmpeg-agent-connect", "ffmpeg-agent-media")
+if any((target / name).exists() or (target / name).is_symlink() for name in names):
+    raise SystemExit("Skill already exists; review the installed version before updating.")
+target.mkdir(parents=True, exist_ok=True)
+for name in names:
+    shutil.copytree(source / name, target / name)
+PYTHON
+python3 "$skills_root/ffmpeg-agent-connect/scripts/media_client.py" --help
 ```
 
-You can point `skill_dir` to `ffmpeg-agent-connect` instead; its client behaves identically. Commands receive a configuration file path, never the Token. See `python3 "$skill_dir/scripts/media_client.py" --help` for all options.
+The expected layout is `skills_root/ffmpeg-agent-media/SKILL.md` and `skills_root/ffmpeg-agent-media/scripts/media_client.py`, with the same structure for connect. Refresh skills or restart the host if needed. Review local changes before updating an existing installation; do not merge a new client into an old skill blindly. The installed skills do not depend on the downloaded repository, so you do not need to build the server or run `uv sync`. A host without skill loading can still run the CLI directly.
+
+## Configure a private service connection
+
+The service administrator supplies the root URL and service Token. Create a private file on the machine where the client will run. The following macOS/Linux commands create a template and refuse to overwrite an existing configuration:
+
+```sh
+consumer_private="$HOME/.config/ffmpeg-agent"
+mkdir -p "$consumer_private"
+chmod 700 "$consumer_private"
+consumer_env="$consumer_private/consumer.env"
+(
+  umask 077
+  set -C
+  cat > "$consumer_env" <<'ENV'
+MEDIA_PUBLIC_BASE_URL=https://media.example.com
+MEDIA_SERVICE_TOKEN=<service-token-from-administrator>
+ENV
+)
+```
+
+**Before connecting, open this file in a private local editor and replace both placeholders.** Do not paste the Token into Agent chat or command arguments. If you already have a private configuration, reuse its path instead. On other systems, create the same two settings and apply equivalent private file permissions.
+
+Use the service root URL, without `/mcp` or `/a2a`. The URL must be reachable from the Agent's execution environment: `127.0.0.1` inside a remote Agent or container refers to that environment, not your computer. Use HTTPS for remote services; HTTP is suitable for local loopback testing. If the administrator explicitly selected open access, set `MEDIA_SERVICE_TOKEN=null`; do not leave it empty.
+
+Consumers do not need the model key or deployment JSON. Do not copy the server's entire `.env`, print the consumer file or `source` it. Process environment variables with the same names override this file; check for another environment's overrides before connecting. State files contain local paths, file references and task IDs, so keep them private and out of Git too.
+
+Continue in the same shell after installation and configuration:
+
+```sh
+skill_dir="$skills_root/ffmpeg-agent-media"
+consumer_run=$(mktemp -d "$consumer_private/run.XXXXXX")
+```
+
+If using an existing installation or a new shell, set `skill_dir`, `consumer_env` and `consumer_run` to the corresponding absolute paths first. Create a new private run directory for new tasks; output subdirectories used below must not exist. You can point `skill_dir` to `ffmpeg-agent-connect` instead, whose client behaves identically. Commands pass the configuration file path, never the Token. Full options are available with `python3 "$skill_dir/scripts/media_client.py" --help`.
 
 ## Connect for the first time
 

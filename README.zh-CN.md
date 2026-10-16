@@ -4,6 +4,8 @@
 
 面向应用程序和远程 AI Agent 的媒体处理服务，支持 HTTP 和 MCP。上传文件、提交异步任务，再下载处理结果。客户端无需共享卷，也可以将共享卷与 HTTP 传输组合使用。
 
+**已有服务，想让自己的 Agent 处理媒体？** 从[技能安装与使用](#让你的-agent-使用已部署的服务)开始。**需要自行部署？** 查看 [Docker 构建与启动](#使用-docker-compose-启动)。
+
 | 能力 | 用途 |
 | --- | --- |
 | 媒体探测 | 探测媒体信息、选择报告内容，可选扫描统计帧数 |
@@ -19,15 +21,44 @@
 
 ## 让你的 Agent 使用已部署的服务
 
-消费者无需安装 Docker、FFmpeg 或服务端源码。安装 [`ffmpeg-agent-connect`](skills/ffmpeg-agent-connect/SKILL.md) 完成连接和能力检查，使用 [`ffmpeg-agent-media`](skills/ffmpeg-agent-media/SKILL.md) 完成日常上传、处理、恢复和下载。两个技能各自附带同一套独立客户端，只需 Python 3.10+、服务地址和服务 Token；模型 Key 留在服务端。
+消费者只需 **Python 3.10+**、可达的服务地址和服务 Token。运行时无需额外 Python 包、Docker、FFmpeg、服务端源码或模型 Key。两个技能都附带同一套独立的标准库客户端，可分别安装。
 
-已连接远程 MCP 的 Agent 优先使用原生工具，本地文件通过 HTTP 上传下载；也支持自然语言 A2A 委托及纯 HTTP 调用。安装、私有配置、原生 MCP 衔接和完整示例见[消费者技能使用指南](docs/usage/consumer-skills.zh-CN.md)。
+| 技能 | 用途 |
+| --- | --- |
+| [`ffmpeg-agent-connect`](skills/ffmpeg-agent-connect/SKILL.md) | 首次连接、认证与能力检查、连接排障 |
+| [`ffmpeg-agent-media`](skills/ffmpeg-agent-media/SKILL.md) | 上传、处理、恢复任务、下载与结果校验 |
+
+**安装并连接：** 将下面的话复制给你的 Agent，把地址替换为从 Agent 实际执行环境可访问的服务地址：
+
+```text
+请从 https://github.com/breakstring/ffmpeg-agent/tree/main/skills 分别安装 ffmpeg-agent-connect 和 ffmpeg-agent-media 技能。
+请按当前宿主的技能安装方式安装两个完整目录，保留 scripts、references 和 agents 元数据。
+然后使用 ffmpeg-agent-connect 连接 https://media.example.com。复用我的私有消费者配置；尚未配置时，请指导我在本机私有文件中设置服务地址和 Token，不要让我把 Token 粘贴到对话中。
+检查可用协议和媒体能力，优先复用宿主已有的原生远程 MCP，本地文件通过 HTTP 传输。用我选定的小文件完成上传、媒体处理和下载校验。
+```
+
+手工安装见[完整命令和宿主目录表](docs/usage/consumer-skills.zh-CN.md#安装完整技能)。需要安装整个技能目录，不能只复制 `SKILL.md`；安装后按宿主要求刷新技能或开启新会话。
+
+**开始处理：** 连接成功后，把文件和目标交给 Agent，例如：
+
+```text
+请使用 ffmpeg-agent-media，把这段视频转成宽度不超过 1280 的 H.264 MP4，保留源帧时间节奏。保存到新的输出目录，完成下载校验，并保留任务状态，等待超时后可以继续恢复。
+```
+
+结构化 HTTP/MCP 操作无需服务端模型，当前 Agent 可以直接将需求转成支持的参数；服务端自然语言规划和 A2A 是可选功能。原生 MCP 工具负责提交和查询任务，**本地文件字节仍通过 HTTP 上传下载**。安装技能本身不会自动注册宿主原生 MCP。私有配置、原生 MCP 衔接和可运行示例见[消费者技能使用指南](docs/usage/consumer-skills.zh-CN.md)。
 
 ## 使用 Docker Compose 启动
 
-需要 Docker、Compose 和 Python 3。以下命令均在仓库根目录运行。
+宿主机需要 Git、Docker Compose v2 和 Python 3.10+（用于配置与客户端脚本）。Python 3.14、FFmpeg 和媒体依赖运行在镜像内部，无需在宿主机另外安装。
 
-### 首次初始化并启动
+```sh
+git clone https://github.com/breakstring/ffmpeg-agent.git
+cd ffmpeg-agent
+```
+
+以下部署命令均在此仓库根目录运行。
+
+### 首次生成配置
 
 首次部署时，先生成配置：
 
@@ -35,23 +66,71 @@
 python3 deploy/generate-config.py
 ```
 
-脚本准备 `.env` 和 `deploy/local/media-config.json`，不会启动容器。随机服务 Token 只写入权限为 `0600` 的 `.env`；保持 `deploy/local` 目录权限为 `0700`。按需编辑 `.env` 中的服务地址、模型配置和功能开关，再构建并启动：
+脚本准备 `.env` 和 `deploy/local/media-config.json`，不会启动容器。随机服务 Token 只写入权限为 `0600` 的 `.env`；保持 `deploy/local` 目录权限为 `0700`。
+
+### 从源码构建镜像
+
+按需编辑 `.env` 中的服务地址、模型配置和功能开关，再构建并启动：
 
 ```sh
 docker compose up -d --build --wait
 ```
 
-Compose 会等待服务就绪。下面的客户端示例自动读取 `.env`，无需将 Token 复制到命令中。
+Compose 构建本地镜像 `ffmpeg-agent:v1-local`，启动单个服务实例并等待就绪。也可以分开构建和启动：
+
+```sh
+docker build -t ffmpeg-agent:v1-local .
+docker compose up -d --no-build --wait
+```
+
+以上命令使用 `.env` 中默认的 `MEDIA_IMAGE`；如果已修改，请让构建和启动使用同一镜像名。容器以非 root 用户运行、根文件系统只读，Compose 提供持久化状态、工作和输出卷。不要扩容为多个服务实例，也不要让多个实例共用 SQLite 状态。
+
+检查容器状态和带认证的服务连接，然后运行[上传 → 处理 → 下载示例](#上传处理和下载)：
+
+```sh
+docker compose ps
+python3 skills/ffmpeg-agent-connect/scripts/media_client.py --env-file .env check --protocol all
+```
+
+默认地址为宿主机上的 `http://localhost:8080`，未主动开启时 A2A 显示未启用是正常的。连接检查不能代替实际媒体处理验证。下面的客户端示例自动读取 `.env`，无需将 Token 复制到命令中。
+
+### 使用 GHCR 预构建镜像
+
+已配置的镜像仓库为 `ghcr.io/breakstring/ffmpeg-agent`，首次成功发布后提供 Linux AMD64 和 ARM64 镜像。Package 可见性与代码仓库独立，设为 Public 后才能匿名拉取；详见[镜像发布与可见性设置](deploy/README.md#ghcr-镜像发布)。
+
+此方式与上面的本地构建二选一。先完成首次生成配置，再将 `.env` 中的非敏感镜像配置改为：
+
+```dotenv
+MEDIA_IMAGE=ghcr.io/breakstring/ffmpeg-agent:latest
+```
+
+镜像发布完成后，拉取并直接启动：
+
+```sh
+docker compose pull media
+docker compose up -d --no-build --wait media
+```
+
+更新镜像时，先等待活动任务结束并备份状态，再执行同样的两条命令。使用 GHCR 镜像时保留 `--no-build`；`--build` 用于自己的本地源码镜像。
+
+| 镜像引用 | 含义 |
+| --- | --- |
+| `:main` / `:latest` | `main` 最近一次成功发布的镜像，标签会移动 |
+| `:sha-<完整40位提交ID>` | 关联指定源码提交的镜像 |
+| `:X.Y.Z` | 对应 `vX.Y.Z` Git 标签发布的版本，需等该版本实际发布 |
+| `@sha256:<digest>` | 不可变的清单引用，适合需要可复现性的部署 |
+
+发布流程先验证两个架构，再发布已经测试的镜像。此表说明标签规则，不表示某个版本已经存在；请从[镜像包页面](https://github.com/breakstring/ffmpeg-agent/pkgs/container/ffmpeg-agent)选择实际已发布的标签或 digest。
 
 ### 日常启动
 
-配置已初始化且镜像已构建时，直接运行：
+配置已初始化且镜像已构建或拉取时，直接运行：
 
 ```sh
-docker compose up -d --wait
+docker compose up -d --no-build --wait
 ```
 
-**日常启动无需再次运行 `generate-config.py`。** 更新源码或 Dockerfile 后需要重新构建时，使用 `docker compose up -d --build --wait`。修改 `.env` 后的生效命令见下文。
+**日常启动无需再次运行 `generate-config.py`。** 本地源码镜像更新代码、依赖或 Dockerfile 后，使用 `docker compose up -d --build --wait` 重新构建；仓库镜像按上面的拉取/启动命令更新。修改 `.env` 后的生效命令见下文。
 
 ### 配置与旧版本迁移
 
@@ -63,7 +142,8 @@ docker compose up -d --wait
 | `MEDIA_LLM_ENABLED` / `MEDIA_A2A_ENABLED` | `false` / `false` | 开启自然语言规划和可选 A2A |
 | `MEDIA_LLM_API_KEY` / `MEDIA_LLM_MODEL` / `MEDIA_LLM_BASE_URL` | 空 | 供应商 Key、模型标识与 OpenAI-compatible API 地址 |
 | `MEDIA_PUBLIC_BASE_URL` | `http://localhost:8080` | 客户端可达地址，也用于 MCP Host/Origin 校验 |
-| `MEDIA_IMAGE` | `ffmpeg-agent:v1-local` | 本地镜像名称 |
+| `MEDIA_IMAGE` | `ffmpeg-agent:v1-local` | 本地镜像名或已发布的仓库镜像引用 |
+| `MEDIA_PLANNING_TIMEOUT_SECONDS` | `300` | 自然语言规划预算；媒体执行另用 JSON `task_timeout_seconds`（默认 `3600`） |
 | `MEDIA_BIND_ADDRESS` / `MEDIA_PORT` | `127.0.0.1` / `8080` | 宿主机公开地址和端口 |
 | `MEDIA_CONFIG_PATH` | `./deploy/local/media-config.json` | 结构服务 JSON 路径，相对于仓库根目录 |
 | `MEDIA_CPUS` / `MEDIA_MEMORY` / `MEDIA_PIDS_LIMIT` | `2.0` / `2g` / `128` | 容器 CPU、内存和进程数限制 |
