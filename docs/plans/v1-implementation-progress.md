@@ -393,3 +393,23 @@ GitHub 只读 preflight 确认仓库 Public、Actions 已启用、当前账号 A
 用户要求只读排查 Docker 日志后，核对该时间窗口内 322 条结构化事件：仅有 MCP 工具完成和 HTTP 请求完成，上传为 201，其他接口均为 2xx，26 次健康检查正常；容器无 OOM、无重启，无其他重叠规划请求。诊断时容器内 DNS、TCP/TLS 以及模型列表 API 均成功，模型列表 HTTP 200 且包含所配置模型；这不能证明先前生成请求已正常返回。
 
 代码核对确认：SDK 原始日志静默，服务没有规划阶段及模型请求日志；`generate_media` 的 `mcp_tool_finished/succeeded` 只表示请求已接受。总规划期限覆盖模型调用、可选纠错、本地验证和保存，现有日志不能区分首次模型请求、第二轮纠错或保存等待。建议补任务 ID、阶段、请求序号、耗时、HTTP 状态和固定错误码等受控事件，同时保持请求/响应正文、URL、凭据和原始异常不入日志。本轮未修改服务代码、配置或再次部署，详见[失败验收与诊断报告](../verification/ghcr-native-mcp-natural-language-validation.json)。
+
+## 2026-10-16：分级规划诊断与关闭 Qwen 思考（CFK-816）
+
+按用户后续授权补充规划阶段和模型请求日志，提交 `4070229`。`MEDIA_LOG_LEVEL` 默认 `INFO`，支持 DEBUG/INFO/WARNING/ERROR/CRITICAL；DEBUG 增加状态读取、模型等待响应头/响应体、解析、输出校验、计划保存和媒体接受的阶段、请求序号及耗时。超时、取消、错误使用固定类别，记录最近检查点；`http_headers` 包括建连和发送，不能证明供应商已经收到请求。用户另要求诊断正文，因此新增默认关闭的 `MEDIA_LOG_MODEL_CONTENT`，仅显式开启且处于 DEBUG 时输出经凭据、敏感字段、URL、路径、邮箱和嵌套 JSON 脱敏的正文；超过 128 KiB 整段省略。SDK 原始日志保持关闭。
+
+该精确 arm64 诊断镜像 `sha256:cf077387f6d7e5ca5b404f7b0a059ae3f806f4df53c3ba4a39e2ab1812d7cdca` 内 **820 项测试通过**。同一 fixture 和自然语言组合请求成功：首次模型请求 94.315517 秒，无纠错，计划校验、保存、媒体接受均为毫秒级，媒体执行 1.333 秒；三份产物完整下载并独立验证。实际请求、响应及配置模型均为 `qwen3.8-flash`，未传入 `enable_thinking`，响应含 13,577 字符思考内容及供应商报告的 3,709 reasoning tokens。此次慢点位于模型请求，但无法拆分网络、供应商排队与生成耗时，也不能还原旧 300 秒失败的精确原因。证据见[规划日志诊断报告](../verification/planning-logs-validation.json)，原失败报告保留。
+
+按用户补充要求，提交 `ef3dbc6` 加入 `.env` 配置 `MEDIA_LLM_ENABLE_THINKING=false`；`true` 开启，显式小写 `null` 省略扩展，空值和 `NULL` 拒绝。核对[百炼思考参数](https://help.aliyun.com/zh/model-studio/qwen-api-via-openai-chat-completions/)与[结构化输出](https://help.aliyun.com/zh/model-studio/qwen-structured-output)：SDK 的 `extra_body` 应映射为 HTTP 顶层参数；本轮保持合规的 `prompted/json_object`、含 JSON 关键词和完整 Schema 的提示词及本地 Pydantic/图校验。当前 native 路径实际 `strict:false` 且有两处 `patternProperties`；强制 OpenAI strict 会破坏动态输入/输出和参数，不能仅切开关声称百炼严格 Schema 兼容。保留现有 4096 输出预算及截断输出校验，供应商原生 Schema 适配留待独立实施与验收。
+
+| 同一自然语言组合请求 | 省略思考开关 | 显式关闭思考 |
+| --- | --- | --- |
+| 模型调用次数 / 纠错 | 1 / 0 | 1 / 0 |
+| 模型请求耗时 | 94.315517 秒 | 7.515839 秒 |
+| 响应思考正文 | 13,577 字符 | 未返回该字段 |
+| 媒体执行耗时 | 1.333 秒 | 3.06474 秒 |
+| 三个下载文件 | 独立验证通过 | 独立验证通过，大小与 SHA-256 均与前次相同 |
+
+关闭思考后实测模型耗时减少 92.03%，为各一次观测，不是延迟承诺。脱敏请求副本除新增 `enable_thinking:false` 外一致；实际响应 HTTP 200、finish_reason=stop，生成 H.264/AAC MP4 320×180 与 0/500 ms 两张 PNG 160×90。完整解码、24 帧相对 PTS、音频内容对齐及 PNG 独立重建误差检查通过。最终源码在宿主和精确镜像 `sha256:8e3e3ebcbc4a8e78f1d650367b930ab5ad001a2fccc89744e80a5ed8a8ec4244` 内均 **843 项测试通过**；Ruff、Pyright、消费者副本同步检查通过。报告记录实际阈值和边界，见[关闭思考验收与对比](../verification/qwen-thinking-off-validation.json)。
+
+两次本地更新前均确认无活动工作，正常停止并逐项校验四卷备份，再复用原卷、端口和安全配置。第二次备份首次误用系统 Python 3.9，脚本自动恢复原容器；确认缺少 `hashlib.file_digest` 后使用项目 Python 3.14 重做，完整备份通过才切换。最终 25 个历史任务、25 个尝试、30 个产物、32 个步骤、29 个上传和 11 个规划请求均未改变，96 个历史输出目录/文件条目保持一致；新增一项成功组合任务。本次上传已释放，服务健康、无活动工作，INFO 日志和正文关闭已恢复，思考保持关闭；其他配置和凭据不变。仅本地提交和部署，未 push 或发布新 GHCR 镜像；双实际宿主机及备份恢复演练等待办不变。

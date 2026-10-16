@@ -14,7 +14,7 @@
 
 - 使用 `pydantic-ai-slim[openai]==2.56.0` 和 `a2a-sdk[http-server]==1.2.2`，具体传递依赖锁在 `uv.lock`。Python 3.14 与原固定 FastAPI/Pydantic/MCP 组合须实际解析、导入和协议验证。
 - 模型默认关闭；A2A 独立开关，启用 A2A 要求自然语言规划配置完整。关闭模型时原结构化 HTTP/MCP 功能保持可用。
-- 使用可配置 OpenAI-compatible base URL/model/API key；key 为 `SecretStr`。不硬编码供应商的 thinking 参数。只开启有界模型输出与显式请求预算，不启用 trace、原始 HTTP/body 日志或 SDK 隐式 HTTP 重试。
+- 使用可配置 OpenAI-compatible base URL/model/API key；key 为 `SecretStr`。`MEDIA_LLM_ENABLE_THINKING` 默认 `false`，通过 SDK `extra_body` 映射为 HTTP 顶层 `enable_thinking`；`true` 开启，显式小写 `null` 省略供应商扩展。保留有界模型输出与显式请求预算，不启用 SDK trace、原始 HTTP/body 日志或隐式 HTTP 重试。默认 `prompted` 采用 JSON Object 加完整本地校验；`native` 需核对供应商 Schema 合同，百炼兼容边界见[使用指南](../usage/agent.zh-CN.md)。
 - 根目录 `.env` 统一保存服务 Token、模型 Key/model/base URL、LLM/A2A 开关和规划预算；结构 JSON 不接受这些字段。服务默认读取当前目录 `.env`，可用 `MEDIA_ENV_FILE` 显式选文件；不自动读取 `.env.local`。Compose 从 `.env` 按白名单传入环境，进程 `MEDIA_*` 优先于文件；修改后必须重新创建容器。`.env` 权限为 0600，不能提交或复制进镜像，不公开展开的 Compose 配置、inspect 或凭据值。显式本地验收仍兼容 `llm_provider/llm_default_model/llm_api_key/llm_base_url`，解析不执行 shell、不展开变量。旧 JSON 通过 `deploy/generate-config.py` 原子迁移，先保存 `.env` 再移除重复字段；已有 `.env` 明确值优先。
 - 规划并发默认 2（1～4），全局未完成请求上限默认 32，规划总期限默认 300 秒（可配置范围 `(0, 300]`），输出 token 上限默认 4096。该期限从规划请求接受起计算，包含排队、模型调用、受控纠错和媒体任务提交；媒体任务接受后独立使用 `task_timeout_seconds`（默认 3600 秒），不沿用规划期限。模型网络 I/O 始终在数据库事务外，与媒体 Worker 槽分开计数。
 
@@ -53,6 +53,8 @@ A2A 状态：规划/排队/运行/取消中映射 working；成功映射 complet
 所有新 HTTP/A2A/Card 路径沿用统一可选 Bearer Token；`.env` 的 `MEDIA_SERVICE_TOKEN` 显式小写 `null` 开放，Token 统一校验，部署缺失或空值拒绝启动。仅直接构造 Settings 保留旧 callers 兼容。caller 从可信中间件传入，不由模型或请求 metadata 指定。下载 URL 不包含 Token；同一调用方凭据继续用于下载。SDK 原始 body/debug/异常日志必须关闭或安全过滤。
 
 ## 验证与交付
+
+诊断事件按 `MEDIA_LOG_LEVEL` 分级，默认 `INFO`；`DEBUG` 记录状态读取、模型请求及响应检查点、输出校验、计划保存、媒体接受的阶段、序号和耗时。`MEDIA_LOG_MODEL_CONTENT` 默认 `false`，仅在 `DEBUG` 且显式开启时记录脱敏模型正文：先解析完整 JSON 及嵌套 JSON，再递归过滤；非 JSON 文本也须脱敏，超过 128 KiB 或无法可靠区分敏感赋值的文本整段省略。实际凭据及其转义形式、敏感字段、URL、路径和邮箱不得进入诊断正文；SDK 原始错误仍关闭。公开验收报告只保存安全摘要，不复制正文。
 
 1. 定向单测覆盖计划校验、默认与参数绑定、需澄清/不支持、超时、并发、幂等、caller 隔离、外部错误脱敏及普通测试无模型网络请求。
 2. 覆盖规划开始/返回/保存、媒体接受前后、取消竞争、重启恢复、文件到期/release、GC、迁移和敏感字段清除；保存计划后恢复不再请求模型。

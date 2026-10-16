@@ -1,0 +1,346 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-16",
+  "status": "passed",
+  "scope": "新增规划阶段日志后的一次本地诊断镜像、原生 MCP 自然语言组合处理及下载产物独立验证。",
+  "baseline": {
+    "source_revision": "4070229de814c03dfbfc9d6132d76ad963d56aee",
+    "local_diagnostic_image_id": "sha256:cf077387f6d7e5ca5b404f7b0a059ae3f806f4df53c3ba4a39e2ab1812d7cdca",
+    "architecture": "arm64",
+    "service_engine": {
+      "ffmpeg": "7.1.5-0+deb13u1",
+      "ffprobe": "7.1.5-0+deb13u1",
+      "pillow": "12.3.0",
+      "contract_sha256": "cea602fd6f880ef0a4103b77a1c6752316e729259147b5323be77fa97be981c2",
+      "presets_sha256": "3075a9273018409fe3a523a84d845bfa4683dc4a266be868b8904b4fc950dc13",
+      "implementation_sha256": "e0b35473b7fae63fbe23c249a91e9250b2db206b26aa23a7d3a035c84c96468f"
+    },
+    "new_git_push_for_this_validation": false,
+    "diagnostic_image_pushed": false
+  },
+  "previous_failure": {
+    "report": "docs/verification/ghcr-native-mcp-natural-language-validation.json",
+    "report_sha256": "0d443711a196e47024b084bd6e410b1965cc2ca4c43f1bdb9b71185de8398c92",
+    "agent_task_id": "agent_f025340f436e4495a1118d07c9507abe",
+    "status": "failed",
+    "error_code": "PLANNING_TIMEOUT",
+    "planning_budget_seconds": 300,
+    "elapsed_seconds": 300.009,
+    "plan_persisted": false,
+    "media_job_created": false,
+    "outputs_downloaded": 0,
+    "report_preserved": true,
+    "causal_limit": "此前没有模型请求和规划阶段日志；本次成功不能确定旧 300 秒超时的精确原因，也不能证明日志修改修复了模型延迟。"
+  },
+  "fixture": {
+    "name": "video_h264_640x360.mkv",
+    "size_bytes": 62056,
+    "sha256": "3befa1884aaeeedc2fd99eb1e8701dc1ca8dd294f9a6e01da8e042fb853602f9",
+    "same_as_previous_failure": true,
+    "current_identity_unchanged": true
+  },
+  "run": {
+    "transport": "宿主原生 MCP；文件字节经既有 HTTP 上传和下载",
+    "generate_media_calls": 1,
+    "agent_task_id": "agent_71f0d4cda9a04dd7a7e63dc6d456960a",
+    "accepted_at": "2026-10-16T06:10:27.507Z",
+    "planning_deadline_at": "2026-10-16T06:15:27.507Z",
+    "planning_budget_seconds": 300,
+    "decision": "execute",
+    "status": "succeeded",
+    "job_id": "job_7ddaf2ccb4d54c9285aa33f0385c9670",
+    "job_created_at": "2026-10-16T06:12:01.947Z",
+    "media_deadline_at": "2026-10-16T07:12:01.947Z",
+    "execution_attempts": 1,
+    "inputs_released": true
+  },
+  "model_request": {
+    "configured_model": "qwen3.8-flash",
+    "request_model": "qwen3.8-flash",
+    "response_model": "qwen3.8-flash",
+    "output_mode": "prompted",
+    "response_format": {
+      "type": "json_object"
+    },
+    "request_bytes": 72449,
+    "message_roles": [
+      "system",
+      "system",
+      "user"
+    ],
+    "stream": false,
+    "max_tokens": 4096,
+    "enable_thinking_parameter_sent": false,
+    "reasoning_effort_parameter_sent": false,
+    "thinking_budget_parameter_sent": false,
+    "parameter_presence_note": "以上 sent=false 表示没有发送该参数，不表示显式关闭思考。",
+    "http_status": 200,
+    "finish_reasons": [
+      "stop"
+    ],
+    "response_text_characters": 740,
+    "response_reasoning_characters": 13577,
+    "provider_reported_usage": {
+      "completion_tokens": 4099,
+      "completion_tokens_details": {
+        "reasoning_tokens": 3709,
+        "text_tokens": 4099
+      },
+      "prompt_tokens": 32653,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "text_tokens": 32653
+      },
+      "total_tokens": 36752
+    },
+    "usage_note": "保留供应商原始计数字段，不自行相加或归因；未发布请求或响应正文。"
+  },
+  "timings": {
+    "model_requests": 1,
+    "controlled_output_corrections": 0,
+    "queue_ms": 47.09,
+    "model_request_ms": 94315.517,
+    "model_planning_ms": 94358.444,
+    "plan_validation_ms": 0.37,
+    "plan_save_ms": 20.35,
+    "media_accept_ms": 9.514,
+    "media_execution_ms": 1333.0,
+    "interpretation": "本次模型请求约 94.315 秒，媒体执行 1.333 秒。模型请求计时包含网络、供应商处理及 SDK 响应处理，不等于纯推理时长；供应商排队等内部阶段无法拆分。"
+  },
+  "outputs": [
+    {
+      "operation": "video.transcode.v1",
+      "artifact_id": "art_bef4cde878f5422aa1971a26cd78aada",
+      "kind": "file",
+      "state": "ready",
+      "size_bytes": 30736,
+      "sha256": "6fefad925b8544a8d749a0b7c25a7a58d3562a8a0700c8c528b6b0e77ee37682",
+      "codec": "h264",
+      "container": "mp4",
+      "dimensions": [
+        320,
+        180
+      ],
+      "audio_stream_count": 1,
+      "audio_sample_rate_hz": 44100,
+      "audio_channels": 1,
+      "download_sha256_matches_native_metadata": true
+    },
+    {
+      "operation": "video.extract_frames.v1",
+      "artifact_id": "art_ff9b61bf7155475abd5c63b6d7171998",
+      "kind": "collection",
+      "state": "ready",
+      "size_bytes": 15062,
+      "collection_sha256_from_native_metadata": "78c3fd9eaebd8bee0f8ae66827a2eba992c79b67445858f08795122600c60278",
+      "frame_selection": "next",
+      "time_origin": "first_decodable_pts",
+      "members": [
+        {
+          "index": 0,
+          "member_key": "frame_000.png",
+          "requested_time_ms": 0,
+          "actual_time_ms": 0,
+          "size_bytes": 6939,
+          "sha256": "b3db64854dbe8f57d4b0cd95f341e2fd7477c007cb9079a4fd25cfebf78ad220",
+          "format": "png",
+          "dimensions": [
+            160,
+            90
+          ],
+          "download_sha256_matches_native_metadata": true
+        },
+        {
+          "index": 1,
+          "member_key": "frame_001.png",
+          "requested_time_ms": 500,
+          "actual_time_ms": 500,
+          "size_bytes": 8123,
+          "sha256": "26d7235cb8496fc85979bf38c6e7da376b0cce209054f12356c91a8616f1b426",
+          "format": "png",
+          "dimensions": [
+            160,
+            90
+          ],
+          "download_sha256_matches_native_metadata": true
+        }
+      ]
+    }
+  ],
+  "independent_validation": {
+    "checked_at_utc": "2026-10-16T06:15:03.699188+00:00",
+    "status": "passed",
+    "tools": {
+      "ffmpeg": "ffmpeg version 9.0.1 Copyright (c) 2000-2026 the FFmpeg developers",
+      "ffprobe": "ffprobe version 9.0.1 Copyright (c) 2007-2026 the FFmpeg developers",
+      "pillow": "12.3.0",
+      "python": "3.14.7"
+    },
+    "full_video_audio_decode_with_xerror": true,
+    "timeline": {
+      "source_frame_count": 24,
+      "result_frame_count": 24,
+      "maximum_absolute_relative_pts_difference_seconds": 0.0,
+      "tolerance_seconds": 0.001,
+      "pass": true,
+      "scope": "按首帧归零逐帧比较 PTS；容器平均帧率字段和绝对音视频起点不作为保持保证"
+    },
+    "audio_content": {
+      "source_sample_count": 45056,
+      "result_sample_count": 46049,
+      "best_sample_alignment_shift": -1024,
+      "correlation": 0.9997968906507603,
+      "rms_ratio_result_to_source": 1.0004202157078503,
+      "overlap_ratio": 0.9777628178679233,
+      "thresholds": {
+        "min_correlation": 0.97,
+        "min_overlap_ratio": 0.9,
+        "rms_ratio_range": [
+          0.8,
+          1.2
+        ],
+        "max_alignment_samples": 2048
+      },
+      "pass": true,
+      "scope": "解码 PCM 对齐后比较内容；不证明绝对起始时间、AAC 字节或无损音频保持不变"
+    },
+    "images": [
+      {
+        "format": "PNG",
+        "dimensions": [
+          160,
+          90
+        ],
+        "full_png_decode": true,
+        "rgb_mean_absolute_error": 0.671087962962963,
+        "rgb_max_absolute_error": 3,
+        "thresholds": {
+          "max_mean_absolute_error": 2.0,
+          "max_pixel_channel_error": 20
+        },
+        "pass": true,
+        "requested_time_ms": 0,
+        "native_actual_time_ms": 0,
+        "independently_selected_source_frame": 0,
+        "independently_selected_source_time_ms": 0.0,
+        "native_time_matches_source": true
+      },
+      {
+        "format": "PNG",
+        "dimensions": [
+          160,
+          90
+        ],
+        "full_png_decode": true,
+        "rgb_mean_absolute_error": 0.6796296296296296,
+        "rgb_max_absolute_error": 3,
+        "thresholds": {
+          "max_mean_absolute_error": 2.0,
+          "max_pixel_channel_error": 20
+        },
+        "pass": true,
+        "requested_time_ms": 500,
+        "native_actual_time_ms": 500,
+        "independently_selected_source_frame": 12,
+        "independently_selected_source_time_ms": 500.0,
+        "native_time_matches_source": true
+      }
+    ]
+  },
+  "container_tests": {
+    "image_id": "sha256:cf077387f6d7e5ca5b404f7b0a059ae3f806f4df53c3ba4a39e2ab1812d7cdca",
+    "architecture": "arm64",
+    "recorded_at": "2026-10-16T06:06:22.860961+00:00",
+    "engine_series": "7.1",
+    "checks": [
+      "non_root",
+      "readonly_root",
+      "locked_test_dependencies",
+      "full_pytest_suite",
+      "consumer_skill_packages",
+      "source_from_tested_image"
+    ],
+    "exit_code": 0,
+    "passed": 820,
+    "pytest_summary": "820 passed in 154.35s (0:02:34)",
+    "scope_note": "820 项是该精确镜像内的完整测试结果；不表述为宿主机 820 项通过。"
+  },
+  "state_and_log_restore": {
+    "pre_change_backup": {
+      "clean_stop": true,
+      "container_exit_code": 143,
+      "schema": 3,
+      "quick_check": "ok",
+      "foreign_key_errors": 0,
+      "active": {
+        "media_jobs": 0,
+        "planning_requests": 0,
+        "submitted_active_media": 0,
+        "running_attempts": 0,
+        "uploads": 0,
+        "active_sends": 0,
+        "publishing": 0
+      }
+    },
+    "post_change_healthy": true,
+    "restart_count": 0,
+    "oom_killed": false,
+    "database_quick_check": "ok",
+    "foreign_key_errors": 0,
+    "active": {
+      "media_jobs": 0,
+      "planning_requests": 0,
+      "submitted_active_media": 0,
+      "running_attempts": 0,
+      "uploads": 0,
+      "active_sends": 0,
+      "publishing": 0
+    },
+    "historical_rows_unchanged": {
+      "jobs": 24,
+      "attempts": 24,
+      "artifacts": 28,
+      "steps": 30,
+      "uploaded_files": 28,
+      "agent_requests": 10
+    },
+    "new_rows": {
+      "jobs": 1,
+      "attempts": 1,
+      "artifacts": 2,
+      "steps": 2,
+      "uploaded_files": 1,
+      "agent_requests": 1
+    },
+    "historical_files": {
+      "work": {
+        "historical_entries_unchanged": 1,
+        "new_entries": 0
+      },
+      "shared_input": {
+        "historical_entries_unchanged": 0,
+        "new_entries": 0
+      },
+      "shared_output": {
+        "historical_entries_unchanged": 89,
+        "new_entries": 7
+      }
+    },
+    "runtime_meta_note": "容器重启代际标记允许更新，不纳入历史业务行不变声明。",
+    "configuration_and_credentials_unchanged": true,
+    "final_log_level": "INFO",
+    "final_model_content_logging": false,
+    "known_credential_matches_in_diagnostic_records": 0,
+    "model_bodies_or_private_access_data_published": false
+  },
+  "limitations": [
+    "仅验证本次短 H.264/AAC fixture 的已下载产物，不代表全部格式、长媒体或并发验收",
+    "PNG 由宿主 FFmpeg 9.0.1 解码并用 Pillow 12.3.0 LANCZOS 独立重建；服务 FFmpeg 为 7.1 系列，跨版本像素比较采用明示 RGB 误差阈值",
+    "PCM 对齐验证用于音频内容保持，不证明绝对 A/V 起点或压缩字节保持；周期测试音存在对齐歧义",
+    "独立脚本不访问服务、模型、凭据或私有状态；模型规划及任务终态另由本次原生 MCP 元数据核对",
+    "仅一次真实模型诊断成功，不承诺后续模型延迟；不能用本轮 94.315 秒解释此前 300 秒超时的精确原因。",
+    "集合摘要取自原生产物元数据；独立重算的是三个下载文件 SHA-256，不声称重算了服务端原始集合清单摘要。",
+    "本报告只覆盖该诊断镜像和本次运行，不混入后续模型思考参数变更或新镜像的验收结果。",
+    "未新增双宿主机、Windows、HTTPS/代理、并发容量、容器强停或备份恢复演练。"
+  ]
+}

@@ -1,0 +1,470 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-16",
+  "recorded_at": "2026-10-16T06:38:52.186679+00:00",
+  "status": "passed",
+  "issue": "CFK-816",
+  "scope": "默认关闭Qwen思考后的同一原生MCP自然语言转码加抽帧请求；核对官方请求合同、实际请求/响应、下载媒体及数据保留。",
+  "source_revision": "ef3dbc6f8258cbfb537c391856f2ac92ee73c6c3",
+  "image_id": "sha256:8e3e3ebcbc4a8e78f1d650367b930ab5ad001a2fccc89744e80a5ed8a8ec4244",
+  "architecture": "arm64",
+  "official_contract_check": {
+    "checked_at": "2026-10-16",
+    "references": [
+      "https://help.aliyun.com/zh/model-studio/deep-thinking/",
+      "https://help.aliyun.com/zh/model-studio/qwen-api-via-openai-chat-completions/",
+      "https://help.aliyun.com/zh/model-studio/qwen-structured-output"
+    ],
+    "thinking": "Qwen3.8-flash为默认开启思考的混合模式。Python SDK使用extra_body，HTTP请求体为顶层enable_thinking:false；显式null配置省略该扩展。",
+    "selected_output": "保持prompted：response_format=json_object、提示词含JSON及完整参数schema、Pydantic和任务图本地校验；不宣称供应商严格Schema保证。",
+    "native_boundary": {
+      "model_supports_json_schema": true,
+      "sdk_versions": {
+        "pydantic-ai-slim": "2.56.0",
+        "openai": "3.31.0",
+        "pydantic": "2.14.1",
+        "jsonschema": "4.26.0"
+      },
+      "observed_current_native_strict": false,
+      "unsupported_patternProperties_count": 2,
+      "forced_openai_strict_changes_dynamic_maps": true,
+      "forced_strict_valid_plan_rejected_offline": true,
+      "decision": "本次未切换native。Qwen原生Schema需单独适配并验收，不能仅打开strict。"
+    },
+    "output_budget": "官方建议不设置max_tokens以避免JSON截断；按本项目有限资源合同保留4096。输出仍须完整本地校验；不完整JSON不能执行，完整合法JSON即使finish_reason=length也不一律拒绝。"
+  },
+  "configuration": {
+    "MEDIA_LLM_ENABLE_THINKING": false,
+    "supported_values": [
+      false,
+      true,
+      null
+    ],
+    "null_semantics": "不发送enable_thinking扩展",
+    "MEDIA_LLM_OUTPUT_MODE": "prompted",
+    "planning_timeout_seconds": 300,
+    "planning_max_output_tokens": 4096,
+    "model": "qwen3.8-flash"
+  },
+  "model_request": {
+    "request_bytes": 72473,
+    "model": "qwen3.8-flash",
+    "enable_thinking": false,
+    "extra_body_nested": false,
+    "message_roles": [
+      "system",
+      "system",
+      "user"
+    ],
+    "message_characters": [
+      555,
+      53315,
+      7621
+    ],
+    "json_instruction_present": true,
+    "max_tokens": 4096,
+    "stream": false,
+    "response_format": {
+      "type": "json_object"
+    }
+  },
+  "model_response": {
+    "model": "qwen3.8-flash",
+    "http_status": 200,
+    "finish_reason": "stop",
+    "message_fields": [
+      "content",
+      "role"
+    ],
+    "text_lengths": {
+      "content": 760,
+      "role": 9
+    },
+    "usage": {
+      "completion_tokens": 398,
+      "prompt_tokens": 32617,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "text_tokens": 32617
+      },
+      "total_tokens": 33015
+    }
+  },
+  "comparison": {
+    "baseline_report": "docs/verification/planning-logs-validation.json",
+    "same_fixture": true,
+    "same_intent": true,
+    "redacted_request_bodies_identical_except_enable_thinking": true,
+    "added_enable_thinking": false,
+    "original_parameter_absent": true,
+    "limitation": "各一次观测，不是统计基准或延迟保证；模型计时含网络及供应商内部处理，不能据此还原旧300秒超时精确原因。供应商token统计按原值保留。",
+    "thinking_default_on_model_ms": 94315.517,
+    "thinking_explicit_off_model_ms": 7515.839,
+    "observed_reduction_percent": 92.03,
+    "observed_ratio": 12.55,
+    "thinking_default_on_reasoning_characters": 13577,
+    "thinking_explicit_off_reasoning_characters": 0,
+    "all_three_downloaded_files_byte_identical": true
+  },
+  "run": {
+    "generate_media_calls": 1,
+    "model_requests": 1,
+    "controlled_output_corrections": 0,
+    "agent_task_id": "agent_29193724d02947c18725dada67c6d4c0",
+    "job_id": "job_4c06d45eb6094fe9b957922b7fc52c2a",
+    "accepted_at": "2026-10-16T06:35:27.091Z",
+    "status": "succeeded",
+    "operations": [
+      "video.transcode.v1",
+      "video.extract_frames.v1"
+    ],
+    "execution_attempts": 1,
+    "inputs_released": true,
+    "uploads_released": true
+  },
+  "timings": {
+    "queue_ms": 37.51,
+    "model_request_ms": 7515.839,
+    "model_planning_ms": 7558.332,
+    "plan_validate_ms": 0.277,
+    "plan_save_ms": 18.487,
+    "media_accept_ms": 9.496,
+    "media_execution_ms": 3064.74
+  },
+  "independent_media_validation": {
+    "schema_version": 1,
+    "checked_at_utc": "2026-10-16T06:37:04.786484+00:00",
+    "status": "passed",
+    "tools": {
+      "ffmpeg": "ffmpeg version 9.0.1 Copyright (c) 2000-2026 the FFmpeg developers",
+      "ffprobe": "ffprobe version 9.0.1 Copyright (c) 2007-2026 the FFmpeg developers",
+      "pillow": "12.3.0",
+      "python": "3.14.7"
+    },
+    "source": {
+      "fixture": "video_h264_640x360.mkv",
+      "sha256": "3befa1884aaeeedc2fd99eb1e8701dc1ca8dd294f9a6e01da8e042fb853602f9",
+      "expected_sha256_matches": true
+    },
+    "download_identity": [
+      {
+        "file": "results/extracted_frames/frame_000.png",
+        "size_bytes": 6939,
+        "sha256": "b3db64854dbe8f57d4b0cd95f341e2fd7477c007cb9079a4fd25cfebf78ad220",
+        "matches_download_summary": true,
+        "matches_native_mcp_metadata": true
+      },
+      {
+        "file": "results/extracted_frames/frame_001.png",
+        "size_bytes": 8123,
+        "sha256": "26d7235cb8496fc85979bf38c6e7da376b0cce209054f12356c91a8616f1b426",
+        "matches_download_summary": true,
+        "matches_native_mcp_metadata": true
+      },
+      {
+        "file": "results/transcoded_video",
+        "size_bytes": 30736,
+        "sha256": "6fefad925b8544a8d749a0b7c25a7a58d3562a8a0700c8c528b6b0e77ee37682",
+        "matches_download_summary": true,
+        "matches_native_mcp_metadata": true
+      }
+    ],
+    "video": {
+      "file": "results/transcoded_video",
+      "codec": "h264",
+      "width": 320,
+      "height": 180,
+      "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+      "full_decode_with_xerror": true,
+      "audio_stream_count": 1,
+      "audio_sample_rate": "44100",
+      "audio_channels": 1,
+      "source_audio_properties_preserved": true,
+      "pass": true
+    },
+    "timeline": {
+      "source_frame_count": 24,
+      "result_frame_count": 24,
+      "source_relative_pts_seconds": [
+        0.0,
+        0.042,
+        0.083,
+        0.125,
+        0.167,
+        0.208,
+        0.25,
+        0.292,
+        0.333,
+        0.375,
+        0.417,
+        0.458,
+        0.5,
+        0.542,
+        0.583,
+        0.625,
+        0.667,
+        0.708,
+        0.75,
+        0.792,
+        0.833,
+        0.875,
+        0.917,
+        0.958
+      ],
+      "result_relative_pts_seconds": [
+        0.0,
+        0.042,
+        0.083,
+        0.125,
+        0.167,
+        0.208,
+        0.25,
+        0.292,
+        0.333,
+        0.375,
+        0.417,
+        0.458,
+        0.5,
+        0.542,
+        0.583,
+        0.625,
+        0.667,
+        0.708,
+        0.75,
+        0.792,
+        0.833,
+        0.875,
+        0.917,
+        0.958
+      ],
+      "maximum_absolute_relative_pts_difference_seconds": 0.0,
+      "tolerance_seconds": 0.001,
+      "pass": true,
+      "scope": "按首帧归零逐帧比较 PTS；容器平均帧率字段和绝对音视频起点不作为保持保证"
+    },
+    "audio_content": {
+      "source_sample_count": 45056,
+      "result_sample_count": 46049,
+      "best_sample_alignment_shift": -1024,
+      "correlation": 0.9997968906507603,
+      "rms_ratio_result_to_source": 1.0004202157078503,
+      "overlap_ratio": 0.9777628178679233,
+      "thresholds": {
+        "min_correlation": 0.97,
+        "min_overlap_ratio": 0.9,
+        "rms_ratio_range": [
+          0.8,
+          1.2
+        ],
+        "max_alignment_samples": 2048
+      },
+      "pass": true,
+      "scope": "解码 PCM 对齐后比较内容；不证明绝对起始时间、AAC 字节或无损音频保持不变"
+    },
+    "extracted_images": [
+      {
+        "format": "PNG",
+        "dimensions": [
+          160,
+          90
+        ],
+        "full_png_decode": true,
+        "rgb_mean_absolute_error": 0.671087962962963,
+        "rgb_max_absolute_error": 3,
+        "thresholds": {
+          "max_mean_absolute_error": 2.0,
+          "max_pixel_channel_error": 20
+        },
+        "pass": true,
+        "file": "results/extracted_frames/frame_000.png",
+        "requested_time_ms": 0,
+        "native_actual_time_ms": 0,
+        "independently_selected_source_frame": 0,
+        "independently_selected_source_time_ms": 0.0,
+        "native_time_matches_source": true
+      },
+      {
+        "format": "PNG",
+        "dimensions": [
+          160,
+          90
+        ],
+        "full_png_decode": true,
+        "rgb_mean_absolute_error": 0.6796296296296296,
+        "rgb_max_absolute_error": 3,
+        "thresholds": {
+          "max_mean_absolute_error": 2.0,
+          "max_pixel_channel_error": 20
+        },
+        "pass": true,
+        "file": "results/extracted_frames/frame_001.png",
+        "requested_time_ms": 500,
+        "native_actual_time_ms": 500,
+        "independently_selected_source_frame": 12,
+        "independently_selected_source_time_ms": 500.0,
+        "native_time_matches_source": true
+      }
+    ],
+    "limitations": [
+      "仅验证本次短 H.264/AAC fixture 的已下载产物，不代表全部格式、长媒体或并发验收",
+      "PNG 由宿主 FFmpeg 9.0.1 解码并用 Pillow 12.3.0 LANCZOS 独立重建；服务 FFmpeg 为 7.1 系列，跨版本像素比较采用明示 RGB 误差阈值",
+      "PCM 对齐验证用于音频内容保持，不证明绝对 A/V 起点或压缩字节保持；周期测试音存在对齐歧义",
+      "独立脚本不访问服务、模型、凭据或私有状态；模型规划及任务终态由主代理原生 MCP 证据记录"
+    ]
+  },
+  "verification": {
+    "host": {
+      "status": "passed",
+      "source_revision": "ef3dbc6f8258cbfb537c391856f2ac92ee73c6c3",
+      "pytest_summary": "843 passed in 84.53s (0:01:24)",
+      "ruff": "passed",
+      "pyright": "0 errors, 0 warnings",
+      "consumer_sync": "passed",
+      "diff_check": "passed"
+    },
+    "exact_image": {
+      "status": "passed",
+      "image_id": "sha256:8e3e3ebcbc4a8e78f1d650367b930ab5ad001a2fccc89744e80a5ed8a8ec4244",
+      "architecture": "arm64",
+      "recorded_at": "2026-10-16T06:29:48.254387+00:00",
+      "engine_series": "7.1",
+      "checks": [
+        "non_root",
+        "readonly_root",
+        "locked_test_dependencies",
+        "full_pytest_suite",
+        "consumer_skill_packages",
+        "source_from_tested_image"
+      ],
+      "exit_code": 0,
+      "pytest_summary": "843 passed in 155.58s (0:02:35)",
+      "elapsed_seconds": 161.05719750002027
+    },
+    "actual_request_no_nested_extra_body": true,
+    "known_credential_matches_in_captured_logs": 0,
+    "model_response_has_no_reasoning_content": true
+  },
+  "deployment": {
+    "verified_backup_volume_count": 4,
+    "same_named_volumes_ports_security": true,
+    "only_changed_runtime_options": [
+      "MEDIA_IMAGE_VERSION",
+      "MEDIA_LLM_ENABLE_THINKING",
+      "MEDIA_LOG_LEVEL",
+      "MEDIA_LOG_MODEL_CONTENT"
+    ],
+    "backup_retry": {
+      "backup_attempt": "failed_before_verification",
+      "host_interpreter": {
+        "python": "3.9.6",
+        "file_digest": false
+      },
+      "service_restarted_same_container": true,
+      "active": {
+        "media_jobs": 0,
+        "planning_requests": 0,
+        "submitted_active_media": 0,
+        "running_attempts": 0,
+        "uploads": 0,
+        "active_sends": 0,
+        "publishing": 0
+      },
+      "structural_config_changed": false,
+      "environment_file_changed": false,
+      "retry_interpreter": "3.14.7"
+    },
+    "final": {
+      "passed": true,
+      "container_id": "351a86e33db36464aa63eb364b7f7f21a940797aae5da0f93987c89029b75c27",
+      "image_id": "sha256:8e3e3ebcbc4a8e78f1d650367b930ab5ad001a2fccc89744e80a5ed8a8ec4244",
+      "healthy": true,
+      "restart_count": 0,
+      "oom_killed": false,
+      "database_quick_check": "ok",
+      "foreign_key_errors": 0,
+      "active": {
+        "media_jobs": 0,
+        "planning_requests": 0,
+        "submitted_active_media": 0,
+        "running_attempts": 0,
+        "uploads": 0,
+        "active_sends": 0,
+        "publishing": 0
+      },
+      "historic_tables": {
+        "jobs": {
+          "historical_rows_unchanged": 25,
+          "new_rows": 1
+        },
+        "attempts": {
+          "historical_rows_unchanged": 25,
+          "new_rows": 1
+        },
+        "artifacts": {
+          "historical_rows_unchanged": 30,
+          "new_rows": 2
+        },
+        "steps": {
+          "historical_rows_unchanged": 32,
+          "new_rows": 2
+        },
+        "refs": {
+          "historical_rows_unchanged": 0,
+          "new_rows": 0
+        },
+        "leases": {
+          "historical_rows_unchanged": 0,
+          "new_rows": 0
+        },
+        "downloads": {
+          "historical_rows_unchanged": 0,
+          "new_rows": 0
+        },
+        "uploaded_files": {
+          "historical_rows_unchanged": 29,
+          "new_rows": 1
+        },
+        "file_refs": {
+          "historical_rows_unchanged": 0,
+          "new_rows": 0
+        },
+        "agent_requests": {
+          "historical_rows_unchanged": 11,
+          "new_rows": 1
+        },
+        "meta": {
+          "historical_rows_unchanged": 0,
+          "new_rows": 0
+        }
+      },
+      "historic_files": {
+        "work": {
+          "historical_entries_unchanged": 1,
+          "new_entries": 0
+        },
+        "shared_input": {
+          "historical_entries_unchanged": 0,
+          "new_entries": 0
+        },
+        "shared_output": {
+          "historical_entries_unchanged": 96,
+          "new_entries": 7
+        }
+      },
+      "other_config_and_credentials_unchanged": true,
+      "log_level": "INFO",
+      "model_content_logging": false,
+      "thinking_enabled": false,
+      "output_mode": "prompted",
+      "source_revision": "ef3dbc6f8258cbfb537c391856f2ac92ee73c6c3"
+    },
+    "git_push": false,
+    "image_publish": false
+  },
+  "limits": [
+    "仅本地arm64，未新增双业务宿主机或A2A端到端验收。",
+    "未进行备份恢复演练；已验证四卷完整归档与历史数据保留。",
+    "未向公开报告复制模型正文、实际凭据、私有配置或访问URL。",
+    "旧300秒失败证据保留，尚不能确定当时模型内部或网络的精确原因。"
+  ]
+}
