@@ -20,6 +20,7 @@ base = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(base)
 docker = base.docker
 LABEL = base.LABEL
+env_support = base.env_support
 
 
 class Harness:
@@ -41,8 +42,8 @@ class Harness:
         config = json.loads((ROOT / "deploy/media-config.example.json").read_text())
         config["service_token"] = self.token
         config["max_attempts"] = 1 if self.mode in {"staged", "renamed", "committed"} else 2
-        config_path.write_text(json.dumps(config))
-        config_path.chmod(0o644)
+        environment_path = env_support.write_runtime_configuration(config, config_path)
+        self.mounts.extend(env_support.environment_mount(environment_path))
         try:
             for part, volume in self.volumes.items():
                 docker("volume", "create", "--label", f"{LABEL}={self.owner}", volume)

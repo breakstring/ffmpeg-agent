@@ -10,6 +10,7 @@ import math
 import os
 import re
 import shutil
+import sys
 import tempfile
 import uuid
 from contextlib import contextmanager
@@ -26,6 +27,9 @@ OPERATIONS = {
     "resize_image": ("image.resize.v1", "image", "image"),
 }
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
+
+from media_service.envfile import read_env_file  # noqa: E402
 
 
 class ExampleError(Exception):
@@ -37,6 +41,8 @@ def parse_args(description: str) -> argparse.Namespace:
     parser.add_argument("source", type=Path)
     parser.add_argument("destination", type=Path)
     parser.add_argument("--config", type=Path, default=ROOT / "deploy/local/media-config.json")
+    parser.add_argument("--env-file", type=Path, default=ROOT / ".env",
+                        help="Private .env containing MEDIA_SERVICE_TOKEN")
     parser.add_argument("--base-url", help="Override the service URL; never include a token")
     parser.add_argument("--operation", choices=OPERATIONS, default="transcode_video")
     parser.add_argument("--params", type=Path, help="Optional JSON object of media parameters")
@@ -99,18 +105,39 @@ def safe_code(value: object) -> str:
 
 
 class Client:
-    def __init__(self, config: Path, base_url: str | None = None):
-        settings = json.loads(config.read_text())
-        self.base = (base_url or settings["public_base_url"]).rstrip("/")
+    def __init__(self, config: Path, base_url: str | None = None, *, env_file: Path = ROOT / ".env"):
+        try:
+            values = read_env_file(env_file) if env_file.exists() else {}
+        except (OSError, ValueError):
+            raise ExampleError("Cannot read --env-file; check its permissions and syntax") from None
+        token = os.environ.get("MEDIA_SERVICE_TOKEN", values.get("MEDIA_SERVICE_TOKEN"))
+        if token is None:
+            raise ExampleError("Set MEDIA_SERVICE_TOKEN in --env-file or the process environment; "
+                               "use null only for an intentionally open service")
+        if token != "null" and (len(token) < 24 or not token.isascii()
+                                or any(character.isspace() or ord(character) < 33
+                                       or ord(character) == 127 for character in token)):
+            raise ExampleError("MEDIA_SERVICE_TOKEN must be at least 24 printable ASCII characters "
+                               "without spaces, or null")
+        address = base_url or os.environ.get("MEDIA_PUBLIC_BASE_URL",
+                                            values.get("MEDIA_PUBLIC_BASE_URL"))
+        if not address:
+            try:
+                settings = json.loads(config.read_text(encoding="utf-8"))
+                address = settings.get("public_base_url") if isinstance(settings, dict) else None
+            except FileNotFoundError:
+                pass
+            except (OSError, ValueError):
+                raise ExampleError("Cannot read --config service address") from None
+        if not isinstance(address, str) or not address:
+            raise ExampleError("Set --base-url or MEDIA_PUBLIC_BASE_URL, or provide --config "
+                               "containing public_base_url")
+        self.base = address.rstrip("/")
         self.url = urlsplit(self.base)
         if (self.url.scheme not in {"http", "https"} or not self.url.hostname
                 or self.url.username or self.url.password or self.url.query or self.url.fragment):
             raise ExampleError("Service URL must be HTTP(S) without credentials, query or fragment")
-        token = settings["service_token"]
-        if token is not None and (not isinstance(token, str) or not token or "\n" in token
-                                  or "\r" in token):
-            raise ExampleError("service_token must be a nonempty string or null")
-        self.headers = {"Authorization": "Bearer " + token} if token else {}
+        self.headers = {"Authorization": "Bearer " + token} if token != "null" else {}
 
     @contextmanager
     def response(self, method: str, path: str, body=None, headers=None):

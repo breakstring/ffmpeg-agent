@@ -9,7 +9,6 @@
 在仓库根目录执行：
 
 ```sh
-cp .env.example .env
 python3 deploy/generate-config.py
 docker compose up -d --build
 docker compose ps
@@ -17,23 +16,31 @@ curl --fail http://127.0.0.1:8080/health/live
 curl --fail http://127.0.0.1:8080/health/ready
 ```
 
-生成器拒绝覆盖已有文件，随机 token 只进入 `deploy/local/media-config.json`，不打印到终端。该目录必须为 `0700`；目录内文件 `0644` 便于绑定到容器后由 UID/GID `10001:10001` 读取，宿主机其他用户无法穿过私有目录。请保持配置目录权限，不把配置加入 Git、构建上下文或日志。可以直接编辑该文件设置调用方、存储和来源规则；不要通过命令行参数或环境变量传 token。
+生成器可重复执行：创建 `.env` 和结构 JSON，或将旧 JSON 中的服务 Token、模型 Key、规划参数与功能开关迁入 `.env`，移除重复字段。已有非空模型值和明确的 `false` 开关优先；模板中空的模型字段可从旧 JSON 迁入。旧 `callers.tokens` 按已选服务调用方迁移首个 Token，随后移除全部旧 Token。随机 Token 只在缺少配置或仍为已知占位符时生成，只写入权限为 `0600` 的 `.env`，不打印到终端。结构 JSON 所在目录保持 `0700`，文件为 `0644`，便于绑定后由容器 UID/GID `10001:10001` 读取。凭据与本地配置不得加入 Git、构建上下文或日志。
 
-已有 `.env` 和私有 JSON 时保留它们，跳过复制和生成。`.env.example` 仅配置 Compose 项目名、镜像、端口、配置文件位置和容器资源，根目录 `MEDIA_CONFIG_PATH` 相对仓库解析。单独使用旧 `-f deploy/compose.yaml` 时其相对配置路径仍按 deploy 目录解析，外部配置使用绝对路径。
+`.env` 是服务 Bearer Token、模型配置、功能开关与 Compose 参数的统一入口，变量说明见 [`.env.example`](../.env.example)。Compose 显式把对应环境变量传给服务，进程环境变量优先于文件；结构 JSON 仅保留存储、来源规则、任务限额等结构项，不再接受认证或规划配置。需要自定义文件时，使用 `python3 deploy/generate-config.py --env-file <环境文件路径> --output <结构JSON路径>`，并让 `MEDIA_CONFIG_PATH` 对应实际结构 JSON 路径；Compose 通过 `docker compose --env-file <环境文件路径> ...` 选择同一文件。根目录 Compose 的相对路径按仓库解析；单独使用旧 `-f deploy/compose.yaml` 时相对配置路径按 deploy 目录解析，建议外部配置使用绝对路径。
+
+修改 `.env` 后执行下列命令重新创建容器，不能只 restart 沿用旧容器环境：
+
+```sh
+docker compose up -d --force-recreate --wait media
+```
+
+不要执行 `source .env`，值中含 `$` 时用单引号避免 Compose 插值。检查 Compose 结构时仅使用 `docker compose config --quiet`；完整展开配置和容器环境检查可能包含凭据，不应输出到终端、日志或报告。直接运行 Python 服务默认读取 `.env`，可用 `MEDIA_ENV_FILE` 指定其他文件；结构 JSON 由 `MEDIA_CONFIG_FILE` 指定。两种启动方式都将进程环境变量置于文件值之前。
 
 服务以非 root 运行，根文件系统只读；`state`、`work`、`shared_input` 和 `shared_output` 是四个独立卷。SQLite 只在 `state` 卷，业务容器不挂载 state/work。服务对共享输入只读，对共享输出可写；业务对输出只读。所有区域不能嵌套。外部 bind mount 需要预先满足 UID/GID 的读写权限，不能启动后自动递归修改既有业务目录所有权。
 
-默认仅向宿主机 `127.0.0.1:8080` 映射端口。跨机部署通过实际受控 HTTPS 入口提供服务，把 `public_base_url` 改为远端调用方可达地址；监听映射由 `MEDIA_BIND_ADDRESS` 和 `MEDIA_PORT` 配置。实际源服务的 hostname、端口、scheme 和允许目标网段加入对应调用方的 `source_rules`；空列表表示默认禁止 HTTP 来源。不可用全网段通配代替部署时的明确目标。
+默认仅向宿主机 `127.0.0.1:8080` 映射端口。跨机部署通过实际受控 HTTPS 入口提供服务，把 `.env` 中的 `MEDIA_PUBLIC_BASE_URL` 改为远端调用方可达地址；监听映射由 `MEDIA_BIND_ADDRESS` 和 `MEDIA_PORT` 配置。实际源服务的 hostname、端口、scheme 和允许目标网段加入对应调用方的 `source_rules`；空列表表示默认禁止 HTTP 来源。不可用全网段通配代替部署时的明确目标。
 
 默认 1 个 Worker、2 CPU、2 GiB 内存、128 PID、64 MiB `/tmp`、60 秒容器停止宽限期。配置中的 `max_work_bytes`、存储 `quota_bytes` 和磁盘余量控制持久工作/输出区域；Compose 的内存限制不构成磁盘配额。`max_frame_count` 默认 100，可按容量调整每次抽帧请求上限；`max_frame_rate` 默认 240 fps，只限制显式 constant/max 帧率，source 模式保留源帧时间节奏。这两项在服务 JSON 中配置，并通过 capabilities 公开。提高 Worker 数量之前先完成目标宿主机实测。构建参数 `BUILD_REVISION` 记录交付版本，不修改冻结操作或预设含义。
 
 ## 上传与远程 MCP
 
-新生成配置使用一个 `service_token`，HTTP、上传、产物下载与 `/mcp` 共用 Bearer 校验。显式设为 `null` 开放服务；已有配置缺少这个字段时继续使用原 `callers.tokens`，升级不会意外关闭认证。配置内保留的 `service_caller` 仅指定现有任务和存储所用的服务空间，不增加用户系统。
+`.env` 中的 `MEDIA_SERVICE_TOKEN` 统一保护 HTTP、上传、产物下载、`/mcp`、启用后的 `/a2a` 与 Agent Card。Token 至少为 24 个无空格的可打印 ASCII 字符；缺失或空值阻止启动，只有显式 `MEDIA_SERVICE_TOKEN=null` 才开放服务。旧 JSON 的 `service_token` 必须先经生成器迁移；运行时不再回退到 JSON 或 `callers.tokens` 获取服务凭据。结构配置中的 `service_caller` 仅指定现有任务和存储所用的服务空间，不增加用户系统。自然语言与 A2A 默认关闭，设置方法见[使用指南](../docs/usage/agent.zh-CN.md)。
 
 独立上传使用 `POST /v1/files`（原始二进制、`application/octet-stream`）；请求内上传使用 `POST /v1/jobs/upload`（multipart，`job` JSON 在先）。托管输入放在私有 work 卷的 `_uploads`，不额外要求业务共享卷，也不写只读输入卷。默认总上传预算 4 GiB、同时接收 2 个、总时限 300 秒、闲置 30 秒，且受整个 work 卷预算限制；实际配置和能力查询为准。上传完成和任务接受是不同检查点，失败请求中的完整文件按有限 TTL 保留供重试，半文件关闭后定向回收。
 
-远程 MCP 使用 `public_base_url` 加 `/mcp`，同进程提供 Streamable HTTP。入口按该公开地址检查 Host 和 Origin；反向代理应保留正确的公开 Host。客户端先用 HTTP 上传取得 `file_id`，再通过 MCP 处理和查询，最后带同一 Token 从 HTTP 下载产物。没有 stdio 桥接或远端客户端路径读取。调用示例见[README](../README.zh-CN.md)。
+远程 MCP 使用 `MEDIA_PUBLIC_BASE_URL` 加 `/mcp`，同进程提供 Streamable HTTP。入口按该公开地址检查 Host 和 Origin；反向代理应保留正确的公开 Host。客户端先用 HTTP 上传取得 `file_id`，再通过 MCP 处理和查询，最后带同一 Token 从 HTTP 下载产物。没有 stdio 桥接或远端客户端路径读取。调用示例见[README](../README.zh-CN.md)。
 
 升级会在单实例锁内把 SQLite schema 1 事务迁移到 2，保留原有任务与产物，新增上传登记和引用表。新版本写入 schema 2 后，旧镜像不能直接读取该数据库；回退应恢复升级前一致性备份。备份现有 state/work/output 已包含托管上传文件。
 
@@ -95,11 +102,11 @@ cp deploy/remote-check.example.json deploy/local/remote-check.json
 chmod 600 deploy/local/remote-check.json
 ```
 
-将媒体宿主机采集的 `media-host.json` 复制到业务宿主机的 `deploy/local/media-host.json`。编辑私有配置副本中的服务 HTTPS 地址、专用调用 token、来源 URL/受控头和 fixture 路径。部署方确认两台实际宿主机不同后，将 `distinct_physical_hosts_confirmed` 设为 `true`；该确认和主机指纹共同作为验收依据，脚本不能独立证明物理拓扑。不要在容器内或两个 VM 身份下冒充两个实际宿主机。随后执行：
+将媒体宿主机采集的 `media-host.json` 复制到业务宿主机的 `deploy/local/media-host.json`。编辑私有 JSON 副本中的服务 HTTPS 地址、来源 URL/受控头和 fixture 路径；专用服务 Token 只写入权限为 `0600` 的 `.env` 的 `MEDIA_SERVICE_TOKEN`。此验收要求认证，Token 不得为空或 `null`；旧副本中的 `caller_token` 须移出 JSON。部署方确认两台实际宿主机不同后，将 `distinct_physical_hosts_confirmed` 设为 `true`；该确认和主机指纹共同作为验收依据，脚本不能独立证明物理拓扑。不要在容器内或两个 VM 身份下冒充两个实际宿主机。随后执行：
 
 ```sh
 python3 deploy/verify-http-remote.py run \
-  --config deploy/local/remote-check.json \
+  --config deploy/local/remote-check.json --env-file .env \
   --output deploy/local/remote-video.mp4 \
   --report deploy/local/two-host-http.json
 ```
@@ -108,7 +115,7 @@ python3 deploy/verify-http-remote.py run \
 
 ## 本地验收与容量实测
 
-在可用 Docker daemon 上执行。脚本创建带随机名称和所有权标签的专用容器、卷及网络，完成后只清理本次创建的资源。仓库 fixture 只读挂载，再复制到专用输入卷；不挂载既有业务目录。每次生成的测试 token 仅存在临时配置中。
+在可用 Docker daemon 上执行。脚本创建带随机名称和所有权标签的专用容器、卷及网络，完成后只清理本次创建的资源。仓库 fixture 只读挂载，再复制到专用输入卷；不挂载既有业务目录。每次生成的测试 Token 仅存在本次验收的私有环境文件或进程环境中。
 
 ```sh
 docker build --build-arg BUILD_REVISION=local-verification -t ffmpeg-agent:v1-local .

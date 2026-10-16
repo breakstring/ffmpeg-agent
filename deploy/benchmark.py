@@ -1,5 +1,6 @@
 import argparse
 import hashlib
+import importlib.util
 import json
 import math
 import secrets
@@ -12,6 +13,14 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
+
+_support_spec = importlib.util.spec_from_file_location(
+    "deployment_env_support", Path(__file__).with_name("env_support.py"),
+)
+assert _support_spec and _support_spec.loader
+env_support = importlib.util.module_from_spec(_support_spec)
+_support_spec.loader.exec_module(env_support)
+
 
 LABEL = "io.ffmpeg-agent.verification"
 TERMINAL = {"succeeded", "partial", "failed", "canceled"}
@@ -137,8 +146,7 @@ def run(image: str, workers: int, jobs: int) -> dict:
         config["service_token"] = token
         config["worker_concurrency"] = workers
         config_path = Path(temp) / "config.json"
-        config_path.write_text(json.dumps(config))
-        config_path.chmod(0o644)
+        environment_path = env_support.write_runtime_configuration(config, config_path)
         try:
             for volume in volumes.values():
                 docker("volume", "create", "--label", f"{LABEL}={owner}", volume)
@@ -192,6 +200,7 @@ def run(image: str, workers: int, jobs: int) -> dict:
                 f"type=volume,src={volumes['output']},dst=/media/output",
                 "--mount",
                 f"type=bind,src={config_path},dst=/run/secrets/media-config.json,readonly",
+                *env_support.environment_mount(environment_path),
                 image,
             )
             port = docker("port", name, "8080/tcp").rsplit(":", 1)[1]

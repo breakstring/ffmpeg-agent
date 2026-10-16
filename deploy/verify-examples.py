@@ -5,6 +5,7 @@ import asyncio
 import hashlib
 import importlib.util
 import json
+import os
 import re
 import subprocess
 import sys
@@ -30,7 +31,9 @@ CASES = {
 
 
 async def execute(arguments: list[str], expected: int = 0) -> str:
-    result = await asyncio.to_thread(subprocess.run, arguments, cwd=ROOT, capture_output=True,
+    environment = {key: value for key, value in os.environ.items()
+                   if key not in {"MEDIA_PUBLIC_BASE_URL", "MEDIA_SERVICE_TOKEN"}}
+    result = await asyncio.to_thread(subprocess.run, arguments, cwd=ROOT, env=environment, capture_output=True,
                                     text=True, timeout=180)
     assert result.returncode == expected, "example_exit_status"
     assert "Download verified" in result.stdout, "missing_download_verification"
@@ -65,9 +68,11 @@ def inspect_output(operation: str, target: Path) -> dict:
 async def verify_mode(image: str, authenticated: bool, http_python: str, record: dict) -> None:
     async with harness.running(image, authenticated, record) as server:
         work = Path(server.temp.name)
-        client_config = work / "client.json"
-        client_config.write_text(json.dumps({"public_base_url": server.base,
-                                             "service_token": server.token if authenticated else None}))
+        client_config = work / "client.env"
+        client_config.write_text(
+            "MEDIA_PUBLIC_BASE_URL=" + server.base + "\nMEDIA_SERVICE_TOKEN="
+            + (server.token if authenticated else "null") + "\n"
+        )
         client_config.chmod(0o600)
         record["cases"] = []
         for route in ("multipart", "upload_first", "mcp"):
@@ -77,7 +82,7 @@ async def verify_mode(image: str, authenticated: bool, http_python: str, record:
                 arguments = [sys.executable if route == "mcp" else http_python,
                              str(ROOT / "examples" / script),
                              str(ROOT / "tests/fixtures" / fixture), str(target),
-                             "--config", str(client_config), "--operation", operation]
+                             "--env-file", str(client_config), "--operation", operation]
                 if route == "upload_first":
                     arguments.append("--upload-first")
                 job_id = await execute(arguments)
@@ -99,7 +104,7 @@ async def verify_mode(image: str, authenticated: bool, http_python: str, record:
             request_id = "example-retry-" + route
             arguments = [sys.executable if route == "mcp" else http_python,
                          str(ROOT / "examples" / script), str(ROOT / "tests/fixtures/image_jpeg_portrait_odd.jpg"),
-                         str(work / f"{route}-retry-first.jpg"), "--config", str(client_config),
+                         str(work / f"{route}-retry-first.jpg"), "--env-file", str(client_config),
                          "--operation", "resize_image", "--request-id", request_id]
             if route == "upload_first":
                 arguments.append("--upload-first")
@@ -116,7 +121,7 @@ async def verify_mode(image: str, authenticated: bool, http_python: str, record:
             await execute([sys.executable if route == "mcp" else http_python,
                            str(ROOT / "examples" / script),
                            str(ROOT / "tests/fixtures/video_h264_640x360.mkv"), str(target),
-                           "--config", str(client_config), "--operation", "extract_frames",
+                           "--env-file", str(client_config), "--operation", "extract_frames",
                            "--params", str(partial_params)], expected=2)
             assert inspect_output("extract_frames", target) == {"saved_members": 1, "failed_members": 1}
         record["partial_routes"] = ["multipart", "mcp"]

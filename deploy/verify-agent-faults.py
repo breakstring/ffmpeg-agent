@@ -29,7 +29,7 @@ class Harness(faults.Harness):
             "llm_model": "isolated-fake-planner", "llm_base_url": "https://model.invalid/v1",
             "planning_concurrency": 1, "planning_timeout_seconds": 300,
         })
-        path.write_text(json.dumps(config))
+        faults.env_support.write_runtime_configuration(config, path)
         super().run_container(name, ["python", "/fault-tests/agent_fault_server.py", "serve", self.mode])
 
     def agent_control(self, *args: str):

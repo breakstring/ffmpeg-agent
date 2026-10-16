@@ -15,7 +15,7 @@
 - 使用 `pydantic-ai-slim[openai]==2.56.0` 和 `a2a-sdk[http-server]==1.2.2`，具体传递依赖锁在 `uv.lock`。Python 3.14 与原固定 FastAPI/Pydantic/MCP 组合须实际解析、导入和协议验证。
 - 模型默认关闭；A2A 独立开关，启用 A2A 要求自然语言规划配置完整。关闭模型时原结构化 HTTP/MCP 功能保持可用。
 - 使用可配置 OpenAI-compatible base URL/model/API key；key 为 `SecretStr`。不硬编码供应商的 thinking 参数。只开启有界模型输出与显式请求预算，不启用 trace、原始 HTTP/body 日志或 SDK 隐式 HTTP 重试。
-- 根目录 `.env.local` 仅供显式本地运行/验收读取，不能提交或复制进镜像。`.gitignore` 保留 `.env.*` 和 `!.env.example`；模板只含占位值。兼容用户现有 `llm_provider/llm_default_model/llm_api_key/llm_base_url` 命名，进程内解析文件，不通过 shell source、CLI 参数或日志传递密钥。
+- 根目录 `.env` 统一保存服务 Token、模型 Key/model/base URL、LLM/A2A 开关和规划预算；结构 JSON 不接受这些字段。服务默认读取当前目录 `.env`，可用 `MEDIA_ENV_FILE` 显式选文件；不自动读取 `.env.local`。Compose 从 `.env` 按白名单传入环境，进程 `MEDIA_*` 优先于文件；修改后必须重新创建容器。`.env` 权限为 0600，不能提交或复制进镜像，不公开展开的 Compose 配置、inspect 或凭据值。显式本地验收仍兼容 `llm_provider/llm_default_model/llm_api_key/llm_base_url`，解析不执行 shell、不展开变量。旧 JSON 通过 `deploy/generate-config.py` 原子迁移，先保存 `.env` 再移除重复字段；已有 `.env` 明确值优先。
 - 规划并发默认 2（1～4），全局未完成请求上限默认 32，规划总期限默认 60 秒，输出 token 上限默认 4096。模型网络 I/O 始终在数据库事务外，与媒体 Worker 槽分开计数。
 
 ## 公共请求与计划
@@ -50,7 +50,7 @@ schema 2→3 增加短期 `agent_requests` 表，保存 caller/幂等键/摘要�
 
 A2A 状态：规划/排队/运行/取消中映射 working；成功映射 completed；partial 映射 failed 并保留成功产物与明确部分失败说明；失败映射 failed；实际取消终态映射 canceled；需补充信息和不支持映射 rejected 并说明需新消息提交，避免承诺本轮没有实现的 input-required 续写。产物返回 HTTP 文件引用与安全元数据，大文件不进入 base64 结果。
 
-所有新 HTTP/A2A/Card 路径沿用原统一可选 Bearer Token；显式 null 开放，显式 Token 统一校验，缺字段兼容 callers。caller 从可信中间件传入，不由模型或请求 metadata 指定。下载 URL 不包含 Token；同一调用方凭据继续用于下载。SDK 原始 body/debug/异常日志必须关闭或安全过滤。
+所有新 HTTP/A2A/Card 路径沿用统一可选 Bearer Token；`.env` 的 `MEDIA_SERVICE_TOKEN` 显式小写 `null` 开放，Token 统一校验，部署缺失或空值拒绝启动。仅直接构造 Settings 保留旧 callers 兼容。caller 从可信中间件传入，不由模型或请求 metadata 指定。下载 URL 不包含 Token；同一调用方凭据继续用于下载。SDK 原始 body/debug/异常日志必须关闭或安全过滤。
 
 ## 验证与交付
 

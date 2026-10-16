@@ -22,29 +22,34 @@
 需要 Docker、Compose 和 Python 3。在仓库根目录运行以下命令；已有配置会保留，可以重复执行：
 
 ```sh
-if [ ! -f .env ]; then cp .env.example .env; fi
-if [ ! -f deploy/local/media-config.json ]; then
-  python3 deploy/generate-config.py
-fi
+python3 deploy/generate-config.py
 docker compose up -d --build --wait
 ```
 
-Compose 会等待服务就绪。生成器将随机服务 Token 写入 `deploy/local/media-config.json`；保持其父目录仅当前用户可访问（`0700`）。下面的示例会自动读取这个文件，无需将 Token 复制到命令中。
+Compose 会等待服务就绪。生成器可重复执行，创建或迁移 `.env` 和结构 JSON，保留已有设置。随机服务 Token 只写入权限为 `0600` 的 `.env`。保持 `deploy/local` 目录权限为 `0700`；下面的客户端示例自动读取 `.env`，无需将 Token 复制到命令中。
 
-在 `.env` 中设置公开地址、端口和容器资源；在私有 JSON 中设置 Token、公开 URL、存储和服务限额。HTTP、MCP、上传和下载通过相同 Bearer 头校验；将 `service_token` 设为 `null` 即开放这些入口。
-
-通过 Compose 开启自然语言和 A2A 时，将 `llm_*` 与 `a2a_enabled` 配置加入上述私有 JSON。`.env.example` 中的模型设置用于显式本地读取，Compose 不会将它们传入服务，详见[启用方法](docs/usage/agent.zh-CN.md#开启规划)。
+服务级 Bearer Token、模型 Key、模型参数和功能开关统一在 `.env` 中配置，Docker Compose 会显式传给服务。结构 JSON 只保留存储、来源规则和服务限额等设置，不再接受 `service_token`、模型凭据或功能开关。已有部署升级前先运行生成器迁移这些字段。进程环境变量优先于 `.env`，空 Token 会被拒绝。凭据不能进入 Git、命令参数或日志；不要 `source .env`、打印展开后的 Compose 配置或分享容器环境检查输出。
 
 | `.env` 变量 | 默认值 | 用途 |
 | --- | --- | --- |
+| `MEDIA_SERVICE_TOKEN` | 自动随机生成 | HTTP、MCP、A2A、上传和下载共用的 Bearer Token；显式 `null` 开放服务 |
+| `MEDIA_LLM_ENABLED` / `MEDIA_A2A_ENABLED` | `false` / `false` | 开启自然语言规划和可选 A2A |
+| `MEDIA_LLM_API_KEY` / `MEDIA_LLM_MODEL` / `MEDIA_LLM_BASE_URL` | 空 | 供应商 Key、模型标识与 OpenAI-compatible API 地址 |
+| `MEDIA_PUBLIC_BASE_URL` | `http://localhost:8080` | 客户端可达地址，也用于 MCP Host/Origin 校验 |
 | `MEDIA_IMAGE` | `ffmpeg-agent:v1-local` | 本地镜像名称 |
 | `MEDIA_BIND_ADDRESS` / `MEDIA_PORT` | `127.0.0.1` / `8080` | 宿主机公开地址和端口 |
-| `MEDIA_CONFIG_PATH` | `./deploy/local/media-config.json` | 私有服务 JSON 路径，相对于仓库根目录 |
+| `MEDIA_CONFIG_PATH` | `./deploy/local/media-config.json` | 结构服务 JSON 路径，相对于仓库根目录 |
 | `MEDIA_CPUS` / `MEDIA_MEMORY` / `MEDIA_PIDS_LIMIT` | `2.0` / `2g` / `128` | 容器 CPU、内存和进程数限制 |
 
-如果使用自定义 `MEDIA_CONFIG_PATH`，生成或保留对应配置，并通过 `--config` 将路径传给示例。修改端口时，同时更新 JSON 中的 `public_base_url`。`worker_concurrency` 设置逻辑任务并发数（1～4，默认 1）。
+Token 至少为 24 个无空格的可打印 ASCII 字符；缺失或空值均阻止启动，只有 `MEDIA_SERVICE_TOKEN=null` 才选择开放模式。自然语言和 A2A 的具体设置见[启用方法](docs/usage/agent.zh-CN.md#开启规划)。修改 `.env` 后重新创建容器以生效：
 
-默认服务仅在宿主机可访问。远程使用时提供 HTTPS 入口，将 `public_base_url` 设为客户端可达地址，并转发正确的公开 Host 头；MCP 按该地址检查 Host 和 Origin。远程客户端只需一份包含 `public_base_url` 和 `service_token` 的私有 JSON，通过 `--config` 指定即可，无需复制服务端的存储或部署配置。Token 不放入命令行参数或 Git。
+```sh
+docker compose up -d --force-recreate --wait media
+```
+
+修改端口时，同时更新 `.env` 中的 `MEDIA_PUBLIC_BASE_URL`。结构 JSON 的 `worker_concurrency` 设置逻辑任务并发数（1～4，默认 1）。自定义 JSON 通过 `MEDIA_CONFIG_PATH` 选择；示例可用 `--config` 读取其中的地址作为没有环境 URL 和 `--base-url` 时的后备。
+
+默认服务仅在宿主机可访问。远程使用时提供 HTTPS 入口，将 `MEDIA_PUBLIC_BASE_URL` 设为客户端可达地址，并转发正确的公开 Host 头；MCP 按该地址检查 Host 和 Origin。远程示例客户端只需一份包含 `MEDIA_PUBLIC_BASE_URL` 与 `MEDIA_SERVICE_TOKEN` 的私有 `.env`，通过 `--env-file` 指定，无需复制服务端存储或部署 JSON。进程环境变量优先于该文件，`--base-url` 优先指定连接地址；示例客户端绝不从 JSON 读取 Token。
 
 ## 上传、处理和下载
 
@@ -102,9 +107,9 @@ uv run --frozen python examples/mcp-workflow.py \
   tests/fixtures/video_h264_640x360.mkv "$output_dir/result.mp4"
 ```
 
-客户端通过 HTTP 上传，调用远程 `transcode_video` 工具，通过 MCP 等待任务，再经 HTTP 下载。两种传输使用相同的私有配置和 Token，无需配置本地 stdio 服务。
+客户端通过 HTTP 上传，调用远程 `transcode_video` 工具，通过 MCP 等待任务，再经 HTTP 下载。两种传输读取相同的 `.env` Token，无需配置本地 stdio 服务。
 
-接入其他 MCP 客户端时，使用 `public_base_url + /mcp` 的 Streamable HTTP 入口，本机为 `http://localhost:8080/mcp`；在连接设置中配置服务 Bearer 头，文件 HTTP 请求也使用相同的头。**仅有 MCP 不能上传你电脑上的文件路径**：客户端需要具备 HTTP 文件传输能力，或者使用服务可访问的输入 URL／共享文件。
+接入其他 MCP 客户端时，使用 `MEDIA_PUBLIC_BASE_URL + /mcp` 的 Streamable HTTP 入口，本机为 `http://localhost:8080/mcp`；在连接设置中配置服务 Bearer 头，文件 HTTP 请求也使用相同的头。**仅有 MCP 不能上传你电脑上的文件路径**：客户端需要具备 HTTP 文件传输能力，或者使用服务可访问的输入 URL／共享文件。
 
 下面仅用于说明 HTTP 上传后 `transcode_video` 的工具参数；调用时替换实际 `file_id` 和本次请求的幂等键：
 
@@ -190,7 +195,7 @@ python3 examples/http-workflow.py \
 
 客户端先打印请求 ID，再打印已接受的 `job_id`。默认每次执行都会创建新请求；只有重试完全相同的请求时才显式复用 `--request-id`，包括源文件、操作、参数及上传方式。改变其中任何一项时使用新 ID。
 
-默认等待 600 秒，可用 `--wait-seconds` 调整。等待超时不会取消后台处理；在相同客户端命令后加 `--job-id` 和已打印的 ID，即可跳过上传与提交，继续等待和下载。恢复时仍需填写 `SOURCE DESTINATION`，但不会读取源文件。`--help` 列出完整选项；`--base-url` 覆盖连接地址，`--config` 指定私有客户端 JSON。
+默认等待 600 秒，可用 `--wait-seconds` 调整。等待超时不会取消后台处理；在相同客户端命令后加 `--job-id` 和已打印的 ID，即可跳过上传与提交，继续等待和下载。恢复时仍需填写 `SOURCE DESTINATION`，但不会读取源文件。`--help` 列出完整选项；`--env-file` 指定私有环境文件（默认仓库根目录 `.env`），`--base-url` 覆盖连接地址；`--config` 只补充后备 `public_base_url`，不读取 Token。
 
 目标文件或抽帧目录不能已存在。下载采用流式传输，大小和 SHA-256 校验通过后才形成完整文件。抽帧集合包含 `manifest.json`，记录成功与失败成员；`partial` 会保存可用成员并以状态码 2 退出。任务失败或传输失败会以非零状态退出；客户端不会覆盖已有文件，也不会将下载不完整的文件当作成功结果。
 
@@ -220,7 +225,7 @@ HTTP 来源默认禁止，配置规则后才能获取。共享输入只读借用
 
 ## 运行和配置
 
-`docker compose stop` 会保留卷。备份或升级前停止新提交、等待任务完成，再停止服务。将 **state、work、output、私有配置和镜像版本一起备份**；共享输入由应用负责备份。日常停止或清理不要使用 `docker compose down -v`。
+`docker compose stop` 会保留卷。备份或升级前停止新提交、等待任务完成，再停止服务。将 **state、work、output、私有 `.env`、结构 JSON 和镜像版本一起备份**；共享输入由应用负责备份。日常停止或清理不要使用 `docker compose down -v`。
 
 每个服务实例独占自己的状态和工作卷。默认一个逻辑 Worker，可配置为 1～4 个；增加前按实际负载和资源测试。不要让多个容器同时访问同一状态目录。
 

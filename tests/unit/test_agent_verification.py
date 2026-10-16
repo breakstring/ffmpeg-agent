@@ -64,11 +64,17 @@ def test_private_file_is_readable_to_container_without_keys_in_arguments():
         assert stat.S_IMODE(config.parent.stat().st_mode) == 0o700
         assert stat.S_IMODE(config.stat().st_mode) == 0o644
         data = json.loads(config.read_text())
-        assert data["llm_api_key"] == model["llm_api_key"].get_secret_value()
-        assert data["service_token"] == harness.token
+        assert "llm_api_key" not in data and "service_token" not in data
+        environment = config.with_suffix(".env")
+        assert stat.S_IMODE(environment.stat().st_mode) == 0o644
+        values = verification.shared.env_support.read_env_file(environment)
+        assert values["MEDIA_LLM_API_KEY"] == model["llm_api_key"].get_secret_value()
+        assert values["MEDIA_SERVICE_TOKEN"] == harness.token
         arguments = harness.container_arguments(config)
         assert harness.monitor.observe(" ".join(arguments), "arguments")
         assert f"type=bind,src={config},dst=/run/secrets/media-config.json,readonly" in arguments
+        assert f"type=bind,src={environment},dst=/run/secrets/media.env,readonly" in arguments
+        assert "MEDIA_ENV_FILE=/run/secrets/media.env" in arguments
         assert "MEDIA_TEST_ENGINE_SERIES=7.1" in arguments
         assert "127.0.0.1:18888:8080" in arguments
         assert arguments[-1] == harness.image

@@ -237,25 +237,28 @@ async def test_official_a2a_partial_collection_retains_member_and_failure(settin
         assert hashlib.sha256(response.content).hexdigest() == member["sha256"]
 
 
-async def test_official_a2a_workflow_example_downloads_verified_result(settings, tmp_path):
+async def test_official_a2a_workflow_example_downloads_verified_result(settings, tmp_path, monkeypatch):
     import json
     import sys
 
     enable_agent(settings, authenticated=True)
+    monkeypatch.delenv("MEDIA_SERVICE_TOKEN", raising=False)
+    monkeypatch.delenv("MEDIA_PUBLIC_BASE_URL", raising=False)
     service = Service(settings, planner=FixturePlanner())
     async with serve(service) as base:
         config = tmp_path / "client-config.json"
-        config.write_text(json.dumps({
-            "public_base_url": base,
-            "service_token": settings.service_token.get_secret_value(),
-        }))
+        config.write_text(json.dumps({"public_base_url": base}))
+        env_file = tmp_path / ".env"
+        env_file.write_text("MEDIA_SERVICE_TOKEN=" + settings.service_token.get_secret_value() + "\n")
+        env_file.chmod(0o600)
         intent = tmp_path / "intent.txt"
         intent.write_text("检查媒体属性", encoding="utf-8")
         destination = tmp_path / "downloaded"
         process = await asyncio.create_subprocess_exec(
             sys.executable, str(EXAMPLE),
             str(settings.storages["input"].root / "audio_mp3_mono_22050.mp3"), str(destination),
-            "--config", str(config), "--intent-file", str(intent), "--wait-seconds", "15",
+            "--config", str(config), "--env-file", str(env_file),
+            "--intent-file", str(intent), "--wait-seconds", "15",
             stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
         )
         stdout, stderr = await asyncio.wait_for(process.communicate(), 20)

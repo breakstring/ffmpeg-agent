@@ -1,5 +1,6 @@
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 import platform
@@ -17,6 +18,14 @@ from uuid import uuid4
 
 FIXTURE_NAME = "video_h264_aac_square.mp4"
 TERMINAL = {"succeeded", "partial", "failed", "canceled"}
+
+
+_support_spec = importlib.util.spec_from_file_location(
+    "remote_env_support", Path(__file__).with_name("env_support.py"),
+)
+assert _support_spec and _support_spec.loader
+env_support = importlib.util.module_from_spec(_support_spec)
+_support_spec.loader.exec_module(env_support)
 
 
 class VerificationError(RuntimeError):
@@ -144,10 +153,16 @@ def check_video(path: Path) -> dict:
     }
 
 
-def verify(config_path: Path, output: Path, local_smoke: bool) -> dict:
+def verify(config_path: Path, output: Path, local_smoke: bool, env_file: Path) -> dict:
     if config_path.stat().st_mode & 0o077:
-        raise VerificationError("包含 token 和来源地址的配置必须为 0600")
+        raise VerificationError("包含来源地址的配置必须为 0600")
     config = json.loads(config_path.read_text())
+    if "caller_token" in config:
+        raise VerificationError("将 caller_token 移至 .env 的 MEDIA_SERVICE_TOKEN")
+    environment = env_support.read_env_file(env_file)
+    token = os.environ.get("MEDIA_SERVICE_TOKEN", environment.get("MEDIA_SERVICE_TOKEN"))
+    if not token or len(token) < 24 or any(not 33 <= ord(char) <= 126 for char in token):
+        raise VerificationError("远端验收需要 .env 中显式配置 MEDIA_SERVICE_TOKEN")
     base = urllib.parse.urlsplit(config["service_url"])
     if base.scheme not in {"http", "https"} or not base.hostname:
         raise VerificationError("服务地址必须为 HTTP(S)")
@@ -169,7 +184,7 @@ def verify(config_path: Path, output: Path, local_smoke: bool) -> dict:
     if output.exists():
         raise VerificationError("下载目标已存在，拒绝覆盖")
 
-    client = Client(config["service_url"], config["caller_token"])
+    client = Client(config["service_url"], token)
     assert client.json("GET", "/health/ready")[0] == 200
     _, capabilities = client.json("GET", "/v1/capabilities")
     source = {
@@ -286,6 +301,7 @@ def main() -> int:
     host.add_argument("--report", type=Path, required=True)
     run = subparsers.add_parser("run", help="在业务宿主机执行")
     run.add_argument("--config", type=Path, required=True)
+    run.add_argument("--env-file", type=Path, default=Path(".env"))
     run.add_argument("--output", type=Path, required=True)
     run.add_argument("--report", type=Path, required=True)
     run.add_argument("--local-smoke", action="store_true", help="仅脚本自验，不计为跨机验收")
@@ -293,7 +309,7 @@ def main() -> int:
     try:
         report = (
             collect_host(args.image) if args.command == "host"
-            else verify(args.config, args.output, args.local_smoke)
+            else verify(args.config, args.output, args.local_smoke, args.env_file)
         )
         args.report.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
     except Exception as error:

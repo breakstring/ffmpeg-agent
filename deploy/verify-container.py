@@ -3,6 +3,7 @@
 import argparse
 import concurrent.futures
 import hashlib
+import importlib.util
 import json
 import secrets
 import subprocess
@@ -13,6 +14,14 @@ import urllib.request
 import uuid
 from pathlib import Path
 from typing import Any
+
+_support_spec = importlib.util.spec_from_file_location(
+    "deployment_env_support", Path(__file__).with_name("env_support.py"),
+)
+assert _support_spec and _support_spec.loader
+env_support = importlib.util.module_from_spec(_support_spec)
+_support_spec.loader.exec_module(env_support)
+
 
 LABEL = "io.ffmpeg-agent.verification"
 TERMINAL = {"succeeded", "partial", "failed", "canceled"}
@@ -120,9 +129,8 @@ def main() -> None:
         config = json.loads((root / "deploy/media-config.example.json").read_text())
         config["service_token"] = token
         config["worker_concurrency"] = args.workers
-        config_path.write_text(json.dumps(config))
-        config_path.chmod(0o644)
-        mounts = [
+        environment_path = env_support.write_runtime_configuration(config, config_path)
+        mounts = env_support.environment_mount(environment_path) + [
             "--mount",
             f"type=volume,src={volumes['state']},dst=/var/lib/ffmpeg-agent/state",
             "--mount",

@@ -29,6 +29,7 @@ base = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(base)
 docker = base.docker
 LABEL = base.LABEL
+env_support = base.env_support
 
 
 class Harness:
@@ -61,9 +62,8 @@ class Harness:
             "max_work_bytes": 128 * 1024**2,
         }
         config_path = Path(self.temp.name) / "config.json"
-        config_path.write_text(json.dumps(config))
-        config_path.chmod(0o644)
-        mounts: list[str] = []
+        environment_path = env_support.write_runtime_configuration(config, config_path)
+        mounts: list[str] = env_support.environment_mount(environment_path)
         self.stage = "owned_volume_creation"
         for part, volume in self.volumes.items():
             assert not json.loads(docker("volume", "inspect", volume, check=False) or "[]"), "resource_name_collision"

@@ -28,6 +28,7 @@ def parse_args():
     parser.add_argument("destination", type=Path, help="新建的结果目录，每个命名输出单独保存")
     parser.add_argument("--intent-file", type=Path, help="UTF-8 描述文件；恢复查询时无需提供")
     parser.add_argument("--config", type=Path, default=ROOT / "deploy/local/media-config.json")
+    parser.add_argument("--env-file", type=Path, default=ROOT / ".env", help="包含服务 Token 的私有 .env")
     parser.add_argument("--base-url", help="覆盖服务 URL，不含凭据")
     parser.add_argument("--request-id", default=uuid4().hex, help="同一完整请求重试时复用")
     parser.add_argument("--task-id", help="恢复已有 agent task 的查询，不再次上传/规划")
@@ -61,7 +62,7 @@ async def main() -> int:
         logger.handlers = [logging.NullHandler()]
         logger.propagate = False
         logger.setLevel(logging.CRITICAL + 1)
-    files = Client(args.config, args.base_url)
+    files = Client(args.config, args.base_url, env_file=args.env_file)
     async with httpx.AsyncClient(headers=files.headers, timeout=30, follow_redirects=False) as http:
         card = await A2ACardResolver(http, files.base).get_agent_card()
         if not any(interface.url == files.base + "/a2a"

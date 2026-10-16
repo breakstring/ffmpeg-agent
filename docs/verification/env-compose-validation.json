@@ -1,0 +1,68 @@
+{
+  "image_id": "sha256:ea09dd8e2d0ec68f792bd4caf75c7dae4a9e9a57b122f8ea591f4e9b6ef215b5",
+  "protected_disabled": {
+    "capabilities_status": 200,
+    "agent_status": 503,
+    "a2a_card_status": 404,
+    "a2a_status": 404,
+    "mcp_authorized": true,
+    "model_tools_absent": true
+  },
+  "protected_http_statuses": {
+    "http_missing": 401,
+    "http_wrong": 401,
+    "mcp_missing": 401,
+    "mcp_wrong": 401,
+    "a2a_missing": 401,
+    "a2a_wrong": 401,
+    "a2a_card_missing": 401,
+    "a2a_card_wrong": 401
+  },
+  "protected_enabled_http_statuses": {
+    "http_missing": 401,
+    "http_wrong": 401,
+    "mcp_missing": 401,
+    "mcp_wrong": 401,
+    "a2a_missing": 401,
+    "a2a_wrong": 401,
+    "a2a_card_missing": 401,
+    "a2a_card_wrong": 401
+  },
+  "enabled": {
+    "capabilities_status": 200,
+    "a2a_card_status": 200,
+    "upload_status": 201,
+    "agent_submit_status": 202,
+    "a2a_query_status": 200,
+    "mcp_model_tools_visible": true,
+    "planning_limits_loaded": true,
+    "a2a_origin_loaded": true,
+    "a2a_same_task_visible": true,
+    "needs_input_completed": true,
+    "model_key_matched": true,
+    "model_name_matched": true,
+    "model_output_budget_matched": true
+  },
+  "open_disabled": {
+    "capabilities_status": 200,
+    "agent_status": 503,
+    "a2a_card_status": 404,
+    "a2a_status": 404,
+    "mcp_authorized": true,
+    "model_tools_absent": true
+  },
+  "passed": true,
+  "container_recreations": 3,
+  "mock_model_requests": 1,
+  "public_responses_scanned": 37,
+  "container_log_scans": 3,
+  "secret_disclosure_absent": true,
+  "environment_whitelist_verified": true,
+  "structural_json_only": true,
+  "private_env_permissions": true,
+  "readonly_rootfs": true,
+  "nonroot_uid": 10001,
+  "root_env_not_loaded": true,
+  "inherited_media_compose_environment_removed": true,
+  "owned_resources_removed": true
+}

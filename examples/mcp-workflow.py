@@ -92,7 +92,7 @@ def main() -> int:
             "MCP always uploads first; --upload-first has no additional effect."
         )
         params = prepare(args)
-        client = Client(args.config, args.base_url)
+        client = Client(args.config, args.base_url, env_file=args.env_file)
         return asyncio.run(run(args, params, client))
     except KeyboardInterrupt:
         print(

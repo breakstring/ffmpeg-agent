@@ -1,6 +1,5 @@
 {
   "service_url": "https://media.example.internal",
-  "caller_token": "REPLACE_IN_PRIVATE_COPY_ONLY",
   "source": {
     "url": "https://controlled-source.example.internal/video_h264_aac_square.mp4",
     "headers": {}

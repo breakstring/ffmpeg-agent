@@ -31,7 +31,7 @@
 | HTTP 获取 | aiohttp | 控制 DNS、重定向、超时、下载字节数和流式写入 |
 | HTTP 上传 | ASGI 流式接收、python-multipart 增量解析 | 独立 octet-stream 上传与请求内 multipart 共用托管文件管理，不能整文件缓冲 |
 | HTTP 产物 | FastAPI/Starlette 响应层，加产物读取生命周期管理 | HEAD、单区间 Range；引用保护覆盖真实发送过程 |
-| 配置与日志 | Pydantic settings、标准 logging 的结构化 JSON 输出 | 启动校验、凭据文件、关联 ID 和脱敏；不增加日志平台依赖 |
+| 配置与日志 | Pydantic settings、标准 logging 的结构化 JSON 输出 | `.env` 统一 Token、模型与开关，JSON 保留结构配置；启动校验、关联 ID 和脱敏，不增加日志平台依赖 |
 | 包管理 | uv、pyproject.toml、uv.lock | 锁定依赖并在构建中使用冻结同步 |
 | 检查 | Ruff、pyright、pytest、pytest-asyncio | 静态检查、真实 SQLite、真实引擎及容器端到端验证 |
 | 基础镜像 | Python 3.14 / Debian 13 slim 系列，非 root 运行 | 首先验证部署机器架构，锁定镜像 digest 与系统包版本 |
@@ -231,7 +231,7 @@ HTTP、multipart 元数据、MCP 媒体工具和任务图工具复用 Pydantic �
 | 显式读取租约 | 默认 15 分钟，单次最长 1 小时，累计最长 24 小时；retiring 后不续期 |
 | 幂等保证窗口 | 终态后至少 24 小时，返回实际截止时间 |
 
-认证采用一个可选服务 Token。私有配置中显式设置 `service_token` 为 Token 时，HTTP API、MCP、上传和下载统一校验 Bearer；设为 `null` 时开放访问，内部使用固定 `service_caller` 形成服务空间，仅配置一个调用方时自动选定。省略该字段保持已有 `callers.tokens` 认证兼容；简单模式不增加用户、角色或 OAuth 系统。Token 不进入工具参数、URL、日志或公开结果。跨机经现有 HTTPS 入口访问；来源 URL/认证头按敏感信息受限保存，公开状态、日志和错误不回显。
+认证采用一个可选服务 Token。`.env` 中 `MEDIA_SERVICE_TOKEN` 为 Token 时，HTTP API、MCP、上传和下载统一校验 Bearer；显式小写 `null` 时开放访问，部署缺失或空值拒绝启动。内部使用固定 `service_caller` 形成服务空间，仅配置一个调用方时自动选定。旧 JSON 先迁移，只有直接构造 Settings 保留缺字段时的 `callers.tokens` 兼容；简单模式不增加用户、角色或 OAuth 系统。Token 不进入工具参数、URL、日志或公开结果。跨机经现有 HTTPS 入口访问；来源 URL/认证头按敏感信息受限保存，公开状态、日志和错误不回显。
 
 就绪检查覆盖状态库、挂载权限、最低可用空间、引擎能力及恢复完成状态；存活检查不因单个坏媒体或短暂繁忙而触发重启。日志按 request/job/step/attempt ID 关联，记录排队、获取、处理、发布及回收耗时。首版提供结构化日志与健康接口，不增加 Prometheus/Grafana 等独立依赖。
 

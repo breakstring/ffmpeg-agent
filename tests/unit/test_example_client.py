@@ -24,6 +24,101 @@ def client(example):
     return example.Client.__new__(example.Client)
 
 
+@pytest.fixture
+def client_settings(monkeypatch, tmp_path):
+    monkeypatch.delenv("MEDIA_SERVICE_TOKEN", raising=False)
+    monkeypatch.delenv("MEDIA_PUBLIC_BASE_URL", raising=False)
+    config = tmp_path / "client.json"
+    config.write_text(json.dumps({"public_base_url": "http://localhost:8080"}))
+    return config, tmp_path / ".env"
+
+
+def test_client_reads_env_file_without_expanding_token(example, client_settings):
+    config, env_file = client_settings
+    token = "fixture-token-with-literal-${VALUE}"
+    env_file.write_text("MEDIA_SERVICE_TOKEN='" + token + "'\n")
+
+    configured = example.Client(config, env_file=env_file)
+
+    assert configured.headers == {"Authorization": "Bearer " + token}
+    assert configured.base == "http://localhost:8080"
+
+
+def test_client_process_environment_overrides_env_file(example, client_settings, monkeypatch):
+    config, env_file = client_settings
+    env_file.write_text("MEDIA_SERVICE_TOKEN=fixture-file-token-123456789\n"
+                        "MEDIA_PUBLIC_BASE_URL=http://file.invalid:8080\n")
+    monkeypatch.setenv("MEDIA_SERVICE_TOKEN", "fixture-process-token-123456789")
+    monkeypatch.setenv("MEDIA_PUBLIC_BASE_URL", "https://process.invalid")
+
+    configured = example.Client(config, env_file=env_file)
+
+    assert configured.headers == {"Authorization": "Bearer fixture-process-token-123456789"}
+    assert configured.base == "https://process.invalid"
+
+
+def test_client_never_falls_back_to_json_token(example, client_settings):
+    config, env_file = client_settings
+    config.write_text(json.dumps({"public_base_url": "http://localhost:8080",
+                                  "service_token": "legacy-json-token-123456789"}))
+
+    with pytest.raises(example.ExampleError, match="Set MEDIA_SERVICE_TOKEN") as error:
+        example.Client(config, env_file=env_file)
+
+    assert "legacy-json-token" not in str(error.value)
+
+
+@pytest.mark.parametrize("token", ["", "short", "NULL", "fixture token-123456789012345",
+                                  "fixture-token-123456789012345\nheader", "密钥" * 24])
+def test_client_rejects_invalid_process_token_without_exposing_it(
+    example, client_settings, monkeypatch, token,
+):
+    config, env_file = client_settings
+    env_file.write_text("MEDIA_SERVICE_TOKEN=fixture-valid-token-123456789\n")
+    monkeypatch.setenv("MEDIA_SERVICE_TOKEN", token)
+
+    with pytest.raises(example.ExampleError, match="at least 24 printable ASCII") as error:
+        example.Client(config, env_file=env_file)
+
+    if token:
+        assert token not in str(error.value)
+
+
+@pytest.mark.parametrize("source", ["file", "process"])
+def test_client_open_access_requires_explicit_null(
+    example, client_settings, monkeypatch, source,
+):
+    config, env_file = client_settings
+    if source == "file":
+        env_file.write_text("MEDIA_SERVICE_TOKEN=null\n")
+    else:
+        monkeypatch.setenv("MEDIA_SERVICE_TOKEN", "null")
+
+    assert example.Client(config, env_file=env_file).headers == {}
+
+
+def test_client_env_address_works_without_server_json(example, client_settings):
+    config, env_file = client_settings
+    config.unlink()
+    env_file.write_text("MEDIA_SERVICE_TOKEN=null\nMEDIA_PUBLIC_BASE_URL=https://remote.invalid\n")
+
+    configured = example.Client(config, env_file=env_file)
+
+    assert configured.base == "https://remote.invalid"
+    assert example.Client(config, "https://override.invalid", env_file=env_file).base == (
+        "https://override.invalid"
+    )
+
+
+def test_client_missing_address_has_actionable_error(example, client_settings):
+    config, env_file = client_settings
+    config.unlink()
+    env_file.write_text("MEDIA_SERVICE_TOKEN=null\n")
+
+    with pytest.raises(example.ExampleError, match="Set --base-url or MEDIA_PUBLIC_BASE_URL"):
+        example.Client(config, env_file=env_file)
+
+
 class DownloadResponse(io.BytesIO):
     def __init__(self, data, *, content_length=None, fail_after=None, unpublished=None):
         super().__init__(data)

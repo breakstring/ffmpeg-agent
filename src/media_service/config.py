@@ -176,12 +176,24 @@ class Settings(BaseSettings):
 
     @classmethod
     def from_file(cls) -> Settings:
-        path = Path(os.environ.get("MEDIA_CONFIG_FILE", "/run/secrets/media-config.json"))
-        data = json.loads(path.read_text())
-        if env_path := os.environ.get("MEDIA_ENV_FILE"):
-            from media_service.local_env import load_local_env
+        from media_service.envfile import ENV_ONLY_FIELDS, read_env_file
+        from media_service.local_env import load_local_env
 
-            data.update(load_local_env(Path(env_path)))
+        explicit_env = os.environ.get("MEDIA_ENV_FILE")
+        env_path = Path(explicit_env) if explicit_env else Path.cwd() / ".env"
+        values = read_env_file(env_path) if explicit_env or env_path.exists() else {}
+        path = Path(os.environ.get("MEDIA_CONFIG_FILE") or os.environ.get("MEDIA_CONFIG_PATH")
+                    or values.get("MEDIA_CONFIG_PATH", "deploy/local/media-config.json"))
+        data = json.loads(path.read_text())
+        if not isinstance(data, dict):
+            raise ValueError("service configuration must be an object")
+        if ENV_ONLY_FIELDS.intersection(data):
+            raise ValueError("move token and model settings from JSON to .env with generate-config.py")
+        overrides = load_local_env(env_path if values or explicit_env else None,
+                                   fields=ENV_ONLY_FIELDS | {"public_base_url"})
+        if "service_token" not in overrides:
+            raise ValueError("MEDIA_SERVICE_TOKEN is required; use a strong token or explicit null")
+        data.update(overrides)
         return cls.model_validate(data)
 
     def public_limits(self) -> dict:

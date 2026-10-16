@@ -6,33 +6,32 @@ Describe the result you want and provide named input references. PydanticAI crea
 
 ## Enable planning
 
-Planning and A2A are disabled by default. Add the following fields to the private service JSON, substituting your provider settings privately:
+Planning and A2A are disabled by default. Run `python3 deploy/generate-config.py` once to create or migrate `.env` and the structural service JSON, then edit the existing entries in `.env` using your provider settings:
 
-```json
-{
-  "llm_enabled": true,
-  "llm_api_key": "<provider-api-key>",
-  "llm_model": "<model-id>",
-  "llm_base_url": "https://<provider-host>/compatible-mode/v1",
-  "a2a_enabled": false
-}
+```dotenv
+MEDIA_LLM_ENABLED=true
+MEDIA_LLM_API_KEY='<provider-api-key>'
+MEDIA_LLM_MODEL='<model-id>'
+MEDIA_LLM_BASE_URL=https://<provider-host>/compatible-mode/v1
+MEDIA_A2A_ENABLED=false
 ```
 
-These are additional configuration fields, not a complete service configuration. Keep the file and credentials out of Git. The provider must support the configured OpenAI-compatible API. The default `llm_output_mode` is `prompted`; `native` requires provider support for native structured output. The service does not add provider-specific thinking settings.
+The service Bearer Token is also configured only in `.env` as `MEDIA_SERVICE_TOKEN`; it is separate from the model API key. The generator creates a random Token, and only an explicit `MEDIA_SERVICE_TOKEN=null` selects open service access. Keep `.env` mode `0600` and out of Git. Use single quotes for values containing `$` so Compose preserves them literally. Never `source` a credentials file, put a key on the command line, print resolved Compose configuration, or share container environment output.
 
-| Setting | Default | Meaning |
+The provider must support the configured OpenAI-compatible API. The service does not add provider-specific thinking settings. All planning settings use the same `.env`:
+
+| `.env` variable | Default | Meaning |
 | --- | --- | --- |
-| `planning_concurrency` | `2` | Concurrent model requests, from 1 to 4 |
-| `max_agent_requests` | `32` | Global limit for unfinished planning requests |
-| `planning_timeout_seconds` | `60` | Total planning budget, including any controlled correction |
-| `planning_max_output_tokens` | `4096` | Maximum model output tokens |
-| `a2a_enabled` | `false` | Enable the A2A endpoint; requires planning |
+| `MEDIA_LLM_OUTPUT_MODE` | `prompted` | `native` requires provider support for native structured output |
+| `MEDIA_PLANNING_CONCURRENCY` | `2` | Concurrent model requests, from 1 to 4 |
+| `MEDIA_MAX_AGENT_REQUESTS` | `32` | Global limit for unfinished planning requests |
+| `MEDIA_PLANNING_TIMEOUT_SECONDS` | `60` | Total planning budget, including any controlled correction |
+| `MEDIA_PLANNING_MAX_OUTPUT_TOKENS` | `4096` | Maximum model output tokens |
+| `MEDIA_A2A_ENABLED` | `false` | Enable the A2A endpoint; requires planning |
 
-For explicit local use, `MEDIA_ENV_FILE=.env.local` tells the launcher to load that file. It accepts the existing `llm_api_key`, `llm_default_model`, `llm_base_url` names as well as `MEDIA_LLM_*` settings. The service does not automatically discover `.env.local` in its working directory. Docker deployments use their private JSON configuration; the local file is not copied into the image. See [`.env.example`](../../.env.example) for placeholders. Never `source` a credentials file or put a key on the command line.
+Compose explicitly forwards these values to the service. A direct Python launch reads `.env` by default; `MEDIA_ENV_FILE` selects another file when needed. Process environment variables override file values. The loader reads values without shell execution or interpolation. The structural JSON selected by `MEDIA_CONFIG_FILE` still supplies directories, storage, source rules and limits appropriate to the machine; it rejects service Token and planning/feature settings so they cannot silently disagree with `.env`. Existing JSON settings are migrated by the generator. `.env.local` is not discovered automatically or copied into the image.
 
-When using the local file, set `MEDIA_LLM_ENABLED=true`; set `MEDIA_A2A_ENABLED=true` to enable A2A as well. The example keeps both switches off, and the three compatibility aliases only configure the model. A direct Python launch still needs `MEDIA_CONFIG_FILE` to point to a complete service JSON with directories, runtime mode and engine version appropriate to that machine.
-
-With the repository's Compose setup, edit the private JSON selected by `MEDIA_CONFIG_PATH` (default `deploy/local/media-config.json`). Compose uses `.env` for its own substitutions and does not forward `MEDIA_LLM_*`, `MEDIA_A2A_ENABLED` or `MEDIA_ENV_FILE` to the container. After changing the private JSON, recreate the service so it reads the new configuration:
+After changing `.env`, recreate the service to load the new values:
 
 ```sh
 docker compose up -d --force-recreate --wait media
@@ -104,7 +103,7 @@ All three return the same `AgentTaskResult` model as HTTP. `generate_media` call
 
 ## Optional A2A
 
-Set `a2a_enabled: true` alongside complete planning settings. The official Python A2A SDK exposes JSON-RPC at `/a2a` and the Agent Card at `/.well-known/agent-card.json`. These routes, including the Card, use the same optional Bearer authentication as HTTP/MCP. A2A 1.0 is the supported protocol; clients written for 0.3 require separate compatibility validation.
+Set `MEDIA_A2A_ENABLED=true` in `.env` alongside complete planning settings. The official Python A2A SDK exposes JSON-RPC at `/a2a` and the Agent Card at `/.well-known/agent-card.json`. These routes, including the Card, use the same optional Bearer authentication as HTTP/MCP. A2A 1.0 is the supported protocol; clients written for 0.3 require separate compatibility validation.
 
 Send a message with one data part containing the same `AgentRequest`, or text containing the intent plus a data part containing `inputs` and optional `output_policy`. Use a stable message ID for retries. Files are referenced by the existing input model, not embedded bytes. The response is a persisted A2A Task; query it to observe the media result, or request cancellation and keep polling until stopped.
 
@@ -129,7 +128,17 @@ For direct JSON-RPC clients, send `A2A-Version: 1.0` and this body to `/a2a`:
 }
 ```
 
-`SendMessage` returns the Task in `result.task`. Use its `id` with `GetTask` or `CancelTask`, passing `"params": {"id": "<agent_task_id>"}`; those methods return the Task directly in `result`. An official SDK client is available in [`examples/a2a-workflow.py`](../../examples/a2a-workflow.py).
+`SendMessage` returns the Task in `result.task`. Use its `id` with `GetTask` or `CancelTask`, passing `"params": {"id": "<agent_task_id>"}`; those methods return the Task directly in `result`. An official SDK client is available in [`examples/a2a-workflow.py`](../../examples/a2a-workflow.py). It reads the repository `.env` by default; use `--env-file` for a private client file containing `MEDIA_SERVICE_TOKEN` and `MEDIA_PUBLIC_BASE_URL`:
+
+```sh
+output_dir=$(mktemp -d)
+printf 'Inspect source and return its media properties.\n' > "$output_dir/intent.txt"
+uv run --frozen python examples/a2a-workflow.py \
+  tests/fixtures/audio_mp3_mono_22050.mp3 "$output_dir/results" \
+  --intent-file "$output_dir/intent.txt" --env-file .env
+```
+
+The client does not read Tokens from `--config`; that option only supplies a fallback service URL.
 
 A2A JSON-RPC returns `status.state` as `TASK_STATE_WORKING` while queued/planning/running/canceling, `TASK_STATE_COMPLETED` on success, `TASK_STATE_FAILED` for partial or failed media results, and `TASK_STATE_CANCELED` after actual cancellation. `needs_input` and `unsupported` become `TASK_STATE_REJECTED`: submit a new complete message with a new message ID. Partial results preserve successful artifact references. Artifact URLs require the same service credential and never include a Token in the URL.
 

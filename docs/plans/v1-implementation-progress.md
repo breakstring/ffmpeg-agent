@@ -246,3 +246,24 @@ sha256:680953c259022ca9d1ad9e703021e67a1ad431eab04be6189da0a0e6f663a0c4
 `.env.local` 未修改、未跟踪且继续被忽略；模型 Key 未出现在变更文件、公开响应、容器参数/环境或日志中。验收只在进程中读取配置，以 0700 临时父目录中的只读文件挂载到测试容器，不将 Key 放入 Docker 环境或命令行。百炼和故障测试的自有容器/卷残留为 0，生成媒体与日志不提交。
 
 本轮仅本地提交，未 push、merge、tag 或生产部署。真实双宿主机、自然语言增量原生 amd64、规划容量与长期延迟分布未验证；P7/P12 环境待办、HDR/10-bit（CFK-799）、硬件加速（CFK-800）保持原范围。A2A 首期仅单次请求、查询、取消及 HTTP 产物，不声明多轮、SSE、push 或 0.3 客户端兼容。
+
+## 2026-10-16：统一 `.env` 配置（P22 / CFK-812）
+
+服务 Bearer Token、模型 Key/标识/地址、自然语言与 A2A 开关、规划预算统一由 `.env` 提供；服务默认读取当前目录文件，进程环境优先，Compose 按白名单传入。结构 JSON 不再接受这些字段，缺失或空 Token 拒绝启动，只有显式小写 `null` 开放服务。生成器支持初始化、原子迁移与幂等重跑；先保存 `.env` 再移除 JSON 的旧凭据/模型字段。同步双语说明、三种示例客户端及隔离验收脚本。
+
+迁移独立复核发现并修复两处边界：复制模板后的空模型字段不得覆盖并删除旧 Key；合法 `replace…` 前缀 Token 不得被误识别成占位符轮换。已有明确 `false` 开关继续保留，空服务 Token 在写入前拒绝。单/双引号、美元符号和反斜杠经过 15 组本地与 Compose 字面解析对照；模型 Key 按不透明字符串处理，不能再次当 JSON 解码。
+
+最终精确镜像为 `sha256:ea09dd8e2d0ec68f792bd4caf75c7dae4a9e9a57b122f8ea591f4e9b6ef215b5`（Linux arm64），33 个服务源码摘要与工作区一致。
+
+| 验证 | 实际结果 | 证据 |
+| --- | --- | --- |
+| Ruff / Pyright / diff | 全部通过；0 errors / 0 warnings | [本机与配置验证](../verification/env-local-validation.json) |
+| 本机完整 pytest | **702 passed in 83.63s** | 同上 |
+| 最终镜像完整 pytest | **702 passed in 151.27s**；非 root、只读根、FFmpeg 7.1 | [精确镜像测试](../verification/env-tests-arm64.json) |
+| 三阶段 Compose 重建 | Token+关闭、Token+开启、null+关闭均通过；HTTP/MCP/A2A/Card 鉴权一致 | [Compose 验收](../verification/env-compose-validation.json) |
+| 模型配置与脱敏 | 本机模拟 OpenAI 收到正确 Key/model/输出预算，HTTP 任务到 `needs_input`，A2A 查询同任务；37 次公开响应、3 次日志扫描无测试凭据 | 同上 |
+| 文档与 CLI | 79 个本地链接、4 个锚点、3 个示例 `--help` 通过 | 本机记录 |
+
+本机原有模型的三个字段已无损迁入权限为 `0600` 的 `.env`，确认加载成功后从旧 `.env.local` 移除对应字段；服务 Token 已生成，LLM/A2A 仍默认关闭。实际 `.env` 与 Compose 读取值一致，私有文件保持 ignored/untracked，交付文件凭据匹配扫描为零；真实 Key 未进入工具参数、日志、报告或 Git。修改后须重新创建容器，操作见[部署说明](../../deploy/README.md)。
+
+本轮仅验证配置，模拟模型不作为真实供应商或媒体质量的新证据；P21 的百炼及真实媒体报告保持原镜像与原数据。隔离 Compose 的自有容器、卷和网络已清理；仅本地提交，未 push、merge、tag 或生产部署。双宿主机、原生 amd64 等既有未验证条件不变。

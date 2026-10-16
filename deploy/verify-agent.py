@@ -149,13 +149,15 @@ class Harness(shared.Harness):
         parent = Path(self.temp.name)
         parent.chmod(0o700)
         path = parent / "config.json"
-        path.write_text(json.dumps(private_configuration(self.token, self.base, self.model)))
+        shared.env_support.write_runtime_configuration(
+            private_configuration(self.token, self.base, self.model), path,
+        )
         # 父目录限制主机读取；单文件只读 bind 需允许容器的非 root UID 读取。
         path.chmod(0o644)
         return path
 
     def container_arguments(self, config_path: Path) -> list[str]:
-        mounts = []
+        mounts = shared.env_support.environment_mount(config_path.with_suffix(".env"))
         for part, volume in self.volumes.items():
             target = f"/var/lib/ffmpeg-agent/{part}" if part != "output" else "/media/output"
             mounts.extend(["--mount", f"type=volume,src={volume},dst={target}"])
@@ -545,7 +547,7 @@ def planning_timeout(value: str) -> float:
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--image", required=True, help="本地镜像 ID 或 tag，启动前解析并固定精确 ID")
-    parser.add_argument("--env-file", type=Path, default=ROOT / ".env.local")
+    parser.add_argument("--env-file", type=Path, default=ROOT / ".env")
     parser.add_argument("--report", type=Path, default=ROOT / "docs/verification/agent-validation.json")
     parser.add_argument("--case", choices=[case["name"] for case in CASES],
                         help="只验收指定场景；省略时执行全部六个场景")

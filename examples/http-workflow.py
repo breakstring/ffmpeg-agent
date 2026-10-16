@@ -18,7 +18,7 @@ from client_common import (
 def main() -> int:
     args = parse_args("Upload, process and download over HTTP")
     params = prepare(args)
-    client = Client(args.config, args.base_url)
+    client = Client(args.config, args.base_url, env_file=args.env_file)
     if args.job_id:
         job = client.api("GET", "/v1/jobs/" + args.job_id)
     else:

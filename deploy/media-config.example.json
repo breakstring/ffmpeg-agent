@@ -1,7 +1,6 @@
 {
   "state_dir": "/var/lib/ffmpeg-agent/state",
   "work_dir": "/var/lib/ffmpeg-agent/work",
-  "service_token": "REPLACE_WITH_A_RANDOM_TOKEN_AT_LEAST_24_CHARACTERS",
   "service_caller": "demo",
   "storages": {
     "input": {"root": "/media/input", "role": "input", "callers": ["demo"]},

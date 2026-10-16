@@ -22,29 +22,34 @@ Optional natural-language tasks turn a description into a validated media plan u
 You need Docker with Compose and Python 3. Run these commands from the repository root. Existing configuration is kept, so you can run them again:
 
 ```sh
-if [ ! -f .env ]; then cp .env.example .env; fi
-if [ ! -f deploy/local/media-config.json ]; then
-  python3 deploy/generate-config.py
-fi
+python3 deploy/generate-config.py
 docker compose up -d --build --wait
 ```
 
-Compose waits for the service to become ready. The generator creates a random service Token in `deploy/local/media-config.json`. Keep its parent directory private (`0700`). The examples below use that file automatically; you do not need to copy the Token into commands.
+Compose waits for the service to become ready. The generator creates or migrates `.env` and the structural JSON without replacing your current settings. The random service Token is stored only in `.env`, with mode `0600`. Keep `deploy/local` private (`0700`); the examples read `.env` automatically, so Tokens do not need to appear in commands.
 
-Edit `.env` for the published address, port and container resources. Edit the private JSON for the Token, public URL, storage and service limits. A Token protects HTTP, MCP, uploads and downloads through the same Bearer header; setting `service_token` to `null` opens these endpoints.
-
-For natural-language tasks and A2A under Compose, add `llm_*` and `a2a_enabled` settings to that private JSON. The model settings in `.env.example` are for explicit local loading; Compose does not forward them to the service. See the [enablement guide](docs/usage/agent.md#enable-planning).
+Configure the service Bearer Token, model key, model settings and feature switches in `.env`. Docker Compose explicitly forwards these settings to the service. The structural JSON contains storage, source rules and service limits; it must not contain `service_token`, model credentials or feature switches. Existing installations should run the generator before upgrading to migrate those settings. A process environment value overrides the corresponding `.env` setting; an empty Token is rejected. Keep credentials out of Git, shell commands and logs. Do not run `source .env`, print resolved Compose configuration, or share container environment inspection output.
 
 | `.env` variable | Default | Purpose |
 | --- | --- | --- |
+| `MEDIA_SERVICE_TOKEN` | Generated randomly | Bearer Token shared by HTTP, MCP, A2A, uploads and downloads; explicit `null` opens the service |
+| `MEDIA_LLM_ENABLED` / `MEDIA_A2A_ENABLED` | `false` / `false` | Enable natural-language planning and optional A2A |
+| `MEDIA_LLM_API_KEY` / `MEDIA_LLM_MODEL` / `MEDIA_LLM_BASE_URL` | Empty | Provider key, model ID and OpenAI-compatible API address |
+| `MEDIA_PUBLIC_BASE_URL` | `http://localhost:8080` | Address reachable by clients; also used for MCP Host/Origin validation |
 | `MEDIA_IMAGE` | `ffmpeg-agent:v1-local` | Local image name |
 | `MEDIA_BIND_ADDRESS` / `MEDIA_PORT` | `127.0.0.1` / `8080` | Published host address and port |
-| `MEDIA_CONFIG_PATH` | `./deploy/local/media-config.json` | Private service JSON path, relative to the repository root |
+| `MEDIA_CONFIG_PATH` | `./deploy/local/media-config.json` | Structural service JSON path, relative to the repository root |
 | `MEDIA_CPUS` / `MEDIA_MEMORY` / `MEDIA_PIDS_LIMIT` | `2.0` / `2g` / `128` | Container CPU, memory and process limits |
 
-If you use a custom `MEDIA_CONFIG_PATH`, generate or keep that configuration and pass its path to examples with `--config`. If you change the port, update `public_base_url` in the JSON too. `worker_concurrency` sets logical task concurrency (1–4, default 1).
+A Token must have at least 24 printable ASCII characters without spaces. Missing or empty Tokens stop startup; only `MEDIA_SERVICE_TOKEN=null` selects open access. To enable natural-language tasks or A2A, follow the [enablement guide](docs/usage/agent.md#enable-planning). After editing `.env`, recreate the container so the new values take effect:
 
-The default service is reachable only on the host. For remote use, provide an HTTPS entry point, set `public_base_url` to the externally reachable URL, and forward the correct public Host header. MCP validates Host and Origin against that address. A remote client needs only a private JSON containing `public_base_url` and `service_token`, passed with `--config`; it does not need the server's storage or deployment configuration. Keep Tokens out of command arguments and Git.
+```sh
+docker compose up -d --force-recreate --wait media
+```
+
+If you change the port, update `MEDIA_PUBLIC_BASE_URL` in `.env` too. `worker_concurrency` in the structural JSON sets logical task concurrency (1–4, default 1). If you use a custom JSON path, select it with `MEDIA_CONFIG_PATH`; examples can read its address with `--config` when no environment URL or `--base-url` is provided.
+
+The default service is reachable only on the host. For remote use, provide an HTTPS entry point, set `MEDIA_PUBLIC_BASE_URL` to the externally reachable URL, and forward the correct public Host header. MCP validates Host and Origin against that address. A remote example client needs only a private `.env` with `MEDIA_PUBLIC_BASE_URL` and `MEDIA_SERVICE_TOKEN`, selected with `--env-file`; it does not need the server's storage or deployment JSON. Process environment settings override this file, and `--base-url` overrides the connection address. Tokens are never read from JSON by the example clients.
 
 ## Upload, process and download
 
@@ -102,9 +107,9 @@ uv run --frozen python examples/mcp-workflow.py \
   tests/fixtures/video_h264_640x360.mkv "$output_dir/result.mp4"
 ```
 
-The client uploads over HTTP, calls the remote `transcode_video` tool, waits through MCP, and downloads over HTTP. It uses the same private configuration and Token for both transports. There is no local stdio server to configure.
+The client uploads over HTTP, calls the remote `transcode_video` tool, waits through MCP, and downloads over HTTP. It reads the same `.env` Token for both transports. There is no local stdio server to configure.
 
-To connect another MCP client, use the Streamable HTTP endpoint at `public_base_url + /mcp` (locally `http://localhost:8080/mcp`) and configure the service Bearer header in its connection settings. File HTTP requests need the same header. **MCP alone cannot upload a path from your computer:** the client needs HTTP file-transfer capability, or an input URL/shared file the service can access.
+To connect another MCP client, use the Streamable HTTP endpoint at `MEDIA_PUBLIC_BASE_URL + /mcp` (locally `http://localhost:8080/mcp`) and configure the service Bearer header in its connection settings. File HTTP requests need the same header. **MCP alone cannot upload a path from your computer:** the client needs HTTP file-transfer capability, or an input URL/shared file the service can access.
 
 For reference, these are the arguments to `transcode_video` after HTTP upload; replace the placeholders with the returned `file_id` and a key for this request:
 
@@ -190,7 +195,7 @@ Query `GET /v1/capabilities` or MCP `list_capabilities` for available encoders, 
 
 The clients print a request ID and then the accepted `job_id`. Each invocation creates a new request by default. Reuse an explicit `--request-id` only to retry the same complete request, including source, operation, parameters and upload mode. Use a new ID when changing any of them.
 
-The default wait is 600 seconds; change it with `--wait-seconds`. A wait timeout leaves processing running. To resume, run the same client with `--job-id` and the printed ID; it skips upload and submission. `SOURCE DESTINATION` are still required, but the source is not opened during resume. Use `--help` for all options. `--base-url` overrides the connection URL; `--config` selects a private client JSON.
+The default wait is 600 seconds; change it with `--wait-seconds`. A wait timeout leaves processing running. To resume, run the same client with `--job-id` and the printed ID; it skips upload and submission. `SOURCE DESTINATION` are still required, but the source is not opened during resume. Use `--help` for all options. `--env-file` selects the private environment file (default: repository `.env`); `--base-url` overrides the connection URL. `--config` only supplies a fallback `public_base_url`, never a Token.
 
 A destination file or frame directory must not already exist. Downloads are streamed and checked against the advertised size and SHA-256 before a completed file appears. Frame collections include `manifest.json` with successful and failed members. A `partial` result saves available members and exits with status 2; a failed task or transfer exits nonzero. The clients do not overwrite existing files or treat an incomplete transfer as a complete result.
 
@@ -220,7 +225,7 @@ Use `POST /v1/files/{file_id}/release` or `POST /v1/artifacts/{artifact_id}/rele
 
 ## Operate and configure
 
-`docker compose stop` preserves volumes. Before backups or upgrades, stop new submissions, let tasks drain, then stop the service. Back up **state, work, output, private configuration and image version together**; your application owns shared-input backups. Avoid `docker compose down -v` for routine stops or cleanup.
+`docker compose stop` preserves volumes. Before backups or upgrades, stop new submissions, let tasks drain, then stop the service. Back up **state, work, output, private `.env`, structural JSON and image version together**; your application owns shared-input backups. Avoid `docker compose down -v` for routine stops or cleanup.
 
 Run one service instance with its own state and work volumes. The default is one logical Worker, configurable from 1 to 4; increasing it requires workload and resource testing. Do not run several containers against the same state directory.
 

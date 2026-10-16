@@ -1,4 +1,5 @@
 import argparse
+import importlib.util
 import json
 import os
 import secrets
@@ -6,6 +7,14 @@ import subprocess
 import tempfile
 from pathlib import Path
 from uuid import uuid4
+
+_support_spec = importlib.util.spec_from_file_location(
+    "deployment_env_support", Path(__file__).with_name("env_support.py"),
+)
+assert _support_spec and _support_spec.loader
+env_support = importlib.util.module_from_spec(_support_spec)
+_support_spec.loader.exec_module(env_support)
+
 
 LABEL = "io.ffmpeg-agent.verification"
 
@@ -48,8 +57,7 @@ def verify(image: str, mode: str) -> dict:
         config_path = private / "media-config.json"
         config = json.loads((root / "deploy/media-config.example.json").read_text())
         config["service_token"] = token
-        config_path.write_text(json.dumps(config))
-        config_path.chmod(0o644)
+        environment_path = env_support.write_runtime_configuration(config, config_path)
         token_path = private / "caller-token"
         token_path.write_text(token)
         token_path.chmod(0o644)
@@ -102,6 +110,7 @@ def verify(image: str, mode: str) -> dict:
         consumer_file.write_text(json.dumps(consumer))
         media_args = [
             "compose",
+            "--env-file", str(environment_path),
             "-p",
             project,
             "-f",
@@ -114,13 +123,17 @@ def verify(image: str, mode: str) -> dict:
             if mode == "same-compose"
             else [
                 "compose",
+                "--env-file", str(environment_path),
                 "-p",
                 project + "-business",
                 "-f",
                 str(consumer_file),
             ]
         )
-        verification_env = {"MEDIA_BIND_ADDRESS": "127.0.0.1", "MEDIA_PORT": "0"}
+        verification_env = {"MEDIA_" + name.upper(): "" for name in env_support.ENV_ONLY_FIELDS}
+        verification_env.update({"MEDIA_BIND_ADDRESS": "127.0.0.1", "MEDIA_PORT": "0",
+                                 "MEDIA_SERVICE_TOKEN": token, "MEDIA_LLM_ENABLED": "false",
+                                 "MEDIA_A2A_ENABLED": "false"})
         previous_env = {key: os.environ.get(key) for key in verification_env}
         os.environ.update(verification_env)
         try:
