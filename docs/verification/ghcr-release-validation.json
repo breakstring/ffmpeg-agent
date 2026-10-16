@@ -1,0 +1,945 @@
+{
+  "date": "2026-10-16",
+  "recorded_at": "2026-10-16T04:08:58.565735+00:00",
+  "issue": "CFK-815",
+  "status": "published_and_anonymously_pullable",
+  "source_revision": "95020d760de6b866fe2abad8f63887b3829e431e",
+  "repository": "https://github.com/breakstring/ffmpeg-agent",
+  "successful_run": {
+    "id": 38847641532,
+    "url": "https://github.com/breakstring/ffmpeg-agent/actions/runs/38847641532",
+    "conclusion": "success",
+    "jobs": [
+      {
+        "id": 116801683155,
+        "name": "原生验证 (arm64)",
+        "conclusion": "success"
+      },
+      {
+        "id": 116801683289,
+        "name": "原生验证 (amd64)",
+        "conclusion": "success"
+      },
+      {
+        "id": 116803622468,
+        "name": "发布已验证的多架构镜像",
+        "conclusion": "success"
+      }
+    ]
+  },
+  "initial_failure": {
+    "run_id": 38847505294,
+    "url": "https://github.com/breakstring/ffmpeg-agent/actions/runs/38847505294",
+    "cause": "锁定的 uv 0.12.8 尚不提供宿主检查环境的 managed Python 3.14.8 下载。",
+    "correction_commit": "95020d760de6b866fe2abad8f63887b3829e431e",
+    "correction": "CI 宿主工具环境使用 Python 3.14.7；生产镜像内 Python 3.14.8 和固定依赖不变。"
+  },
+  "image": {
+    "repository": "ghcr.io/breakstring/ffmpeg-agent",
+    "tags": [
+      "main",
+      "latest",
+      "sha-95020d760de6b866fe2abad8f63887b3829e431e"
+    ],
+    "manifest": {
+      "schemaVersion": 2,
+      "mediaType": "application/vnd.docker.distribution.manifest.list.v2+json",
+      "digest": "sha256:618d759fd0727d6979bc4928b6777a69b5e0996ec69ee866acc4b92037c1fa9a",
+      "size": 685,
+      "manifests": [
+        {
+          "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+          "digest": "sha256:165c436bad94063069dd49111a2a231468a9964839f69f3687545d7c227b0bd1",
+          "size": 2628,
+          "platform": {
+            "architecture": "amd64",
+            "os": "linux"
+          }
+        },
+        {
+          "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+          "digest": "sha256:d8ceee2da4aa06c101e802a8838de17d162acd1a11759215ad6a9bf0945662e8",
+          "size": 2628,
+          "platform": {
+            "architecture": "arm64",
+            "os": "linux"
+          }
+        }
+      ]
+    }
+  },
+  "platforms": [
+    {
+      "platform": "linux/amd64",
+      "runner": "ubuntu-24.04",
+      "pytest": {
+        "status": "passed",
+        "image_id": "sha256:e7f95f61f2c5839971d5812a5d5dd14dd8f47b821ce6e09ea1c8a5fb2c7089bc",
+        "architecture": "amd64",
+        "recorded_at": "2026-10-16T03:53:38.421406+00:00",
+        "engine_series": "7.1",
+        "checks": [
+          "non_root",
+          "readonly_root",
+          "locked_test_dependencies",
+          "full_pytest_suite",
+          "consumer_skill_packages",
+          "source_from_tested_image"
+        ],
+        "exit_code": 0,
+        "pytest_summary": "772 passed in 261.25s (0:04:21)",
+        "elapsed_seconds": 265.390984867
+      },
+      "media": {
+        "status": "passed",
+        "created_at": "2026-10-16T03:58:05.332822+00:00",
+        "image_id": "sha256:e7f95f61f2c5839971d5812a5d5dd14dd8f47b821ce6e09ea1c8a5fb2c7089bc",
+        "fixtures": {
+          "video": {
+            "size_bytes": 62056,
+            "sha256": "3befa1884aaeeedc2fd99eb1e8701dc1ca8dd294f9a6e01da8e042fb853602f9"
+          },
+          "audio": {
+            "size_bytes": 129610,
+            "sha256": "b66e6a869d49a0660598a798890c075357a0610fe6a6cf15ea4c3be2dbf5e86b"
+          },
+          "image": {
+            "size_bytes": 267778,
+            "sha256": "990b60e737edd31c4c3609181cf069d92f66c4d34e9fe588f2f37445b331b429"
+          }
+        },
+        "modes": [
+          {
+            "token_enabled": true,
+            "checks": [
+              "nonroot_readonly_exact_image_without_shared_input",
+              "verified_raw_http_uploads",
+              "remote_mcp_discovery_and_http_capability_parity",
+              "six_media_tools_over_real_tcp_http_and_mcp",
+              "job_and_artifact_effective_parameter_parity",
+              "mcp_idempotency_replay",
+              "all_files_and_collection_members_head_range_size_sha_download",
+              "downloaded_media_decoded_and_properties_verified",
+              "all_six_tools_accept_omitted_mcp_params_and_empty_http_params",
+              "adaptive_defaults_preserve_video_timestamps_audio_properties_and_image_size",
+              "project_fixtures_remain_unchanged",
+              "only_owned_resources_removed"
+            ],
+            "engine": {
+              "ffmpeg": "7.1.5-0+deb13u1",
+              "ffprobe": "7.1.5-0+deb13u1",
+              "image_version": "95020d760de6b866fe2abad8f63887b3829e431e",
+              "implementation_sha256": "e0b35473b7fae63fbe23c249a91e9250b2db206b26aa23a7d3a035c84c96468f"
+            },
+            "cleanup": {
+              "containers_remaining": 0,
+              "volumes_remaining": 0
+            },
+            "case_count": 12,
+            "unique_job_count": 24,
+            "downloaded_verified_file_count": 28,
+            "cases": [
+              {
+                "operation": "media.probe.v1",
+                "default_parameters": false,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              },
+              {
+                "operation": "media.probe.v1",
+                "default_parameters": true,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              },
+              {
+                "operation": "video.transcode.v1",
+                "default_parameters": false,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              },
+              {
+                "operation": "video.transcode.v1",
+                "default_parameters": true,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              },
+              {
+                "operation": "audio.transcode.v1",
+                "default_parameters": false,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              },
+              {
+                "operation": "audio.transcode.v1",
+                "default_parameters": true,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              },
+              {
+                "operation": "video.extract_audio.v1",
+                "default_parameters": false,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              },
+              {
+                "operation": "video.extract_audio.v1",
+                "default_parameters": true,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              },
+              {
+                "operation": "video.extract_frames.v1",
+                "default_parameters": false,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 3,
+                  "mcp": 3
+                }
+              },
+              {
+                "operation": "video.extract_frames.v1",
+                "default_parameters": true,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              },
+              {
+                "operation": "image.resize.v1",
+                "default_parameters": false,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              },
+              {
+                "operation": "image.resize.v1",
+                "default_parameters": true,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              }
+            ]
+          },
+          {
+            "token_enabled": false,
+            "checks": [
+              "nonroot_readonly_exact_image_without_shared_input",
+              "verified_raw_http_uploads",
+              "remote_mcp_discovery_and_http_capability_parity",
+              "six_media_tools_over_real_tcp_http_and_mcp",
+              "job_and_artifact_effective_parameter_parity",
+              "mcp_idempotency_replay",
+              "all_files_and_collection_members_head_range_size_sha_download",
+              "downloaded_media_decoded_and_properties_verified",
+              "all_six_tools_accept_omitted_mcp_params_and_empty_http_params",
+              "adaptive_defaults_preserve_video_timestamps_audio_properties_and_image_size",
+              "project_fixtures_remain_unchanged",
+              "only_owned_resources_removed"
+            ],
+            "engine": {
+              "ffmpeg": "7.1.5-0+deb13u1",
+              "ffprobe": "7.1.5-0+deb13u1",
+              "image_version": "95020d760de6b866fe2abad8f63887b3829e431e",
+              "implementation_sha256": "e0b35473b7fae63fbe23c249a91e9250b2db206b26aa23a7d3a035c84c96468f"
+            },
+            "cleanup": {
+              "containers_remaining": 0,
+              "volumes_remaining": 0
+            },
+            "case_count": 12,
+            "unique_job_count": 24,
+            "downloaded_verified_file_count": 28,
+            "cases": [
+              {
+                "operation": "media.probe.v1",
+                "default_parameters": false,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              },
+              {
+                "operation": "media.probe.v1",
+                "default_parameters": true,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              },
+              {
+                "operation": "video.transcode.v1",
+                "default_parameters": false,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              },
+              {
+                "operation": "video.transcode.v1",
+                "default_parameters": true,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              },
+              {
+                "operation": "audio.transcode.v1",
+                "default_parameters": false,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              },
+              {
+                "operation": "audio.transcode.v1",
+                "default_parameters": true,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              },
+              {
+                "operation": "video.extract_audio.v1",
+                "default_parameters": false,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              },
+              {
+                "operation": "video.extract_audio.v1",
+                "default_parameters": true,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              },
+              {
+                "operation": "video.extract_frames.v1",
+                "default_parameters": false,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 3,
+                  "mcp": 3
+                }
+              },
+              {
+                "operation": "video.extract_frames.v1",
+                "default_parameters": true,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              },
+              {
+                "operation": "image.resize.v1",
+                "default_parameters": false,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              },
+              {
+                "operation": "image.resize.v1",
+                "default_parameters": true,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              }
+            ]
+          }
+        ],
+        "unique_jobs": 48,
+        "downloaded_verified_files": 56
+      },
+      "source_reports_sha256": {
+        "tests.json": "fdec4ae3251431ec67b009e6f7a27382f33d408c4f50710ec3a7521b4d02c452",
+        "tests.log": "ec91b58ae7abfa29a791e50b8b1e0365c1169985433d5b66f2ea1e82e3d9fbc3",
+        "parameters.json": "9a31417e0cd7edcd1afc71dd9a1b04ed2842656c527ff81f37eada7a288f5c98"
+      }
+    },
+    {
+      "platform": "linux/arm64",
+      "runner": "ubuntu-24.04-arm",
+      "pytest": {
+        "status": "passed",
+        "image_id": "sha256:ba2e1a5b1e5f57e6a2e5e885299ef290f4533e26cd028074220e6727ec874589",
+        "architecture": "arm64",
+        "recorded_at": "2026-10-16T03:53:23.697228+00:00",
+        "engine_series": "7.1",
+        "checks": [
+          "non_root",
+          "readonly_root",
+          "locked_test_dependencies",
+          "full_pytest_suite",
+          "consumer_skill_packages",
+          "source_from_tested_image"
+        ],
+        "exit_code": 0,
+        "pytest_summary": "772 passed in 244.25s (0:04:04)",
+        "elapsed_seconds": 248.380225253
+      },
+      "media": {
+        "status": "passed",
+        "created_at": "2026-10-16T03:57:33.527189+00:00",
+        "image_id": "sha256:ba2e1a5b1e5f57e6a2e5e885299ef290f4533e26cd028074220e6727ec874589",
+        "fixtures": {
+          "video": {
+            "size_bytes": 62056,
+            "sha256": "3befa1884aaeeedc2fd99eb1e8701dc1ca8dd294f9a6e01da8e042fb853602f9"
+          },
+          "audio": {
+            "size_bytes": 129610,
+            "sha256": "b66e6a869d49a0660598a798890c075357a0610fe6a6cf15ea4c3be2dbf5e86b"
+          },
+          "image": {
+            "size_bytes": 267778,
+            "sha256": "990b60e737edd31c4c3609181cf069d92f66c4d34e9fe588f2f37445b331b429"
+          }
+        },
+        "modes": [
+          {
+            "token_enabled": true,
+            "checks": [
+              "nonroot_readonly_exact_image_without_shared_input",
+              "verified_raw_http_uploads",
+              "remote_mcp_discovery_and_http_capability_parity",
+              "six_media_tools_over_real_tcp_http_and_mcp",
+              "job_and_artifact_effective_parameter_parity",
+              "mcp_idempotency_replay",
+              "all_files_and_collection_members_head_range_size_sha_download",
+              "downloaded_media_decoded_and_properties_verified",
+              "all_six_tools_accept_omitted_mcp_params_and_empty_http_params",
+              "adaptive_defaults_preserve_video_timestamps_audio_properties_and_image_size",
+              "project_fixtures_remain_unchanged",
+              "only_owned_resources_removed"
+            ],
+            "engine": {
+              "ffmpeg": "7.1.5-0+deb13u1",
+              "ffprobe": "7.1.5-0+deb13u1",
+              "image_version": "95020d760de6b866fe2abad8f63887b3829e431e",
+              "implementation_sha256": "e0b35473b7fae63fbe23c249a91e9250b2db206b26aa23a7d3a035c84c96468f"
+            },
+            "cleanup": {
+              "containers_remaining": 0,
+              "volumes_remaining": 0
+            },
+            "case_count": 12,
+            "unique_job_count": 24,
+            "downloaded_verified_file_count": 28,
+            "cases": [
+              {
+                "operation": "media.probe.v1",
+                "default_parameters": false,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              },
+              {
+                "operation": "media.probe.v1",
+                "default_parameters": true,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              },
+              {
+                "operation": "video.transcode.v1",
+                "default_parameters": false,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              },
+              {
+                "operation": "video.transcode.v1",
+                "default_parameters": true,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              },
+              {
+                "operation": "audio.transcode.v1",
+                "default_parameters": false,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              },
+              {
+                "operation": "audio.transcode.v1",
+                "default_parameters": true,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              },
+              {
+                "operation": "video.extract_audio.v1",
+                "default_parameters": false,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              },
+              {
+                "operation": "video.extract_audio.v1",
+                "default_parameters": true,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              },
+              {
+                "operation": "video.extract_frames.v1",
+                "default_parameters": false,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 3,
+                  "mcp": 3
+                }
+              },
+              {
+                "operation": "video.extract_frames.v1",
+                "default_parameters": true,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              },
+              {
+                "operation": "image.resize.v1",
+                "default_parameters": false,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              },
+              {
+                "operation": "image.resize.v1",
+                "default_parameters": true,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              }
+            ]
+          },
+          {
+            "token_enabled": false,
+            "checks": [
+              "nonroot_readonly_exact_image_without_shared_input",
+              "verified_raw_http_uploads",
+              "remote_mcp_discovery_and_http_capability_parity",
+              "six_media_tools_over_real_tcp_http_and_mcp",
+              "job_and_artifact_effective_parameter_parity",
+              "mcp_idempotency_replay",
+              "all_files_and_collection_members_head_range_size_sha_download",
+              "downloaded_media_decoded_and_properties_verified",
+              "all_six_tools_accept_omitted_mcp_params_and_empty_http_params",
+              "adaptive_defaults_preserve_video_timestamps_audio_properties_and_image_size",
+              "project_fixtures_remain_unchanged",
+              "only_owned_resources_removed"
+            ],
+            "engine": {
+              "ffmpeg": "7.1.5-0+deb13u1",
+              "ffprobe": "7.1.5-0+deb13u1",
+              "image_version": "95020d760de6b866fe2abad8f63887b3829e431e",
+              "implementation_sha256": "e0b35473b7fae63fbe23c249a91e9250b2db206b26aa23a7d3a035c84c96468f"
+            },
+            "cleanup": {
+              "containers_remaining": 0,
+              "volumes_remaining": 0
+            },
+            "case_count": 12,
+            "unique_job_count": 24,
+            "downloaded_verified_file_count": 28,
+            "cases": [
+              {
+                "operation": "media.probe.v1",
+                "default_parameters": false,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              },
+              {
+                "operation": "media.probe.v1",
+                "default_parameters": true,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              },
+              {
+                "operation": "video.transcode.v1",
+                "default_parameters": false,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              },
+              {
+                "operation": "video.transcode.v1",
+                "default_parameters": true,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              },
+              {
+                "operation": "audio.transcode.v1",
+                "default_parameters": false,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              },
+              {
+                "operation": "audio.transcode.v1",
+                "default_parameters": true,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              },
+              {
+                "operation": "video.extract_audio.v1",
+                "default_parameters": false,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              },
+              {
+                "operation": "video.extract_audio.v1",
+                "default_parameters": true,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              },
+              {
+                "operation": "video.extract_frames.v1",
+                "default_parameters": false,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 3,
+                  "mcp": 3
+                }
+              },
+              {
+                "operation": "video.extract_frames.v1",
+                "default_parameters": true,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              },
+              {
+                "operation": "image.resize.v1",
+                "default_parameters": false,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              },
+              {
+                "operation": "image.resize.v1",
+                "default_parameters": true,
+                "transports": [
+                  "http",
+                  "mcp"
+                ],
+                "downloaded_verified_files": {
+                  "http": 1,
+                  "mcp": 1
+                }
+              }
+            ]
+          }
+        ],
+        "unique_jobs": 48,
+        "downloaded_verified_files": 56
+      },
+      "source_reports_sha256": {
+        "tests.json": "6659eeee3f9f894f731b85195ee424488d48b07bd0e096ac0d741eeeb64d0f6b",
+        "tests.log": "662b903affafe3fbcb3457971ee139554818290a37d2bd6a124f5dc3ddf3decc",
+        "parameters.json": "6d5f7790fc683dbae76d2fe77b4014c1b71a5e64d3a7ca8f1b572a9cef155879"
+      }
+    }
+  ],
+  "anonymous_access": {
+    "manifest": {
+      "anonymous_manifest_status": 200,
+      "digest": "sha256:618d759fd0727d6979bc4928b6777a69b5e0996ec69ee866acc4b92037c1fa9a",
+      "platforms": [
+        {
+          "architecture": "amd64",
+          "os": "linux"
+        },
+        {
+          "architecture": "arm64",
+          "os": "linux"
+        }
+      ]
+    },
+    "identity": {
+      "anonymous": true,
+      "index_digest": "sha256:618d759fd0727d6979bc4928b6777a69b5e0996ec69ee866acc4b92037c1fa9a",
+      "platform_manifests": [
+        {
+          "platform": "linux/amd64",
+          "manifest_digest": "sha256:165c436bad94063069dd49111a2a231468a9964839f69f3687545d7c227b0bd1",
+          "config_digest": "sha256:e7f95f61f2c5839971d5812a5d5dd14dd8f47b821ce6e09ea1c8a5fb2c7089bc",
+          "matches_ci_tested_image": true
+        },
+        {
+          "platform": "linux/arm64",
+          "manifest_digest": "sha256:d8ceee2da4aa06c101e802a8838de17d162acd1a11759215ad6a9bf0945662e8",
+          "config_digest": "sha256:ba2e1a5b1e5f57e6a2e5e885299ef290f4533e26cd028074220e6727ec874589",
+          "matches_ci_tested_image": true
+        }
+      ]
+    },
+    "pull": {
+      "anonymous_pull_exit_code": 0,
+      "docker_config_empty": true,
+      "registry": "ghcr.io",
+      "reference": "ghcr.io/breakstring/ffmpeg-agent@sha256:618d759fd0727d6979bc4928b6777a69b5e0996ec69ee866acc4b92037c1fa9a",
+      "platform": "linux/arm64",
+      "docker_image_inspect_id": "sha256:618d759fd0727d6979bc4928b6777a69b5e0996ec69ee866acc4b92037c1fa9a",
+      "docker_image_id_kind": "index_digest",
+      "registry_config_digest": "sha256:ba2e1a5b1e5f57e6a2e5e885299ef290f4533e26cd028074220e6727ec874589",
+      "matches_ci_tested_image": true,
+      "source_revision": "95020d760de6b866fe2abad8f63887b3829e431e",
+      "elapsed_seconds": 1.695,
+      "note": "本机容器镜像存储的 inspect Id 为多架构索引 digest；通过匿名读取平台 manifest 的 config digest 与 CI image_id 比较。先前将两类 digest 直接比较导致的本地断言已纠正。"
+    }
+  },
+  "limitations": [
+    "双架构分别在原生 GitHub runner 的单宿主机上测试，不代替双实际业务宿主机网络、卷权限和备份验收。",
+    "真实媒体覆盖 HTTP/MCP；本轮未验收 HTTPS/反向代理、真实模型规划或 A2A 媒体端到端。",
+    "完整匿名下载在本机 arm64 验证；amd64 匿名 manifest 与 config digest 已核对，未在本机下载其全部层。",
+    "本轮不创建 Git 版本标签，不升级现有运行实例或修改部署凭据。",
+    "只读 Package 管理 API 的凭据权限不足；公开可用性依据匿名 registry 200 和空 Docker 配置拉取成功，不推断管理字段。",
+    "APT 仍使用活动仓库；固定版本不可用时构建应失败并重新验证基线。"
+  ],
+  "evidence_retention": {
+    "image_transfer_days": 1,
+    "ci_reports_days": 14,
+    "published_manifest_days": 90,
+    "note": "本文件保存持久化摘要和原始报告 SHA-256；Actions 中原始完整报告受保留期限制。"
+  },
+  "totals": {
+    "pytest_passed_per_architecture": 772,
+    "pytest_architecture_executions": 1544,
+    "unique_real_media_jobs": 96,
+    "downloaded_verified_files": 112
+  }
+}

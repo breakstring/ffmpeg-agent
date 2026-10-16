@@ -365,3 +365,13 @@ sha256:680953c259022ca9d1ad9e703021e67a1ad431eab04be6189da0a0e6f663a0c4
 首次推送前，本地验证通过 Ruff、Pyright、actionlint 1.7.12、diff 检查；50 个 README/消费者 shell 块、8 个新增部署 shell 块、24 条 CLI 参数、60 个本地链接以及本地/GHCR 两种 Compose 配置均通过。两个技能复制到独立目录后通过 Python `-S` 启动，重复安装和配置覆盖被拒绝，私有权限为 0700/0600；变更文件实际凭据匹配为 0。详见[本地验证报告](../verification/ghcr-local-validation.json)。
 
 GitHub 只读 preflight 确认仓库 Public、Actions 已启用、当前账号 ADMIN、目标 GHCR 包查询 404。此段仅记录发布准备，不将工作流文件存在当作镜像已经可用；远端运行、原生双架构、Package 可见性与匿名拉取结果在实际执行后追加。双宿主机等既有待验项保留。
+
+### GHCR 首次发布与匿名拉取验收
+
+首次 Actions 运行 `38847505294` 在宿主检查环境安装阶段失败：锁定的 uv 0.12.8 尚不提供 managed Python 3.14.8。修正提交 `95020d760de6b866fe2abad8f63887b3829e431e` 仅将 CI 宿主工具环境设为 Python 3.14.7，生产镜像继续使用原定 Python 3.14.8。[后续运行 38847641532](https://github.com/breakstring/ffmpeg-agent/actions/runs/38847641532)三个 job 全部成功。
+
+原生 amd64 镜像 **772 passed in 261.25s**，原生 arm64 镜像 **772 passed in 244.25s**；各自另完成 48 个真实媒体任务（六操作 × 默认/自定义参数 × HTTP/MCP × Token 开/关），合计 96 个唯一任务、112 个下载校验文件。每个架构的 pytest 和媒体报告绑定相同精确镜像 ID，自有容器和卷残留均为 0。验证后发布同一镜像，未重建。
+
+已发布 `ghcr.io/breakstring/ffmpeg-agent` 的 `main`、`latest`、`sha-95020d760de6b866fe2abad8f63887b3829e431e`；多架构清单 digest 为 `sha256:618d759fd0727d6979bc4928b6777a69b5e0996ec69ee866acc4b92037c1fa9a`。匿名 registry GET 返回 200，两个平台 manifest 中的 config digest 均与 CI 已测 image ID 一致。用隔离的空 Docker 配置完整拉取 arm64 成功，源码 revision 一致；本机镜像存储的 inspect ID 是索引 digest，不能直接与 CI config digest 比较。
+
+中英文 README 和部署指南已更新为镜像实际可用。详细摘要、原始报告 SHA-256、发布清单及匿名拉取读回见[发布验收报告](../verification/ghcr-release-validation.json)。完整匿名下载仅在 arm64 执行，amd64 已匿名核对 manifest；本轮不覆盖真实模型、A2A 端到端、HTTPS/代理或双实际业务宿主机验收，不修改现有运行实例或凭据，不创建 Git 版本标签。

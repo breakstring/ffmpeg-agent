@@ -43,7 +43,7 @@ docker compose up -d --no-build --wait media
 
 ### 使用 GHCR 预构建镜像
 
-首次发布且 Package 设为 Public 后，可直接拉取 `ghcr.io/breakstring/ffmpeg-agent`；首次发布是否完成以 [Actions](https://github.com/breakstring/ffmpeg-agent/actions/workflows/container.yml) 和 [Packages](https://github.com/breakstring/ffmpeg-agent/pkgs/container/ffmpeg-agent) 的实际结果为准。发布工作流支持 `linux/amd64` 和 `linux/arm64`，Docker 按宿主架构选择镜像。
+已发布的 `ghcr.io/breakstring/ffmpeg-agent` 支持匿名拉取，包含 `linux/amd64` 和 `linux/arm64`，Docker 按宿主架构选择镜像。2026-10-16 的[首次成功发布](https://github.com/breakstring/ffmpeg-agent/actions/runs/38847641532)已完成双架构测试；验证摘要和精确 digest 见[发布验收报告](../docs/verification/ghcr-release-validation.json)，后续版本见 [Actions](https://github.com/breakstring/ffmpeg-agent/actions/workflows/container.yml) 和 [Packages](https://github.com/breakstring/ffmpeg-agent/pkgs/container/ffmpeg-agent)。
 
 先运行上述配置生成器，再编辑 `.env` 中已有的 `MEDIA_IMAGE` 行：
 
@@ -134,7 +134,7 @@ docker compose up -d --no-build --force-recreate --wait media
 
 通过的镜像以 `docker save` 传给发布 job；发布前核对镜像 ID、架构、源码 revision 与测试报告，随后推送并合并清单，不在发布阶段重新构建。Actions 保存分架构测试报告及最终清单 digest；镜像传递文件保留 1 天、验证报告 14 天、发布清单 90 天。报告不能替代两台业务宿主机的网络与权限验收。
 
-首次创建的 GHCR Package 可能为 Private，即使源码仓库公开。发布成功后，到 Package settings 检查可见性和关联仓库；确认对外分发时将其设置为 Public，再从未登录的客户端验证拉取。公开后应按 GitHub 当前规则处理可见性，不能假定可以改回 Private。参考 [GitHub GHCR 文档](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)与[包权限说明](https://docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility)。
+本仓库镜像已验证可匿名读取与拉取。迁移到其他仓库或首次创建新包时，仍应独立检查 Package 可见性和关联仓库；源码仓库公开不保证包公开。确认对外分发后设置为 Public，并从未登录的客户端验证拉取。公开后应按 GitHub 当前规则处理可见性，不能假定可以改回 Private。参考 [GitHub GHCR 文档](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)与[包权限说明](https://docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility)。
 
 基础镜像 digest、uv、Python 依赖和各架构系统包版本已固定；APT 下载源仍是 Debian 活动仓库。若固定版本不再可取，构建会失败，应核对并重新验证基线，不能为让发布变绿而静默删除版本约束。没有成功的 Actions 结果和清单，不把文档里的目标架构当作已发布或已验证证据。
 

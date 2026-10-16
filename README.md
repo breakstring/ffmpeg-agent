@@ -96,7 +96,7 @@ By default, the service is available at `http://localhost:8080` on this host. Di
 
 ### Use a prebuilt GHCR image
 
-The configured image repository is `ghcr.io/breakstring/ffmpeg-agent`. After its first successful publication, it will provide Linux AMD64 and ARM64 images. Package visibility is separate from repository visibility; anonymous pulls require the GHCR package to be Public. See [publishing and package visibility](deploy/README.md#ghcr-镜像发布).
+Prebuilt Linux AMD64 and ARM64 images are available at `ghcr.io/breakstring/ffmpeg-agent`, with anonymous pulls enabled. Both architectures pass the full test suite and real HTTP/MCP media checks before publication. See [the first release verification](docs/verification/ghcr-release-validation.json) and [publishing details](deploy/README.md#ghcr-镜像发布).
 
 This is an alternative to the local build above. Run the first-time configuration step, then set this non-secret value in `.env`:
 
@@ -104,7 +104,7 @@ This is an alternative to the local build above. Run the first-time configuratio
 MEDIA_IMAGE=ghcr.io/breakstring/ffmpeg-agent:latest
 ```
 
-Once the image has been published, pull and start it without building locally:
+Pull and start the image without building locally:
 
 ```sh
 docker compose pull media

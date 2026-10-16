@@ -96,7 +96,7 @@ python3 skills/ffmpeg-agent-connect/scripts/media_client.py --env-file .env chec
 
 ### 使用 GHCR 预构建镜像
 
-已配置的镜像仓库为 `ghcr.io/breakstring/ffmpeg-agent`，首次成功发布后提供 Linux AMD64 和 ARM64 镜像。Package 可见性与代码仓库独立，设为 Public 后才能匿名拉取；详见[镜像发布与可见性设置](deploy/README.md#ghcr-镜像发布)。
+`ghcr.io/breakstring/ffmpeg-agent` 已提供 Linux AMD64 和 ARM64 预构建镜像，支持匿名拉取。两种架构均在完整测试和真实 HTTP/MCP 媒体校验通过后发布，详见[首次发布验收](docs/verification/ghcr-release-validation.json)及[镜像发布说明](deploy/README.md#ghcr-镜像发布)。
 
 此方式与上面的本地构建二选一。先完成首次生成配置，再将 `.env` 中的非敏感镜像配置改为：
 
@@ -104,7 +104,7 @@ python3 skills/ffmpeg-agent-connect/scripts/media_client.py --env-file .env chec
 MEDIA_IMAGE=ghcr.io/breakstring/ffmpeg-agent:latest
 ```
 
-镜像发布完成后，拉取并直接启动：
+拉取并直接启动：
 
 ```sh
 docker compose pull media
