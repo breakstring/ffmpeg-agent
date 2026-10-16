@@ -318,3 +318,15 @@ sha256:680953c259022ca9d1ad9e703021e67a1ad431eab04be6189da0a0e6f663a0c4
 自有 `video_h264_640x360.mkv` 上传后，原生 MCP 提交一个三步骤任务，实际到达 `succeeded` 且 `inputs_released=true`。下载 H.264 MP4 **320×180**、0/500 ms 的两张 PNG **80×45** 和 JSON 探测报告，共四个文件；独立大小/SHA-256、ffprobe 属性、PNG 完整解码及报告解析通过。仅 release 本次上传，fixture 与本地源副本摘要未变。详见[原生 MCP 验收报告](../verification/codex-native-mcp-validation.json)。
 
 本次补齐本机 Codex 的安装发现、原生 MCP 与文件传输闭环；不扩展为所有宿主、真实双宿主机、Windows 或 HTTPS/代理兼容保证。帧时间按服务原生元数据核对，未在本轮独立解码源时间线。没有修改服务实现或技能运行代码，沿用前轮 762 项回归证据；只验证本轮安装和实际闭环，并本地提交新增报告。
+
+## 2026-10-16：原生 MCP 自然语言链路补验（P23 / CFK-813）
+
+使用已安装的 `ffmpeg-agent-media` 技能与既有连接，文件由技能客户端 HTTP 上传/下载，规划与执行查询实际经过会话的 `mcp__ffmpeg_agent.generate_media`、`get_agent_task`、`get_job`、`get_artifact`、`list_artifact_members`。本次未修改服务配置、技能运行代码或模型开关，也未重启服务。
+
+首个「转码 320 宽 H.264 MP4，加原视频 0/500 ms 两张 160 宽 PNG」组合请求在当前 **60 秒**规划期限内失败，稳定错误为 `PLANNING_TIMEOUT`，没有计划或媒体任务。保留该失败证据并释放其上传；向用户说明后，以新状态和新请求验证单项「将视频首帧保存为 160 宽等比 PNG」，未重发原请求，也未切换协议。
+
+单项请求实际返回 `decision=execute` 和受限 `video.extract_frames.v1` 计划，关联媒体任务 **succeeded**、执行尝试 1、`inputs_released=true`。服务接受到媒体任务创建为 **8.222 秒**，任务创建到产物发布为 **0.624 秒**；前者包含排队、规划、校验与提交，不是独立模型耗时。技能下载 **160×90 PNG、6939 字节**，随后自动释放本次上传。
+
+独立验证 **17/17** 通过：实际文件大小/SHA-256 与原生成员及消费者清单一致，Pillow 和 FFmpeg 完整解码，源 fixture 前后 SHA 不变；另以本机 FFmpeg 9.0.1 解码首帧并用 Pillow Lanczos 重建，平均 RGB 差 **0.671/255**、最大通道差 **3**，不宣称逐像素相等。集合摘要仅与原生元数据核对，实际 PNG 摘要独立重算。消费者未持有模型 Key，运行文本及服务近 10 分钟 stdout/stderr 的已知凭据匹配为 0。
+
+详见[原生 MCP 自然语言验收报告](../verification/codex-native-mcp-natural-language-validation.json)。本次证明单项自然语言的模型规划、实际执行与下载闭环；组合规划仍保留 60 秒超时限制，不能扩大为复杂请求稳定性保证。仅归档证据并本地提交，不重复无代码变更的全量回归；跨宿主机等既有待验边界保留。

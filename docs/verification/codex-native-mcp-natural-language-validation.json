@@ -1,0 +1,376 @@
+{
+  "date": "2026-10-16",
+  "result": "single_operation_end_to_end_passed; initial_combined_request_planning_timeout",
+  "skill": "ffmpeg-agent-media",
+  "protocol": {
+    "control": "Codex native mcp__ffmpeg_agent",
+    "file_transfer": "installed skill HTTP upload/collect",
+    "methods_called": [
+      "list_capabilities",
+      "generate_media",
+      "get_agent_task",
+      "get_job",
+      "get_artifact",
+      "list_artifact_members"
+    ],
+    "protocol_fallback_used": false
+  },
+  "service": {
+    "image_id": "sha256:754a08caaf17fe025c8f925606683f475d28df15695498ee8868806589ef3b1b",
+    "health": "healthy",
+    "planning_timeout_seconds": 60,
+    "configuration_changed": false,
+    "restarted": false,
+    "engine": {
+      "ffmpeg": "7.1.5-0+deb13u1",
+      "ffprobe": "7.1.5-0+deb13u1",
+      "pillow": "12.3.0",
+      "image_version": "local",
+      "contract_sha256": "cea602fd6f880ef0a4103b77a1c6752316e729259147b5323be77fa97be981c2",
+      "presets_sha256": "3075a9273018409fe3a523a84d845bfa4683dc4a266be868b8904b4fc950dc13",
+      "available_encoders": [
+        "aac",
+        "flac",
+        "libmp3lame",
+        "libopus",
+        "libsvtav1",
+        "libvpx-vp9",
+        "libx264",
+        "libx265",
+        "pcm_f32le",
+        "pcm_s16le",
+        "pcm_s24le"
+      ],
+      "available_muxers": [
+        "flac",
+        "ipod",
+        "matroska",
+        "mp3",
+        "mp4",
+        "ogg",
+        "wav",
+        "webm"
+      ],
+      "implementation_sha256": "e0b35473b7fae63fbe23c249a91e9250b2db206b26aa23a7d3a035c84c96468f"
+    }
+  },
+  "initial_combined_request": {
+    "intent": "请将 source 视频转为 H.264 编码的 MP4，宽度设为 320 像素，高度保持原比例，保留原有帧率和音轨；另外从原始 source 视频的 0 秒和 0.5 秒各提取一张 PNG，图片宽度设为 160 像素，高度保持原比例。分别返回转码视频和两张截图，不需要其他输出。",
+    "agent_task_id": "agent_7f86730e122d4834b1e5444c3778f572",
+    "status": "failed",
+    "error_code": "PLANNING_TIMEOUT",
+    "created_at": "2026-10-16T03:12:04.367Z",
+    "planning_deadline_at": "2026-10-16T03:13:04.367Z",
+    "plan": null,
+    "job_id": null,
+    "owned_upload_released": true,
+    "same_request_retried": false
+  },
+  "successful_single_operation": {
+    "intent": "请把 source 视频的第一帧保存为 PNG 图片，宽度 160 像素，高度按原比例缩放。",
+    "agent_task_id": "agent_813cd7a550144433aecd68c4c838c849",
+    "agent_status": "succeeded",
+    "decision": "execute",
+    "validated_plan": {
+      "steps": [
+        {
+          "id": "frame0",
+          "operation": "video.extract_frames.v1",
+          "inputs": {
+            "video": {
+              "source": "source"
+            }
+          },
+          "params": {
+            "video_stream": 0,
+            "sampling": {
+              "mode": "timestamps",
+              "timestamps_ms": [
+                0
+              ]
+            },
+            "frame_selection": "next",
+            "image": {
+              "width": 160,
+              "height": null,
+              "fit": "contain",
+              "allow_upscale": false,
+              "background": "#ffffff",
+              "crop_x": 0.5,
+              "crop_y": 0.5,
+              "resampling": "lanczos",
+              "format": "png",
+              "quality": null,
+              "compression_level": 6,
+              "jpeg_subsampling": null,
+              "progressive": null,
+              "lossless": null,
+              "method": null
+            }
+          }
+        }
+      ],
+      "outputs": {
+        "png_frame": {
+          "step": "frame0",
+          "output": "frames"
+        }
+      }
+    },
+    "job_id": "job_0b7fc85013cc469fa0fabd2caaaeeba3",
+    "job_status": "succeeded",
+    "inputs_released": true,
+    "execution_attempts": 1,
+    "owned_upload_released": true,
+    "observed_agent_statuses": [
+      "queued",
+      "succeeded"
+    ],
+    "accepted_at": "2026-10-16T03:14:25.343Z",
+    "job_created_at": "2026-10-16T03:14:33.565Z",
+    "artifact_published_at": "2026-10-16T03:14:34.189Z",
+    "accepted_to_job_created_seconds": 8.222,
+    "job_created_to_artifact_published_seconds": 0.624,
+    "timing_note": "Intervals use server timestamps; accepted-to-job includes queueing, model planning, validation and submission, not isolated model latency.",
+    "artifact": {
+      "artifact_id": "art_74d63184fff2419ca1291ab2db3e5c45",
+      "job_id": "job_0b7fc85013cc469fa0fabd2caaaeeba3",
+      "kind": "collection",
+      "state": "ready",
+      "media": {
+        "content_type": "image/png",
+        "effective_params": {
+          "frame_selection": "next",
+          "image": {
+            "allow_upscale": false,
+            "background": "#ffffff",
+            "compression_level": 6,
+            "crop_x": 0.5,
+            "crop_y": 0.5,
+            "fit": "contain",
+            "format": "png",
+            "height": null,
+            "jpeg_subsampling": null,
+            "lossless": null,
+            "method": null,
+            "progressive": null,
+            "quality": null,
+            "resampling": "lanczos",
+            "width": 160
+          },
+          "resolved": {
+            "requested_frame_count": 1,
+            "successful_frame_count": 1,
+            "video_stream_index": 0
+          },
+          "sampling": {
+            "mode": "timestamps",
+            "timestamps_ms": [
+              0
+            ]
+          },
+          "video_stream": 0
+        },
+        "format": "png",
+        "frame_selection": "next",
+        "time_origin": "first_decodable_pts",
+        "type": "image"
+      },
+      "size_bytes": 6939,
+      "sha256": "6002926469c87b219f517ceb82663df51dd4d266c79da366da954b74a0f625f6",
+      "retain_until": "2026-10-17T03:14:34.189Z",
+      "published_at": "2026-10-16T03:14:34.189Z",
+      "member_count": 1,
+      "item_count": 1
+    },
+    "members": {
+      "items": [
+        {
+          "index": 0,
+          "member_key": "frame_000.png",
+          "requested_time_ms": 0,
+          "actual_time_ms": 0,
+          "size_bytes": 6939,
+          "sha256": "b3db64854dbe8f57d4b0cd95f341e2fd7477c007cb9079a4fd25cfebf78ad220",
+          "error": null,
+          "media": {
+            "color_space": "srgb",
+            "content_type": "image/png",
+            "format": "png",
+            "height": 90,
+            "type": "image",
+            "width": 160
+          }
+        }
+      ],
+      "next_cursor": null
+    },
+    "downloads": [
+      {
+        "path": "results/png_frame/frame_000.png",
+        "size_bytes": 6939,
+        "sha256": "b3db64854dbe8f57d4b0cd95f341e2fd7477c007cb9079a4fd25cfebf78ad220",
+        "format": "PNG",
+        "width": 160,
+        "height": 90
+      }
+    ]
+  },
+  "independent_validation": {
+    "schema_version": 1,
+    "verified_at_utc": "2026-10-16T03:15:46.172834+00:00",
+    "ok": true,
+    "checks": [
+      {
+        "name": "源文件身份保持不变",
+        "passed": true,
+        "size_bytes": 62056,
+        "sha256": "3befa1884aaeeedc2fd99eb1e8701dc1ca8dd294f9a6e01da8e042fb853602f9"
+      },
+      {
+        "name": "消费者成功并完成释放",
+        "passed": true,
+        "status": "succeeded",
+        "uploads_released": true
+      },
+      {
+        "name": "png_frame:存在原生产物元数据",
+        "passed": true
+      },
+      {
+        "name": "png_frame:没有部分失败",
+        "passed": true
+      },
+      {
+        "name": "png_frame/frame_000.png:与下载元数据一致",
+        "passed": true,
+        "size_bytes": 6939,
+        "sha256": "b3db64854dbe8f57d4b0cd95f341e2fd7477c007cb9079a4fd25cfebf78ad220"
+      },
+      {
+        "name": "png_frame:集合摘要与原生元数据一致",
+        "passed": true
+      },
+      {
+        "name": "png_frame:清单只有一个成功成员",
+        "passed": true
+      },
+      {
+        "name": "png_frame/frame_000.png:与本地清单一致",
+        "passed": true
+      },
+      {
+        "name": "png_frame/frame_000.png:与原生成员元数据一致",
+        "passed": true
+      },
+      {
+        "name": "png_frame/frame_000.png:成员来自零时刻",
+        "passed": true,
+        "actual_time_ms": 0,
+        "requested_time_ms": 0
+      },
+      {
+        "name": "恰好下载一个媒体文件",
+        "passed": true,
+        "file_count": 1
+      },
+      {
+        "name": "结果目录没有额外媒体文件",
+        "passed": true,
+        "excluded_consumer_metadata": [
+          "manifest.json",
+          ".ffmpeg-agent-owner"
+        ]
+      },
+      {
+        "name": "输出为PNG文件",
+        "passed": true
+      },
+      {
+        "name": "PNG完整解码且宽160等比缩放",
+        "passed": true,
+        "actual_size": [
+          160,
+          90
+        ],
+        "expected_size": [
+          160,
+          90
+        ]
+      },
+      {
+        "name": "像素匹配独立解码缩放的源首帧",
+        "passed": true,
+        "exactly_equal": false,
+        "mean_absolute_rgb_error": 0.671087962962963,
+        "max_channel_error": 3,
+        "comparison": "FFmpeg 解码源首帧为 RGB；Pillow Lanczos 缩为 160x90；逐像素比较",
+        "reference_rgb_sha256": "d2a7af2d263238f40ed773d9f65311c9c9ca27ac7340e608a70723ef79b6ac3d",
+        "output_rgb_sha256": "cc4bea67b18e41087c1adbb3abd2364597fd04addc40e10e24896378ecdd68d7",
+        "mean_absolute_rgb_error_threshold": 1.0
+      },
+      {
+        "name": "FFmpeg独立完整解码PNG",
+        "passed": true
+      },
+      {
+        "name": "验证结束时源文件身份仍保持不变",
+        "passed": true
+      }
+    ],
+    "source": {
+      "name": "video_h264_640x360.mkv",
+      "size_bytes": 62056,
+      "sha256": "3befa1884aaeeedc2fd99eb1e8701dc1ca8dd294f9a6e01da8e042fb853602f9",
+      "video": {
+        "codec_name": "h264",
+        "width": 640,
+        "height": 360,
+        "avg_frame_rate": "24/1"
+      }
+    },
+    "outputs": [
+      {
+        "path": "results/png_frame/frame_000.png",
+        "size_bytes": 6939,
+        "sha256": "b3db64854dbe8f57d4b0cd95f341e2fd7477c007cb9079a4fd25cfebf78ad220",
+        "format": "PNG",
+        "width": 160,
+        "height": 90
+      }
+    ],
+    "tools": {
+      "ffmpeg": "ffmpeg version 9.0.1 Copyright (c) 2000-2026 the FFmpeg developers",
+      "pillow": "12.3.0"
+    },
+    "limitations": [
+      "使用本机 FFmpeg 与 Pillow 独立解码和缩放，未调用服务或模型；跨引擎版本可能存在微小像素差异，因此另报告精确相等和像素误差。",
+      "消费者 collection manifest 是脱敏副本，不能据此重算服务端原始完整清单摘要；集合摘要只与原生元数据核对，成员则重新计算实际文件 SHA-256。"
+    ]
+  },
+  "security": {
+    "known_secret_matches_in_run_text_files": 0,
+    "known_secret_matches_in_logs": 0,
+    "log_scan_minutes": 10,
+    "scanned_text_files": 17,
+    "consumer_fields": [
+      "MEDIA_PUBLIC_BASE_URL",
+      "MEDIA_SERVICE_TOKEN"
+    ],
+    "consumer_model_key_copied": false,
+    "installed_skill_matches_repository": true,
+    "service_image_id": "sha256:754a08caaf17fe025c8f925606683f475d28df15695498ee8868806589ef3b1b",
+    "service_health": "healthy",
+    "source_sha256": "3befa1884aaeeedc2fd99eb1e8701dc1ca8dd294f9a6e01da8e042fb853602f9",
+    "log_streams_scanned": [
+      "stdout",
+      "stderr"
+    ]
+  },
+  "scope_limits": [
+    "Initial combined transcode-plus-frame request failed at the current 60-second planning limit; no media job or result was produced for that request.",
+    "A new, simpler first-frame request completed the natural-language native-MCP path; this does not prove complex planning reliability.",
+    "Same-host Codex validation only; cross-host, Windows and HTTPS/proxy coverage remain separate.",
+    "No service or consumer implementation changes; no full regression rerun for this evidence-only task."
+  ]
+}
