@@ -1,0 +1,312 @@
+{
+  "date": "2026-10-16",
+  "recorded_at": "2026-10-16T04:53:45.715872+00:00",
+  "status": "passed",
+  "issue": "CFK-815 follow-up",
+  "scope": "将本地既有 Compose 服务切换到 GHCR 精确镜像，保留配置与四个数据卷，并使用已安装技能及宿主原生 MCP 完成媒体闭环。",
+  "deployment": {
+    "previous_image": "ffmpeg-agent:v1-local",
+    "previous_image_id": "sha256:c23c8b4c22d32bd564be488045d31dffe35f94032d80f9d14a08d686cba6d085",
+    "image": "ghcr.io/breakstring/ffmpeg-agent@sha256:618d759fd0727d6979bc4928b6777a69b5e0996ec69ee866acc4b92037c1fa9a",
+    "platform": "linux/arm64",
+    "source_revision": "95020d760de6b866fe2abad8f63887b3829e431e",
+    "healthy": true,
+    "only_env_image_changed": true,
+    "config_and_service_environment_unchanged": true,
+    "expected_image_metadata_change": "MEDIA_IMAGE_VERSION: local -> 95020d760de6b866fe2abad8f63887b3829e431e",
+    "same_volume_names": [
+      "ffmpeg-agent_shared_input",
+      "ffmpeg-agent_shared_output",
+      "ffmpeg-agent_state",
+      "ffmpeg-agent_work"
+    ],
+    "same_port_mapping": true,
+    "private_env_mode": "0600",
+    "implementation_unchanged": true,
+    "same_user_and_readonly_root": true
+  },
+  "backup": {
+    "location": "deploy/local/ghcr-switch-20261016/backup-verified",
+    "private_directory_mode": "0700",
+    "private_config_file_modes": "0600",
+    "clean_stop": true,
+    "container_exit_code": 143,
+    "schema": 3,
+    "quick_check": "ok",
+    "foreign_key_errors": 0,
+    "archives": {
+      "state": {
+        "bytes": 296960,
+        "sha256": "6c9e9a878d366676b479aad4d6e8eb0b20fe3c35b39cd1a1bec854e779cb7b06",
+        "entries": 2,
+        "matches_source": true
+      },
+      "work": {
+        "bytes": 10240,
+        "sha256": "4491c790658e8a03b3f5cf4096abd9c310bfdfeb866d6bc50e9f551600035ace",
+        "entries": 1,
+        "matches_source": true
+      },
+      "shared_input": {
+        "bytes": 10240,
+        "sha256": "c8c8cdbdbb77bc4c73e58199410d99e3893899127e0de8385f1ecccfda984cdb",
+        "entries": 0,
+        "matches_source": true
+      },
+      "shared_output": {
+        "bytes": 7249920,
+        "sha256": "07d96e84e330ecf87b4c0e9437ac748736703eac521818663c7454f941b95c90",
+        "entries": 86,
+        "matches_source": true
+      }
+    },
+    "note": "正常停止后备份四个卷及配置；归档内每个文件的内容、UID/GID、权限、目录和链接均与停止后的源快照比较。备份仅保存在本机忽略目录，不提交凭据或数据。"
+  },
+  "preservation_before_smoke": {
+    "passed": true,
+    "schema": 3,
+    "quick_check": "ok",
+    "foreign_key_errors": 0,
+    "tables": {
+      "jobs": {
+        "before_count": 23,
+        "after_count": 23,
+        "missing_rows": 0,
+        "new_rows": 0,
+        "changed_rows": 0
+      },
+      "attempts": {
+        "before_count": 23,
+        "after_count": 23,
+        "missing_rows": 0,
+        "new_rows": 0,
+        "changed_rows": 0
+      },
+      "artifacts": {
+        "before_count": 27,
+        "after_count": 27,
+        "missing_rows": 0,
+        "new_rows": 0,
+        "changed_rows": 0
+      },
+      "steps": {
+        "before_count": 29,
+        "after_count": 29,
+        "missing_rows": 0,
+        "new_rows": 0,
+        "changed_rows": 0
+      },
+      "refs": {
+        "before_count": 0,
+        "after_count": 0,
+        "missing_rows": 0,
+        "new_rows": 0,
+        "changed_rows": 0
+      },
+      "leases": {
+        "before_count": 0,
+        "after_count": 0,
+        "missing_rows": 0,
+        "new_rows": 0,
+        "changed_rows": 0
+      },
+      "downloads": {
+        "before_count": 0,
+        "after_count": 0,
+        "missing_rows": 0,
+        "new_rows": 0,
+        "changed_rows": 0
+      },
+      "uploaded_files": {
+        "before_count": 26,
+        "after_count": 26,
+        "missing_rows": 0,
+        "new_rows": 0,
+        "changed_rows": 0
+      },
+      "file_refs": {
+        "before_count": 0,
+        "after_count": 0,
+        "missing_rows": 0,
+        "new_rows": 0,
+        "changed_rows": 0
+      },
+      "agent_requests": {
+        "before_count": 9,
+        "after_count": 9,
+        "missing_rows": 0,
+        "new_rows": 0,
+        "changed_rows": 0
+      },
+      "meta": {
+        "before_count": 1,
+        "after_count": 1,
+        "missing_rows": 0,
+        "new_rows": 0,
+        "changed_rows": 0
+      }
+    },
+    "volumes": {
+      "work": {
+        "entries": 1,
+        "files": 0,
+        "all_contents_and_metadata_unchanged": true
+      },
+      "shared_input": {
+        "entries": 0,
+        "files": 0,
+        "all_contents_and_metadata_unchanged": true
+      },
+      "shared_output": {
+        "entries": 86,
+        "files": 59,
+        "all_contents_and_metadata_unchanged": true
+      }
+    },
+    "active": {
+      "media_jobs": 0,
+      "planning_requests": 0,
+      "submitted_active_media": 0,
+      "running_attempts": 0,
+      "uploads": 0,
+      "active_sends": 0,
+      "publishing": 0
+    },
+    "expected_runtime_metadata_change": true
+  },
+  "connection_checks": {
+    "installed_skill": "ffmpeg-agent-connect",
+    "http": true,
+    "mcp_discovery": true,
+    "mcp_tools": 22,
+    "a2a_card": true,
+    "a2a_enabled_unchanged": true,
+    "llm_enabled_unchanged": true,
+    "planning_timeout_seconds_unchanged": 300,
+    "native_host_mcp_after_restart": true
+  },
+  "media_smoke": {
+    "installed_skill": "ffmpeg-agent-media",
+    "flow": [
+      "HTTP upload",
+      "host native MCP submit_job/get_job/get_artifact",
+      "HTTP collect/download"
+    ],
+    "input": {
+      "fixture": "video_h264_640x360.mkv",
+      "size_bytes": 62056,
+      "sha256": "3befa1884aaeeedc2fd99eb1e8701dc1ca8dd294f9a6e01da8e042fb853602f9"
+    },
+    "request_id": "a8a4d22d445c477f91af0c3fbc7eb79d",
+    "job_id": "job_f9e10dade3fe48cbb0a28acfd261b2bb",
+    "status": "succeeded",
+    "attempts": 1,
+    "artifact_id": "art_c9980ee4b2ac4a2e8e893571e5720e6f",
+    "validation": {
+      "passed": true,
+      "file": "results/video",
+      "size_bytes": 30736,
+      "sha256": "6fefad925b8544a8d749a0b7c25a7a58d3562a8a0700c8c528b6b0e77ee37682",
+      "native_metadata_matches": true,
+      "container": "mov,mp4,m4a,3gp,3g2,mj2",
+      "video": {
+        "codec_name": "h264",
+        "width": 320,
+        "height": 180,
+        "pix_fmt": "yuv420p",
+        "r_frame_rate": "24/1",
+        "avg_frame_rate": "8000/333"
+      },
+      "audio": {
+        "codec_name": "aac",
+        "sample_rate": "44100",
+        "channels": 1
+      },
+      "full_decode_exit_code": 0,
+      "source_unchanged": true,
+      "job_status": "succeeded",
+      "inputs_released": true,
+      "playable_copy": "results/smoke.mp4"
+    },
+    "uploads_released": true,
+    "output_directory": "deploy/local/ghcr-switch-20261016/results"
+  },
+  "final_service_validation": {
+    "healthy": true,
+    "history_after_smoke": {
+      "jobs": {
+        "original_rows": 23,
+        "preserved_rows": 23,
+        "new_rows": 1
+      },
+      "attempts": {
+        "original_rows": 23,
+        "preserved_rows": 23,
+        "new_rows": 1
+      },
+      "artifacts": {
+        "original_rows": 27,
+        "preserved_rows": 27,
+        "new_rows": 1
+      },
+      "steps": {
+        "original_rows": 29,
+        "preserved_rows": 29,
+        "new_rows": 1
+      },
+      "refs": {
+        "original_rows": 0,
+        "preserved_rows": 0,
+        "new_rows": 0
+      },
+      "leases": {
+        "original_rows": 0,
+        "preserved_rows": 0,
+        "new_rows": 0
+      },
+      "downloads": {
+        "original_rows": 0,
+        "preserved_rows": 0,
+        "new_rows": 0
+      },
+      "uploaded_files": {
+        "original_rows": 26,
+        "preserved_rows": 26,
+        "new_rows": 1
+      },
+      "file_refs": {
+        "original_rows": 0,
+        "preserved_rows": 0,
+        "new_rows": 0
+      },
+      "agent_requests": {
+        "original_rows": 9,
+        "preserved_rows": 9,
+        "new_rows": 0
+      }
+    },
+    "historical_files_unchanged": true,
+    "known_credentials_in_logs": 0,
+    "active": {
+      "media_jobs": 0,
+      "planning_requests": 0,
+      "submitted_active_media": 0,
+      "running_attempts": 0,
+      "uploads": 0,
+      "active_sends": 0,
+      "publishing": 0
+    },
+    "schema": 3,
+    "quick_check": "ok",
+    "foreign_key_errors": 0
+  },
+  "verification_adjustments": [
+    "首次停机脚本仅接受退出码0而自动恢复旧容器。核对 Uvicorn 源码后确认优雅关闭会重新发出 SIGTERM，最终以退出码143、数据库 clean=true、无活动任务和完整性检查共同确认正常停止。",
+    "首次切换脚本将 MEDIA_IMAGE_VERSION 的预期变化计作环境变化，自动回退原镜像并确认原环境恢复。改为只允许此构建元数据变化后完成切换，其他环境逐项摘要一致。"
+  ],
+  "limitations": [
+    "本轮为本机原生 arm64 既有部署切换和一个真实结构化转码任务，不代替全部回归或双实际宿主机验收。",
+    "自然语言与 A2A 配置及连接保留并检查；本轮没有再次调用真实模型或执行 A2A 媒体任务。",
+    "备份已验证内容一致，但未执行破坏性的备份恢复演练。"
+  ]
+}

@@ -375,3 +375,13 @@ GitHub 只读 preflight 确认仓库 Public、Actions 已启用、当前账号 A
 已发布 `ghcr.io/breakstring/ffmpeg-agent` 的 `main`、`latest`、`sha-95020d760de6b866fe2abad8f63887b3829e431e`；多架构清单 digest 为 `sha256:618d759fd0727d6979bc4928b6777a69b5e0996ec69ee866acc4b92037c1fa9a`。匿名 registry GET 返回 200，两个平台 manifest 中的 config digest 均与 CI 已测 image ID 一致。用隔离的空 Docker 配置完整拉取 arm64 成功，源码 revision 一致；本机镜像存储的 inspect ID 是索引 digest，不能直接与 CI config digest 比较。
 
 中英文 README 和部署指南已更新为镜像实际可用。详细摘要、原始报告 SHA-256、发布清单及匿名拉取读回见[发布验收报告](../verification/ghcr-release-validation.json)。完整匿名下载仅在 arm64 执行，amd64 已匿名核对 manifest；本轮不覆盖真实模型、A2A 端到端、HTTPS/代理或双实际业务宿主机验收，不修改现有运行实例或凭据，不创建 Git 版本标签。
+
+### 本地既有服务切换到 GHCR（CFK-815 后续验收）
+
+按用户后续明确授权，将本地 `ffmpeg-agent` Compose 服务切换到上述 GHCR 精确 digest，平台为原生 arm64。先确认媒体、规划、上传、下载引用与发布均无活动项，正常停止后完整备份配置和四个实际数据卷；归档内文件内容、UID/GID、权限及目录结构逐项与停止后的源快照一致，数据库 schema 3、完整性和外键检查通过。私有备份保存在忽略目录 `deploy/local/ghcr-switch-20261016/backup-verified`，未提交配置或数据。
+
+`.env` 仅修改 `MEDIA_IMAGE`；Token、模型配置、300 秒规划预算、功能开关、结构 JSON、端口和原四个卷均保留。镜像自带的 `MEDIA_IMAGE_VERSION` 从 `local` 改为发布提交，其余容器环境逐项摘要相同。服务实现摘要一致；启动后 23 个历史任务、23 个执行尝试、27 个产物、29 个步骤、26 个上传及 9 个规划请求均无缺失或变化，59 个历史输出文件内容及元数据一致。仅运行代际标记随重启改变。
+
+已安装的连接技能验证 HTTP、MCP 22 工具和 A2A 接入正常。媒体技能通过 HTTP 上传本项目 62,056 字节测试视频，宿主原生 MCP 提交 `video.transcode.v1` 缩放至宽 320，任务 `job_f9e10dade3fe48cbb0a28acfd261b2bb` 一次执行成功；技能通过 HTTP 下载 30,736 字节 H.264/AAC MP4，独立验证 320×180、大小和 SHA-256 匹配，并完整解码通过。本次上传已释放，源素材未变，验证后所有旧记录及旧文件仍一致，服务健康、无活动任务，日志中实际凭据匹配为 0。
+
+验收摘要及停机/切换检查调整记录见[本地 GHCR 切换报告](../verification/local-ghcr-switch-validation.json)。本轮验证一个结构化真实媒体闭环；保留自然语言/A2A 配置但不再次调用模型，不代替双实际宿主机验收，也未执行备份恢复演练。
