@@ -10,6 +10,7 @@ ENV_ONLY_FIELDS = frozenset({
     "llm_output_mode", "a2a_enabled", "planning_concurrency", "max_agent_requests",
     "planning_timeout_seconds", "planning_max_output_tokens",
     "log_level", "log_model_content",
+    "llm_enable_thinking",
 })
 _ASSIGNMENT = re.compile(r"(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)")
 _MAX_FILE_BYTES = 256 * 1024

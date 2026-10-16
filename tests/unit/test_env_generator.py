@@ -27,6 +27,7 @@ def test_new_environment_has_unique_token_and_repeat_is_idempotent(tmp_path, cap
     assert values["MEDIA_PLANNING_TIMEOUT_SECONDS"] == "300"
     assert values["MEDIA_LOG_LEVEL"] == "INFO"
     assert values["MEDIA_LOG_MODEL_CONTENT"] == "false"
+    assert values["MEDIA_LLM_ENABLE_THINKING"] == "false"
     assert len(token) >= 24 and not generator.is_placeholder(token)
     assert stat.S_IMODE(environment.stat().st_mode) == 0o600
     assert stat.S_IMODE(output.stat().st_mode) == 0o644
@@ -160,6 +161,30 @@ def test_generator_migrates_log_options_from_json_into_environment(tmp_path):
     assert values["MEDIA_LOG_LEVEL"] == "DEBUG"
     assert values["MEDIA_LOG_MODEL_CONTENT"] == "true"
     assert json.loads(output.read_text()) == {"state_dir": "/state"}
+
+
+@pytest.mark.parametrize("value,expected", [(False, "false"), (True, "true"), (None, "null")])
+def test_generator_migrates_thinking_option_without_losing_null(tmp_path, value, expected):
+    private = tmp_path / "private"
+    private.mkdir(mode=0o700)
+    output = private / "config.json"
+    output.write_text(json.dumps({"llm_enable_thinking": value, "state_dir": "/state"}))
+    environment = tmp_path / ".env"
+    generator.generate(environment, output)
+    assert generator.env_support.read_env_file(environment)["MEDIA_LLM_ENABLE_THINKING"] == expected
+    assert json.loads(output.read_text()) == {"state_dir": "/state"}
+
+
+def test_generator_preserves_explicit_null_thinking_setting(tmp_path):
+    environment = tmp_path / ".env"
+    environment.write_text("MEDIA_LLM_ENABLE_THINKING=null\n")
+    private = tmp_path / "private"
+    private.mkdir(mode=0o700)
+    output = private / "config.json"
+    output.write_text(json.dumps({"llm_enable_thinking": False}))
+    generator.generate(environment, output)
+    assert generator.env_support.read_env_file(environment)["MEDIA_LLM_ENABLE_THINKING"] == "null"
+    assert json.loads(output.read_text()) == {}
 
 
 def test_migration_preserves_old_public_url_without_explicit_cli_override(tmp_path):

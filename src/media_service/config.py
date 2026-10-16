@@ -103,6 +103,7 @@ class Settings(BaseSettings):
     llm_model: str | None = None
     llm_base_url: str | None = None
     llm_output_mode: Literal["native", "prompted"] = "prompted"
+    llm_enable_thinking: bool | None = False
     planning_concurrency: int = Field(default=2, ge=1, le=4)
     max_agent_requests: int = Field(default=32, ge=1, le=1024)
     planning_timeout_seconds: float = Field(default=300, gt=0, le=300)

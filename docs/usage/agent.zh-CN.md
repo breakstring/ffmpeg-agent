@@ -19,16 +19,19 @@ MEDIA_A2A_ENABLED=false
 
 服务级 Bearer Token 也只在 `.env` 中通过 `MEDIA_SERVICE_TOKEN` 配置，与模型 API Key 分开。生成器会创建随机 Token，只有显式 `MEDIA_SERVICE_TOKEN=null` 才选择服务开放模式。保持 `.env` 权限为 `0600`，不加入 Git。值中包含 `$` 时使用单引号，避免 Compose 插值；不要 `source` 凭据文件、将密钥放入命令参数、打印展开后的 Compose 配置或分享容器环境输出。
 
-供应商需支持配置对应的 OpenAI-compatible API，服务不会注入供应商专属 thinking 参数。规划相关配置统一使用同一份 `.env`：
+供应商需支持配置对应的 OpenAI-compatible API；思考扩展可按供应商能力关闭、开启或省略。规划相关配置统一使用同一份 `.env`：
 
 | `.env` 配置 | 默认值 | 含义 |
 | --- | --- | --- |
-| `MEDIA_LLM_OUTPUT_MODE` | `prompted` | `native` 要求供应商支持原生结构化输出 |
+| `MEDIA_LLM_OUTPUT_MODE` | `prompted` | `json_object` 加提示词 schema；`native` 需单独验证供应商合同 |
+| `MEDIA_LLM_ENABLE_THINKING` | `false` | 显式关闭思考；`true` 开启；小写 `null` 省略扩展，适配不支持该字段的服务 |
 | `MEDIA_PLANNING_CONCURRENCY` | `2` | 并发模型请求数，允许 1～4 |
 | `MEDIA_MAX_AGENT_REQUESTS` | `32` | 全局未完成规划请求上限 |
 | `MEDIA_PLANNING_TIMEOUT_SECONDS` | `300` | 规划总预算，单位秒，允许大于 0 且不超过 300 |
 | `MEDIA_PLANNING_MAX_OUTPUT_TOKENS` | `4096` | 模型输出 token 上限 |
 | `MEDIA_A2A_ENABLED` | `false` | 启用 A2A，要求规划配置完整 |
+
+百炼兼容核对（2026-10-16）：Qwen3.8-Flash 默认开启思考，本服务通过 SDK `extra_body` 将 `enable_thinking` 写入 HTTP 顶层，默认显式关闭，见[思考模式](https://help.aliyun.com/zh/model-studio/deep-thinking/)和[OpenAI 兼容参数](https://help.aliyun.com/zh/model-studio/qwen-api-via-openai-chat-completions/)。本轮保持 `prompted`：使用 `json_object`、含 JSON 关键词及完整 schema 的提示词，加本地 Pydantic 和任务图校验；它不提供供应商强 schema 保证。虽然该模型支持 `json_schema`，当前 `native` 经 OpenAI schema 转换器发送 `strict:false`，且保留百炼 strict 不支持的 `patternProperties`，不能只切换配置便认定兼容，需适配后另验。[官方结构化输出说明](https://help.aliyun.com/zh/model-studio/qwen-structured-output)建议不限制 `max_tokens` 以免截断；本项目仍按资源合同默认限制为 4096。可能截断或其他异常的输出也必须通过完整 Pydantic 和图校验才可执行，API `200` 本身不代表规划成功。
 
 规划预算包括规划排队、模型请求、受控纠错、计划校验和媒体任务提交。转码、抽帧等媒体执行使用独立的 `task_timeout_seconds`：它配置在结构 JSON 中，默认 `3600` 秒，从媒体任务被接受时开始计时，包含媒体排队、执行和产物发布。长视频处理需要调整这个媒体任务预算，不消耗模型规划预算。
 

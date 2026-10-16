@@ -178,13 +178,16 @@ class PydanticPlanner:
             )
         output = (NativeOutput(PlanningOutcome) if settings.llm_output_mode == "native"
                   else PromptedOutput(PlanningOutcome))
+        model_options: ModelSettings = {"max_tokens": settings.planning_max_output_tokens}
+        if settings.llm_enable_thinking is not None:
+            model_options["extra_body"] = {"enable_thinking": settings.llm_enable_thinking}
         self._agent = Agent(
             _TracedModel(model, self._trace_owner),
             output_type=output,
             deps_type=AgentRequest,
             instructions=_INSTRUCTIONS,
             retries={"output": 1, "tools": 0},
-            model_settings={"max_tokens": settings.planning_max_output_tokens},
+            model_settings=model_options,
         )
         self._agent.instrument = False
         self._agent.output_validator(_validate_plan)

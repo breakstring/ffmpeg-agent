@@ -114,13 +114,34 @@ async def test_planner_uses_structured_output_without_tools_or_private_bindings(
     payload = payloads[0]
     assert payload["response_format"]["type"] == format_type
     assert payload["max_tokens"] == 1024
-    assert not ({"tools", "tool_choice", "enable_thinking", "thinking", "extra_body"} & payload.keys())
+    assert payload["enable_thinking"] is False
+    assert not ({"tools", "tool_choice", "thinking", "extra_body"} & payload.keys())
     serialized = json.dumps(payload, ensure_ascii=False)
     assert "photo" in serialized and "image.resize.v1" in serialized
     for secret in ("isolated-model-api-key", "source-secret", "source-header-secret",
                    "privateoutput", "12345", "ignored-operation-secret", "ignored-limit-secret",
                    "engine-path-secret", "transfer-secret"):
         assert secret not in serialized
+
+
+@pytest.mark.parametrize("mode,format_type", [("prompted", "json_object"),
+                                              ("native", "json_schema")])
+@pytest.mark.parametrize("enable_thinking", [False, True, None])
+async def test_planner_preserves_thinking_setting_in_initial_and_correction_wire_body(
+        settings, mode, format_type, enable_thinking):
+    configured = settings.model_copy(update={"llm_enable_thinking": enable_thinking})
+    async with mock_planner(configured, [executable(source="missing"), executable()],
+                            mode=mode) as (planner, payloads):
+        outcome = await planner.plan(media_request(), {})
+    assert outcome.decision == "execute" and len(payloads) == 2
+    for payload in payloads:
+        if enable_thinking is None:
+            assert "enable_thinking" not in payload
+        else:
+            assert payload["enable_thinking"] is enable_thinking
+        assert "extra_body" not in payload
+        assert payload["response_format"]["type"] == format_type
+        assert payload["max_tokens"] == 1024
 
 
 @pytest.mark.parametrize("timeout_seconds", [180, 300])

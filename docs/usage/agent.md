@@ -19,16 +19,19 @@ MEDIA_A2A_ENABLED=false
 
 The service Bearer Token is also configured only in `.env` as `MEDIA_SERVICE_TOKEN`; it is separate from the model API key. The generator creates a random Token, and only an explicit `MEDIA_SERVICE_TOKEN=null` selects open service access. Keep `.env` mode `0600` and out of Git. Use single quotes for values containing `$` so Compose preserves them literally. Never `source` a credentials file, put a key on the command line, print resolved Compose configuration, or share container environment output.
 
-The provider must support the configured OpenAI-compatible API. The service does not add provider-specific thinking settings. All planning settings use the same `.env`:
+The provider must support the configured OpenAI-compatible API. The thinking extension can be disabled, enabled or omitted to match provider capabilities. All planning settings use the same `.env`:
 
 | `.env` variable | Default | Meaning |
 | --- | --- | --- |
-| `MEDIA_LLM_OUTPUT_MODE` | `prompted` | `native` requires provider support for native structured output |
+| `MEDIA_LLM_OUTPUT_MODE` | `prompted` | `json_object` with a schema in the prompt; `native` needs separate provider-contract verification |
+| `MEDIA_LLM_ENABLE_THINKING` | `false` | Explicitly disable thinking; `true` enables it; lowercase `null` omits the extension for providers that do not accept it |
 | `MEDIA_PLANNING_CONCURRENCY` | `2` | Concurrent model requests, from 1 to 4 |
 | `MEDIA_MAX_AGENT_REQUESTS` | `32` | Global limit for unfinished planning requests |
 | `MEDIA_PLANNING_TIMEOUT_SECONDS` | `300` | Total planning budget in seconds; greater than 0 and at most 300 |
 | `MEDIA_PLANNING_MAX_OUTPUT_TOKENS` | `4096` | Maximum model output tokens |
 | `MEDIA_A2A_ENABLED` | `false` | Enable the A2A endpoint; requires planning |
+
+Model Studio compatibility, checked 2026-10-16: Qwen3.8-Flash enables thinking by default. This service explicitly disables it through SDK `extra_body`, which becomes top-level HTTP `enable_thinking`; see [thinking mode](https://help.aliyun.com/zh/model-studio/deep-thinking/) and [OpenAI-compatible parameters](https://help.aliyun.com/zh/model-studio/qwen-api-via-openai-chat-completions/). This deployment keeps `prompted`: `json_object`, a prompt containing the JSON keyword and full schema, and local Pydantic/graph validation. This does not provide provider-enforced schema guarantees. Although the model supports `json_schema`, the current `native` path uses the OpenAI schema transformer, sends `strict:false`, and retains `patternProperties`, which Model Studio strict mode does not support. Switching modes alone does not establish compatibility; adaptation and separate verification are required. The [structured-output guide](https://help.aliyun.com/zh/model-studio/qwen-structured-output) recommends omitting `max_tokens` to avoid truncation, but this project's resource contract retains the default 4096-token cap. Potentially truncated or otherwise problematic output must still pass complete Pydantic and graph validation before execution; API `200` alone does not mean planning succeeded.
 
 The planning budget includes waiting for a planning slot, model requests, controlled correction, plan validation and media job submission. Transcoding, frame extraction and other media work use the independent `task_timeout_seconds` setting in the structural JSON. Its default is `3600` seconds, measured from media job acceptance and including media queueing, execution and artifact publication. Adjust this media job budget for long videos; media execution does not consume the model planning budget.
 

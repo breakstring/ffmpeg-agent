@@ -37,6 +37,38 @@ def test_default_dotenv_is_shared_source_and_host_port_is_not_app_port(configura
     assert result.llm_api_key is None and not result.llm_enabled and not result.a2a_enabled
     assert result.planning_timeout_seconds == 300
     assert result.log_level == "INFO" and not result.log_model_content
+    assert result.llm_enable_thinking is False
+
+
+@pytest.mark.parametrize("value,expected", [("false", False), ("true", True), ("null", None)])
+def test_thinking_setting_supports_explicit_three_states(configuration, value, expected):
+    _, path = configuration
+    with path.open("a") as stream:
+        stream.write(f"MEDIA_LLM_ENABLE_THINKING={value}\n")
+    assert Settings.from_file().llm_enable_thinking is expected
+
+
+@pytest.mark.parametrize("value,expected", [("false", False), ("true", True), ("null", None)])
+def test_thinking_process_setting_overrides_file(configuration, monkeypatch, value, expected):
+    _, path = configuration
+    with path.open("a") as stream:
+        stream.write("MEDIA_LLM_ENABLE_THINKING=true\n")
+    monkeypatch.setenv("MEDIA_LLM_ENABLE_THINKING", value)
+    assert Settings.from_file().llm_enable_thinking is expected
+
+
+@pytest.mark.parametrize("value", ["", "NULL", "private-invalid-thinking-value"])
+def test_invalid_thinking_setting_is_rejected_without_echoing(configuration, monkeypatch, value):
+    monkeypatch.setenv("MEDIA_LLM_ENABLE_THINKING", value)
+    with pytest.raises(ValueError, match="invalid local environment configuration") as error:
+        Settings.from_file()
+    assert "private-invalid-thinking-value" not in str(error.value)
+
+
+@pytest.mark.parametrize("value", [False, True, None])
+def test_explicit_thinking_constructor_values_remain_supported(settings, value):
+    configured = Settings.model_validate(settings.model_dump() | {"llm_enable_thinking": value})
+    assert configured.llm_enable_thinking is value
 
 
 @pytest.mark.parametrize("level", ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"])

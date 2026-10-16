@@ -117,6 +117,10 @@ docker compose up -d --no-build --force-recreate --wait media
 
 模型规划预算在 `.env` 的 `MEDIA_PLANNING_TIMEOUT_SECONDS`，默认 300 秒；媒体任务预算在结构 JSON 的 `task_timeout_seconds`，默认 3600 秒。客户端的 `--wait-seconds` 只影响一次等待，不会取消服务端任务。具体配置见[自然语言与 A2A 指南](../docs/usage/agent.zh-CN.md)。
 
+`.env` 的 `MEDIA_LLM_ENABLE_THINKING` 默认为 `false`，向模型显式发送 `enable_thinking=false` 以关闭思考模式；`true` 显式开启。使用不接受该扩展的其他 OpenAI-compatible 服务时，设为小写 `null`，请求将省略 `enable_thinking`，由供应商决定默认行为；空值或大写 `NULL` 会拒绝启动。此选项复用已有模型地址、模型名称和 Key，不需要另配凭据，也不改变规划超时和重试预算。修改后按上文重新创建容器。
+
+截至 2026-10-16，[百炼 Qwen3.8-Flash 默认开启思考](https://help.aliyun.com/zh/model-studio/deep-thinking/)；SDK 的 `extra_body` 最终映射为 [HTTP 顶层 `enable_thinking`](https://help.aliyun.com/zh/model-studio/qwen-api-via-openai-chat-completions/)。本轮百炼部署保持 `prompted`（`json_object`、带 JSON 关键词和完整 schema 的提示词、本地 Pydantic/图校验），不宣称供应商强 schema 保证。当前 `native` 发送 `strict:false` 且包含百炼 strict 不支持的 `patternProperties`，需适配后另验；官方支持 `json_schema` 不等于本项目可直接切换。[官方结构化输出说明](https://help.aliyun.com/zh/model-studio/qwen-structured-output)建议不限制 `max_tokens`，本项目按资源合同保留默认 4096，输出通过完整本地校验后才执行，API `200` 不代表规划成功。详见[自然语言指南](../docs/usage/agent.zh-CN.md)。
+
 ### 日志级别与规划诊断
 
 `MEDIA_LOG_LEVEL` 控制服务结构化事件日志的最低级别，支持大写 `DEBUG`、`INFO`、`WARNING`、`ERROR`、`CRITICAL`；缺省为 `INFO`，空值或其他值会拒绝启动且不会回显输入内容。日常运行使用 `INFO` 查看任务状态与规划总耗时；排查卡顿时使用 `DEBUG` 增加模型请求和内部阶段诊断；只关注异常时选择 `WARNING` 或 `ERROR`。日志中的任务标识可用于串联同一次规划的各个阶段。
