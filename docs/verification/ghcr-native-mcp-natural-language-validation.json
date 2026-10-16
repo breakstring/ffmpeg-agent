@@ -1,0 +1,210 @@
+{
+  "date": "2026-10-16",
+  "recorded_at": "2026-10-16T05:46:29.130069+00:00",
+  "status": "failed",
+  "issue": "CFK-815 follow-up",
+  "scope": "当前 GHCR 服务通过已安装媒体技能和宿主原生 MCP 执行一次自然语言组合处理，并只读检查超时日志。",
+  "image": {
+    "reference": "ghcr.io/breakstring/ffmpeg-agent@sha256:618d759fd0727d6979bc4928b6777a69b5e0996ec69ee866acc4b92037c1fa9a",
+    "source_revision": "95020d760de6b866fe2abad8f63887b3829e431e",
+    "same_container": true
+  },
+  "request": {
+    "intent": "请将 source 视频转换成 H.264 编码的 MP4，宽度 320 像素，高度按原比例缩放，保留源帧时间节奏和音频内容，音频保留原采样率和声道；同时从原始 source 视频的 0 毫秒和 500 毫秒各提取一张 PNG 图片，宽度 160 像素，高度按原比例缩放。请分别返回转码视频和两张图片的集合。",
+    "inputs": {
+      "source": {
+        "kind": "uploaded_file",
+        "file_id": "file_54490e4074524e07848b8ac2f75921ac"
+      }
+    }
+  },
+  "fixture": {
+    "name": "video_h264_640x360.mkv",
+    "size_bytes": 62056,
+    "sha256": "3befa1884aaeeedc2fd99eb1e8701dc1ca8dd294f9a6e01da8e042fb853602f9",
+    "unchanged": true
+  },
+  "native_mcp": {
+    "methods": [
+      "list_capabilities",
+      "generate_media",
+      "get_agent_task"
+    ],
+    "generate_media_calls": 1,
+    "agent_task_id": "agent_f025340f436e4495a1118d07c9507abe",
+    "planning_enabled": true,
+    "planning_budget_seconds": 300,
+    "task": {
+      "agent_task_id": "agent_f025340f436e4495a1118d07c9507abe",
+      "status": "failed",
+      "created_at": "2026-10-16T05:36:11.644Z",
+      "planning_deadline_at": "2026-10-16T05:41:11.644Z",
+      "decision": null,
+      "message": null,
+      "plan": null,
+      "job_id": null,
+      "job": null,
+      "error": {
+        "code": "PLANNING_TIMEOUT",
+        "message": "自然语言规划超过允许时限",
+        "retryable": false,
+        "request_id": "6dc0e20d3e6e4815931ac6221a91dfec",
+        "details": null
+      }
+    },
+    "acceptance": {
+      "agent_task_id": "agent_f025340f436e4495a1118d07c9507abe",
+      "status": "queued",
+      "created_at": "2026-10-16T05:36:11.644Z",
+      "planning_deadline_at": "2026-10-16T05:41:11.644Z",
+      "decision": null,
+      "message": null,
+      "plan": null,
+      "job_id": null,
+      "job": null,
+      "error": null
+    }
+  },
+  "collection": {
+    "agent_task_id": "agent_f025340f436e4495a1118d07c9507abe",
+    "status": "failed",
+    "inputs_released": true,
+    "terminal": true,
+    "outputs": {},
+    "code": "PLANNING_TIMEOUT",
+    "ok": false
+  },
+  "outcome": {
+    "plan_persisted": false,
+    "media_job_created": false,
+    "media_executed": false,
+    "outputs_downloaded": 0,
+    "uploads_released": true,
+    "independent_media_verification": "not_run_no_outputs"
+  },
+  "log_diagnostics": {
+    "window_utc": [
+      "2026-10-16T05:35:30Z",
+      "2026-10-16T05:42:00Z"
+    ],
+    "structured_records": 322,
+    "event_counts": {
+      "mcp_tool_finished": 10,
+      "request_finished": 312
+    },
+    "unstructured_lines_omitted": 0,
+    "http_status_counts": {
+      "200": 310,
+      "202": 1,
+      "201": 1
+    },
+    "request_duration_max_ms": 75.28,
+    "key_events": [
+      {
+        "event": "request_finished",
+        "timestamp": 1792128960.436,
+        "request_id": "956fa478b28643388e13c62d2cbe7cb9",
+        "method": "POST",
+        "route": "/v1/files",
+        "status": 201,
+        "duration_ms": 38.66,
+        "utc": "2026-10-16T05:36:00.436000+00:00"
+      },
+      {
+        "event": "mcp_tool_finished",
+        "timestamp": 1792128971.665,
+        "request_id": "e20e9e114a7f454b8ea2d9b9645b42f7",
+        "operation": "generate_media",
+        "status": "succeeded",
+        "utc": "2026-10-16T05:36:11.665000+00:00"
+      }
+    ],
+    "health_requests": 26,
+    "agent_poll_requests": 272,
+    "model_or_planning_events": 0
+  },
+  "runtime_diagnostics": {
+    "task": {
+      "state": "failed",
+      "job_id": null,
+      "has_outcome": 0,
+      "code": "PLANNING_TIMEOUT",
+      "total_seconds": 300.009,
+      "budget_seconds": 300.0,
+      "other_overlapping_requests": 0,
+      "active_planning_now": 0,
+      "created_utc": "2026-10-16T05:36:11.644433+00:00",
+      "deadline_utc": "2026-10-16T05:41:11.644433+00:00",
+      "terminal_at_utc": "2026-10-16T05:41:11.653477+00:00"
+    },
+    "current_model_connectivity": {
+      "dns": {
+        "ok": true,
+        "elapsed_ms": 20.51,
+        "address_count": 4
+      },
+      "tcp_tls": {
+        "ok": true,
+        "elapsed_ms": 72.77,
+        "tls_verified": true
+      },
+      "models_api": {
+        "http_status": 200,
+        "elapsed_ms": 145.8,
+        "configured_model_listed": true
+      }
+    },
+    "checked_at": "2026-10-16T05:44:40.484653+00:00",
+    "container": {
+      "healthy": true,
+      "oom_killed": false,
+      "restart_count": 0,
+      "same_container_as_preflight": true
+    }
+  },
+  "findings": [
+    "上传成功、原生 MCP 请求已接受；媒体处理没有启动。任务在入库后 300.009 秒以 PLANNING_TIMEOUT 终结，未保存计划，未创建 job。",
+    "当前容器持续健康，无 OOM、无重启；查询窗口内只有 2xx 响应，任务和健康检查可正常处理。没有其他规划请求与本次时间区间重叠。",
+    "诊断时容器内 DNS、TCP/TLS 验证通过；以现有配置访问只读模型列表返回 200，配置模型在列表中。此结果不证明先前生成请求已正常返回。",
+    "PLANNING_TIMEOUT 表示服务总规划期限耗尽，覆盖模型调用、可选输出纠错、本地验证与保存等阶段；不能仅凭错误码归因为供应商 HTTP 超时。",
+    "当前 SDK 日志静默且没有规划阶段事件，mcp_tool_finished 的 succeeded 仅表示工具调用接受/查询完成；现有证据无法区分首次模型调用、第二轮纠错或保存等待。"
+  ],
+  "recommended_diagnostics": {
+    "changes_applied": false,
+    "events": [
+      "planning_claimed",
+      "model_request_started",
+      "model_response_headers",
+      "model_response_completed",
+      "plan_validated",
+      "plan_save_started",
+      "plan_save_finished",
+      "planning_finished"
+    ],
+    "fields": [
+      "agent_task_id",
+      "phase",
+      "request_seq",
+      "queue_ms",
+      "duration_ms",
+      "remaining_budget_ms",
+      "http_status",
+      "error_code"
+    ],
+    "excluded": [
+      "intent/prompt",
+      "model response body",
+      "URL",
+      "headers",
+      "credentials",
+      "raw exception text"
+    ],
+    "note": "需同步扩展日志字段白名单并通过离线超时与敏感字段测试；本轮只读分析，不修改服务或再次调用模型。"
+  },
+  "limits": [
+    "本次自然语言组合链路未通过，不能声称规划、媒体执行与结果下载均正常。",
+    "当前网络和模型列表检查只表示诊断时可达，不复现或解释先前生成请求内部过程。",
+    "独立验证脚本仅做了准备和语法检查，没有产物可供验收。",
+    "A2A 不是本次测试入口。"
+  ]
+}
