@@ -25,6 +25,8 @@ def test_new_environment_has_unique_token_and_repeat_is_idempotent(tmp_path, cap
     values = generator.env_support.read_env_file(environment)
     token = values["MEDIA_SERVICE_TOKEN"]
     assert values["MEDIA_PLANNING_TIMEOUT_SECONDS"] == "300"
+    assert values["MEDIA_LOG_LEVEL"] == "INFO"
+    assert values["MEDIA_LOG_MODEL_CONTENT"] == "false"
     assert len(token) >= 24 and not generator.is_placeholder(token)
     assert stat.S_IMODE(environment.stat().st_mode) == 0o600
     assert stat.S_IMODE(output.stat().st_mode) == 0o644
@@ -126,6 +128,7 @@ def test_legacy_environment_gains_defaults_without_overwriting_alias_or_custom_v
         "llm_default_model='existing-model'\nllm_base_url='https://existing.invalid/v1'\n"
         "MEDIA_LLM_ENABLED=true\nMEDIA_PUBLIC_BASE_URL=https://existing-service.invalid\n"
         "MEDIA_PLANNING_CONCURRENCY=1\nMEDIA_PLANNING_TIMEOUT_SECONDS=60\n"
+        "MEDIA_LOG_LEVEL=DEBUG\nMEDIA_LOG_MODEL_CONTENT=true\n"
     )
     output = tmp_path / "private/config.json"
     generator.generate(environment, output)
@@ -137,9 +140,26 @@ def test_legacy_environment_gains_defaults_without_overwriting_alias_or_custom_v
     assert values["MEDIA_PUBLIC_BASE_URL"] == "https://existing-service.invalid"
     assert values["MEDIA_PLANNING_CONCURRENCY"] == "1"
     assert values["MEDIA_PLANNING_TIMEOUT_SECONDS"] == "60"
+    assert values["MEDIA_LOG_LEVEL"] == "DEBUG"
+    assert values["MEDIA_LOG_MODEL_CONTENT"] == "true"
     assert values["MEDIA_A2A_ENABLED"] == "false"
     assert values["MEDIA_PLANNING_MAX_OUTPUT_TOKENS"] == "4096"
     assert environment.read_text().startswith("# preserve comment\n")
+
+
+def test_generator_migrates_log_options_from_json_into_environment(tmp_path):
+    private = tmp_path / "private"
+    private.mkdir(mode=0o700)
+    output = private / "config.json"
+    output.write_text(json.dumps({
+        "log_level": "DEBUG", "log_model_content": True, "state_dir": "/state",
+    }))
+    environment = tmp_path / ".env"
+    generator.generate(environment, output)
+    values = generator.env_support.read_env_file(environment)
+    assert values["MEDIA_LOG_LEVEL"] == "DEBUG"
+    assert values["MEDIA_LOG_MODEL_CONTENT"] == "true"
+    assert json.loads(output.read_text()) == {"state_dir": "/state"}
 
 
 def test_migration_preserves_old_public_url_without_explicit_cli_override(tmp_path):

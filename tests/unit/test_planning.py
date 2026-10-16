@@ -18,6 +18,7 @@ from media_service.local_env import load_local_env
 from media_service.models import capabilities as operation_capabilities
 from media_service.parameters import AUDIO_ENCODERS, MUXERS, VIDEO_ENCODERS
 from media_service.planning import PydanticPlanner, _safe_capabilities
+from media_service.planning_trace import current_planning_trace, planning_trace
 
 
 def model_settings(settings, mode="prompted"):
@@ -296,16 +297,171 @@ async def test_planner_does_not_retry_provider_errors_or_expose_error_body(setti
     provider_error = httpx2.Response(503, json={"error": {
         "message": "private-provider-error-body", "type": "server_error", "code": "failed",
     }})
-    with caplog.at_level(logging.DEBUG):
-        async with mock_planner(settings, [provider_error]) as (planner, payloads):
-            with pytest.raises(ServiceError) as error:
-                await planner.plan(media_request(), {})
+    with caplog.at_level(logging.DEBUG), planning_trace("agent_safe_test") as trace:
+        with trace.stage("model_planning"):
+            async with mock_planner(settings, [provider_error]) as (planner, payloads):
+                with pytest.raises(ServiceError) as error:
+                    await planner.plan(media_request(), {})
     assert len(payloads) == 1 and error.value.code == "PLANNING_FAILED"
     assert error.value.status == 502 and not error.value.retryable
     exposed = str(error.value) + caplog.text + json.dumps(error.value.public())
     for secret in ("private-provider-error-body", "source-secret", "source-header-secret",
-                   "isolated-model-api-key"):
+                   "isolated-model-api-key", "isolated-compatible-model", "model.example.invalid"):
         assert secret not in exposed
+    failure = [item for item in planning_events(caplog)
+               if item["event"] == "planning_model_request" and item["status"] == "failed"]
+    assert len(failure) == 1
+    assert failure[0]["error_type"] == "provider_http"
+    assert failure[0]["http_status"] == 503
+    assert failure[0]["model_request"] == 1
+    assert failure[0]["level"] == "WARNING"
+
+
+def planning_events(caplog):
+    return [json.loads(record.getMessage()) for record in caplog.records
+            if record.name == "media_service.events"]
+
+
+async def test_planning_trace_orders_model_correction_and_keeps_task_phase(settings, caplog):
+    with caplog.at_level(logging.DEBUG), planning_trace("agent_safe_test") as trace:
+        with trace.stage("model_planning"):
+            async with mock_planner(settings, [executable(source="missing"), executable()]) as (
+                    planner, payloads):
+                outcome = await planner.plan(media_request(), {})
+            assert trace.phase == "model_planning"
+            assert trace.model_phase == "output_validate" and trace.model_request == 2
+        with trace.stage("plan_validate"):
+            outcome.plan.bind(media_request())
+    assert current_planning_trace() is None
+    events = planning_events(caplog)
+    starts = [item for item in events if item["event"] == "planning_model_request"
+              and item["status"] == "started"]
+    assert [item["model_request"] for item in starts] == [1, 2]
+    assert len(payloads) == 2
+    stages = [item["model_phase"] for item in events
+              if item["event"] == "planning_model_stage" and item["model_request"] == 2]
+    assert stages == ["http_headers", "http_body", "response_parse", "output_validate"]
+    assert any(item["event"] == "planning_output_validation" and item["status"] == "retry"
+               for item in events)
+    assert all(item["agent_task_id"] == "agent_safe_test" for item in events)
+    assert all("request_id" not in item for item in events)
+    for secret in ("source-secret", "source-header-secret", "isolated-model-api-key",
+                   "isolated-compatible-model", "model.example.invalid", "320 像素"):
+        assert secret not in caplog.text
+
+
+@pytest.mark.parametrize("request_number", [1, 2])
+@pytest.mark.parametrize("phase", ["http_headers", "http_body"])
+async def test_planning_trace_preserves_waiting_phase_on_cancellation(
+        settings, caplog, phase, request_number):
+    started = asyncio.Event()
+    stopped = asyncio.Event()
+    calls = 0
+
+    class BlockedBody(httpx2.AsyncByteStream):
+        async def __aiter__(self):
+            started.set()
+            await asyncio.Event().wait()
+            yield b"unreachable-private-response-body"
+
+        async def aclose(self):
+            stopped.set()
+
+    async def respond(request):
+        nonlocal calls
+        calls += 1
+        if calls < request_number:
+            return response(json.dumps(executable(source="missing")))
+        if phase == "http_body":
+            return httpx2.Response(200, stream=BlockedBody())
+        started.set()
+        try:
+            await asyncio.Event().wait()
+        finally:
+            stopped.set()
+        return response(json.dumps(executable()))
+
+    with caplog.at_level(logging.DEBUG), planning_trace("agent_cancel_test") as trace:
+        with trace.stage("model_planning"):
+            async with httpx2.AsyncClient(transport=httpx2.MockTransport(respond)) as transport:
+                original_hooks = {key: list(value) for key, value in transport.event_hooks.items()}
+                client = AsyncOpenAI(api_key="isolated-key", http_client=transport)
+                planner = PydanticPlanner(model_settings(settings), client=client)
+                task = asyncio.create_task(planner.plan(media_request(), {}))
+                await asyncio.wait_for(started.wait(), 1)
+                task.cancel()
+                with pytest.raises(asyncio.CancelledError):
+                    await task
+                assert stopped.is_set()
+                assert trace.phase == "model_planning" and trace.model_phase == phase
+                assert trace.model_request == calls == request_number
+                await planner.close()
+                assert not transport.is_closed and transport.event_hooks == original_hooks
+                await client.close()
+    cancelled = [item for item in planning_events(caplog)
+                 if item["event"] == "planning_model_request" and item["status"] == "cancelled"]
+    assert len(cancelled) == 1
+    assert cancelled[0]["model_phase"] == phase
+    assert cancelled[0]["model_request"] == request_number
+    assert cancelled[0]["error_type"] == "cancelled"
+    assert cancelled[0]["level"] == "WARNING"
+    assert "unreachable-private-response-body" not in caplog.text
+
+
+@pytest.mark.parametrize("enabled,level,logged", [
+    (False, logging.DEBUG, False), (True, logging.INFO, False), (True, logging.DEBUG, True),
+])
+async def test_planner_content_logging_requires_debug_and_switch_and_redacts(
+        settings, caplog, enabled, level, logged):
+    configured = model_settings(settings).model_copy(update={
+        "log_model_content": enabled,
+        "service_token": SecretStr("isolated-service-token"),
+    })
+    request = media_request().model_copy(update={
+        "intent": "调整图片到 320 宽 isolated-model-api-key "
+                  "https://private.invalid/input?signature=isolated-signed-secret",
+    })
+    reply = executable()
+    reply["message"] = "准备调整 isolated-service-token " \
+        "https://private.invalid/output?signature=response-secret"
+    with caplog.at_level(level), planning_trace("agent_content_test"):
+        async with mock_planner(configured, [reply]) as (planner, payloads):
+            outcome = await planner.plan(request, {})
+    assert outcome.decision == "execute" and len(payloads) == 1
+    content_events = [item for item in planning_events(caplog) if item["event"].endswith("_content")]
+    assert bool(content_events) is logged
+    if logged:
+        assert [item["event"] for item in content_events] == [
+            "planning_model_request_content", "planning_model_response_content",
+        ]
+        assert "调整图片到 320 宽" in content_events[0]["content"]
+        assert "准备调整" in content_events[1]["content"]
+        assert all(item["model_request"] == 1 and item["level"] == "DEBUG"
+                   for item in content_events)
+        assert content_events[1]["http_status"] == 200
+    for secret in ("isolated-model-api-key", "isolated-service-token", "private.invalid",
+                   "isolated-signed-secret", "response-secret", "source-header-secret"):
+        assert secret not in caplog.text
+
+
+async def test_planner_redacts_http_failure_content_without_retry(settings, caplog):
+    configured = model_settings(settings).model_copy(update={"log_model_content": True})
+    reply = httpx2.Response(503, json={"error": {
+        "message": "provider unavailable isolated-model-api-key "
+                   "https://private.invalid/failed?signature=private-signature",
+        "authorization": "Bearer private-header", "type": "server_error",
+    }})
+    with caplog.at_level(logging.DEBUG), planning_trace("agent_failure_content_test"):
+        async with mock_planner(configured, [reply]) as (planner, payloads):
+            with pytest.raises(ServiceError, match="PLANNING_FAILED"):
+                await planner.plan(media_request(), {})
+    assert len(payloads) == 1
+    content = [item for item in planning_events(caplog)
+               if item["event"] == "planning_model_response_content"]
+    assert len(content) == 1 and content[0]["http_status"] == 503
+    assert "provider unavailable" in content[0]["content"]
+    for secret in ("isolated-model-api-key", "private.invalid", "private-signature", "private-header"):
+        assert secret not in caplog.text
 
 
 async def test_planner_sanitizes_unexpected_model_errors(settings):

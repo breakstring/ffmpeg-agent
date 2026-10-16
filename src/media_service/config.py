@@ -112,6 +112,8 @@ class Settings(BaseSettings):
     ffprobe_path: str = "ffprobe"
     host: str = "0.0.0.0"
     port: int = Field(default=8080, ge=1, le=65535)
+    log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
+    log_model_content: bool = False
 
     @model_validator(mode="after")
     def consistent(self):
@@ -188,7 +190,7 @@ class Settings(BaseSettings):
         if not isinstance(data, dict):
             raise ValueError("service configuration must be an object")
         if ENV_ONLY_FIELDS.intersection(data):
-            raise ValueError("move token and model settings from JSON to .env with generate-config.py")
+            raise ValueError("move environment-only settings from JSON to .env with generate-config.py")
         overrides = load_local_env(env_path if values or explicit_env else None,
                                    fields=ENV_ONLY_FIELDS | {"public_base_url"})
         if "service_token" not in overrides:

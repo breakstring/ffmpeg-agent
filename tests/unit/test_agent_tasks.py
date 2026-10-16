@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 import sqlite3
 import time
 from contextlib import asynccontextmanager
@@ -145,6 +146,36 @@ async def test_planning_timeout_and_error_do_not_expose_provider(settings):
         row = await wait_state(service, identifier, "failed")
         assert json.loads(row["error"])["code"] == "PLANNING_FAILED"
         assert "private-provider" not in encode(await service.agent_tasks.get("test", identifier))
+
+
+@pytest.mark.parametrize("phase", ["model_planning", "plan_save", "media_accept"])
+async def test_timeout_logs_actual_wait_stage_without_request(settings, monkeypatch, caplog, phase):
+    settings.planning_timeout_seconds = 0.08
+    planner = Planner(block=phase == "model_planning")
+    async with control(settings, planner, workers=False) as service:
+        async def blocked(*args, **kwargs):
+            await asyncio.Event().wait()
+
+        if phase == "plan_save":
+            monkeypatch.setattr(service.agent_tasks, "_save", blocked)
+        elif phase == "media_accept":
+            monkeypatch.setattr(service, "accept", blocked)
+        with caplog.at_level(logging.DEBUG, logger="media_service.events"):
+            identifier, _ = await service.agent_tasks.submit(
+                "test", "private-idempotency-key", request()
+            )
+            await service.agent_tasks.start()
+            row = await wait_state(service, identifier, "failed")
+        assert json.loads(row["error"])["code"] == "PLANNING_TIMEOUT"
+    records = [json.loads(record.message) for record in caplog.records
+               if record.name == "media_service.events"]
+    failed = [entry for entry in records if entry["event"] == "planning_attempt_failed"]
+    assert len(failed) == 1 and failed[0]["phase"] == phase
+    assert failed[0]["agent_task_id"] == identifier
+    assert failed[0]["code"] == "PLANNING_TIMEOUT"
+    assert not any(value in caplog.text for value in (
+        "检查音频信息", "audio_mp3_mono_22050.mp3", "private-idempotency-key",
+    ))
 
 
 async def test_accepted_media_job_outlives_planning_deadline_during_get_and_recovery(settings):

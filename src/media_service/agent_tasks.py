@@ -10,9 +10,11 @@ from pydantic import ValidationError
 
 from media_service.agent_models import AgentRequest, AgentTaskResult, PlanningOutcome
 from media_service.database import Transaction, wait_settled
-from media_service.errors import ServiceError
+from media_service.errors import MESSAGES, ServiceError
 from media_service.media import capability_document
+from media_service.planning_trace import planning_trace
 from media_service.state import encode, timestamp, uid
+from media_service.telemetry import event
 
 if TYPE_CHECKING:
     from media_service.planning import Planner
@@ -270,38 +272,77 @@ class AgentTasks:
 
     async def _process(self, row: dict):
         identifier = row["id"]
-        try:
-            current = await self.db.one("SELECT * FROM agent_requests WHERE id=?", (identifier,))
-            if current is None:
-                return
-            if current["cancel_requested"]:
-                raise ServiceError("CANCELED", 409)
-            async with asyncio.timeout(max(0, row["deadline"] - time.time())):
-                request = AgentRequest.model_validate_json(row["request"])
-                if row["state"] == "planning":
-                    assert self.planner is not None
-                    outcome = await self.planner.plan(request, capability_document(self.service))
-                    outcome = PlanningOutcome.model_validate(outcome)
-                    job = outcome.plan.bind(request) if outcome.plan else None
-                    if job:
-                        self.service.media.validate_request(job, self.service.engine)
-                    await self._save(identifier, outcome, job.digest() if job else None)
-                else:
-                    outcome = PlanningOutcome.model_validate_json(row["outcome"])
-                    if outcome.plan is None:
-                        raise ServiceError("STATE_CONFLICT", 409)
-                    await self.service.accept(
-                        row["caller"], f"agent:{identifier}", outcome.plan.bind(request),
-                        agent_request_id=identifier,
+        started = time.monotonic()
+        event("planning_claimed", agent_task_id=identifier, status=row["state"],
+              **({"queue_ms": round(max(0, time.time() - row["created"]) * 1000, 2)}
+                 if row["state"] == "planning" else {}),
+              remaining_ms=round(max(0, row["deadline"] - time.time()) * 1000, 2))
+        with planning_trace(identifier) as trace:
+            try:
+                with trace.stage("state_read"):
+                    current = await self.db.one(
+                        "SELECT * FROM agent_requests WHERE id=?", (identifier,)
                     )
-        except TimeoutError:
-            await self._fail(identifier, ServiceError("PLANNING_TIMEOUT", 504))
-        except ValidationError:
-            await self._fail(identifier, ServiceError("PLANNING_INVALID_OUTPUT", 422))
-        except ServiceError as error:
-            await self._fail(identifier, error)
-        except Exception:
-            await self._fail(identifier, ServiceError("PLANNING_FAILED", 502))
+                    if current is None:
+                        return
+                    if current["cancel_requested"]:
+                        raise ServiceError("CANCELED", 409)
+                async with asyncio.timeout(max(0, row["deadline"] - time.time())):
+                    request = AgentRequest.model_validate_json(row["request"])
+                    if row["state"] == "planning":
+                        assert self.planner is not None
+                        with trace.stage("model_planning"):
+                            outcome = await self.planner.plan(
+                                request, capability_document(self.service)
+                            )
+                        with trace.stage("plan_validate"):
+                            outcome = PlanningOutcome.model_validate(outcome)
+                            job = outcome.plan.bind(request) if outcome.plan else None
+                            if job:
+                                self.service.media.validate_request(job, self.service.engine)
+                        with trace.stage("plan_save"):
+                            await self._save(identifier, outcome, job.digest() if job else None)
+                        event("planning_outcome_saved", agent_task_id=identifier,
+                              decision=outcome.decision,
+                              duration_ms=round((time.monotonic() - started) * 1000, 2))
+                    else:
+                        with trace.stage("plan_validate"):
+                            outcome = PlanningOutcome.model_validate_json(row["outcome"])
+                            if outcome.plan is None:
+                                raise ServiceError("STATE_CONFLICT", 409)
+                            definition = outcome.plan.bind(request)
+                        with trace.stage("media_accept"):
+                            job_id, created = await self.service.accept(
+                                row["caller"], f"agent:{identifier}", definition,
+                                agent_request_id=identifier,
+                            )
+                        event("planning_media_accepted", agent_task_id=identifier,
+                              job_id=job_id, created=created,
+                              duration_ms=round((time.monotonic() - started) * 1000, 2))
+            except asyncio.CancelledError:
+                event("planning_attempt_interrupted", agent_task_id=identifier,
+                      phase=trace.phase, model_phase=trace.model_phase,
+                      model_request=trace.model_request,
+                      duration_ms=round((time.monotonic() - started) * 1000, 2))
+                raise
+            except Exception as error:
+                if isinstance(error, TimeoutError):
+                    failure = ServiceError("PLANNING_TIMEOUT", 504)
+                elif isinstance(error, ValidationError):
+                    failure = ServiceError("PLANNING_INVALID_OUTPUT", 422)
+                elif isinstance(error, ServiceError):
+                    failure = error
+                else:
+                    failure = ServiceError("PLANNING_FAILED", 502)
+                event("planning_attempt_failed", level=(logging.ERROR if failure.status >= 500
+                      and failure.code != "PLANNING_TIMEOUT" else logging.WARNING),
+                      agent_task_id=identifier, phase=trace.phase, model_phase=trace.model_phase,
+                      model_request=trace.model_request,
+                      code=failure.code if failure.code in MESSAGES else "PLANNING_FAILED",
+                      duration_ms=round((time.monotonic() - started) * 1000, 2))
+                await self._fail(identifier, failure)
+                event("planning_failure_settled", agent_task_id=identifier,
+                      status="settled", duration_ms=round((time.monotonic() - started) * 1000, 2))
 
     async def worker(self):
         try:

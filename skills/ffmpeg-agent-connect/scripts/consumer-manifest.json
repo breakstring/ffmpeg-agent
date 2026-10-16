@@ -6,7 +6,7 @@
     "ffmpeg_agent_client/artifacts.py": "95e6eaf6e9580b97dfce5d8e0b0231a821343acd219e636d5c586d039914c111",
     "ffmpeg_agent_client/cli.py": "9985cea046f86c50e1006225cfae52c23e87d7e5bb12f5ac6f95d2ad27b0cd53",
     "ffmpeg_agent_client/config.py": "c8cf7cb41aa9225a91f891e86d774bbce48f7e6cc38bf8068c7a76522f4b5db8",
-    "ffmpeg_agent_client/envfile.py": "30becd58d0341c9839876a0d5ddcf5c5d9ea24f02ea4b97a4161fe610068ebec",
+    "ffmpeg_agent_client/envfile.py": "f4a0922e09213a7781ffce1785a0159a81efe3153b5167cfc7d2174aa5bdb178",
     "ffmpeg_agent_client/errors.py": "1995350095d60280edb055d27113a7c09a8c752bef6311639e5b7fba51afabe6",
     "ffmpeg_agent_client/protocols.py": "4c3cb0c72ee9df2414cd10816d5358b1f56ecee08e6d952fd9d6e5c339f0bc07",
     "ffmpeg_agent_client/state.py": "85a8c924064927d9e130f0ff21ee7682949cefd40545c32f38e4cf876d6748c9",

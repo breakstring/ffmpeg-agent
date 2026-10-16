@@ -36,6 +36,71 @@ def test_default_dotenv_is_shared_source_and_host_port_is_not_app_port(configura
     assert result.public_base_url == "https://media.invalid"
     assert result.llm_api_key is None and not result.llm_enabled and not result.a2a_enabled
     assert result.planning_timeout_seconds == 300
+    assert result.log_level == "INFO" and not result.log_model_content
+
+
+@pytest.mark.parametrize("level", ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"])
+def test_log_settings_load_from_env_with_process_precedence(configuration, monkeypatch, level):
+    _, path = configuration
+    with path.open("a") as stream:
+        stream.write("MEDIA_LOG_LEVEL=ERROR\nMEDIA_LOG_MODEL_CONTENT=false\n")
+    monkeypatch.setenv("MEDIA_LOG_LEVEL", level)
+    monkeypatch.setenv("MEDIA_LOG_MODEL_CONTENT", "true")
+    result = Settings.from_file()
+    assert result.log_level == level and result.log_model_content
+
+
+def test_debug_content_is_opt_in(configuration):
+    _, path = configuration
+    with path.open("a") as stream:
+        stream.write("MEDIA_LOG_LEVEL=DEBUG\n")
+    result = Settings.from_file()
+    assert result.log_level == "DEBUG" and not result.log_model_content
+
+
+@pytest.mark.parametrize("name,value", [
+    ("MEDIA_LOG_LEVEL", ""), ("MEDIA_LOG_LEVEL", "debug"),
+    ("MEDIA_LOG_LEVEL", "private-invalid-level"),
+    ("MEDIA_LOG_MODEL_CONTENT", "private-invalid-switch"),
+])
+def test_invalid_log_settings_fail_without_echoing_values(configuration, monkeypatch, name, value):
+    monkeypatch.setenv(name, value)
+    with pytest.raises(ValueError, match="invalid local environment configuration") as error:
+        Settings.from_file()
+    assert "private-invalid" not in str(error.value)
+
+
+def test_main_configures_selected_log_level_without_enabling_access_logs(
+        configuration, monkeypatch):
+    from media_service import __main__ as entrypoint
+
+    monkeypatch.setattr(entrypoint.sys, "argv", ["media-service"])
+    monkeypatch.setenv("WEB_CONCURRENCY", "1")
+    monkeypatch.setenv("MEDIA_LOG_LEVEL", "DEBUG")
+    monkeypatch.setattr(entrypoint.os, "umask", lambda _mask: None)
+    levels = []
+    calls = []
+    app = object()
+    monkeypatch.setattr(entrypoint, "configure", levels.append)
+    monkeypatch.setattr(entrypoint, "create_app", lambda _settings: app)
+    monkeypatch.setattr(entrypoint.uvicorn, "run", lambda *args, **kwargs: calls.append((args, kwargs)))
+    entrypoint.main()
+    assert levels == ["DEBUG"]
+    assert calls[0][0] == (app,)
+    assert calls[0][1]["access_log"] is False
+
+
+def test_main_rejects_invalid_log_settings_before_server_start(configuration, monkeypatch):
+    from media_service import __main__ as entrypoint
+
+    monkeypatch.setattr(entrypoint.sys, "argv", ["media-service"])
+    monkeypatch.setenv("WEB_CONCURRENCY", "1")
+    monkeypatch.setenv("MEDIA_LOG_LEVEL", "private-invalid-level")
+    monkeypatch.setattr(entrypoint.os, "umask", lambda _mask: None)
+    monkeypatch.setattr(entrypoint.uvicorn, "run", lambda *_args, **_kwargs: pytest.fail("started"))
+    with pytest.raises(SystemExit, match="Invalid private service configuration") as error:
+        entrypoint.main()
+    assert "private-invalid-level" not in str(error.value)
 
 
 @pytest.mark.parametrize("planning_timeout", [75, 180, 300])
@@ -74,7 +139,7 @@ def test_json_cannot_remain_a_second_source(configuration, field):
     content = json.loads(path.read_text())
     content[field] = "private-value-never-printed"
     path.write_text(json.dumps(content))
-    with pytest.raises(ValueError, match="move token and model settings") as error:
+    with pytest.raises(ValueError, match="move environment-only settings") as error:
         Settings.from_file()
     assert "private-value" not in str(error.value)
 

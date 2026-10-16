@@ -99,7 +99,7 @@ docker compose up -d --wait
 
 生成器可重复执行：创建 `.env` 和结构 JSON，或将旧 JSON 中的服务 Token、模型 Key、规划参数与功能开关迁入 `.env`，移除重复字段。已有非空模型值和明确的 `false` 开关优先；模板中空的模型字段可从旧 JSON 迁入。旧 `callers.tokens` 按已选服务调用方迁移首个 Token，随后移除全部旧 Token。随机 Token 只在缺少配置或仍为已知占位符时生成，只写入权限为 `0600` 的 `.env`，不打印到终端。结构 JSON 所在目录保持 `0700`，文件为 `0644`，便于绑定后由容器 UID/GID `10001:10001` 读取。凭据与本地配置不得加入 Git、构建上下文或日志。
 
-`.env` 是服务 Bearer Token、模型配置、功能开关与 Compose 参数的统一入口，变量说明见 [`.env.example`](../.env.example)。Compose 显式把对应环境变量传给服务，进程环境变量优先于文件；结构 JSON 仅保留存储、来源规则、任务限额等结构项，不再接受认证或规划配置。需要自定义文件时，使用 `python3 deploy/generate-config.py --env-file <环境文件路径> --output <结构JSON路径>`，并让 `MEDIA_CONFIG_PATH` 对应实际结构 JSON 路径；Compose 通过 `docker compose --env-file <环境文件路径> ...` 选择同一文件。根目录 Compose 的相对路径按仓库解析；单独使用旧 `-f deploy/compose.yaml` 时相对配置路径按 deploy 目录解析，建议外部配置使用绝对路径。
+`.env` 是服务 Bearer Token、模型配置、功能开关、日志选项与 Compose 参数的统一入口，变量说明见 [`.env.example`](../.env.example)。Compose 显式把对应环境变量传给服务，进程环境变量优先于文件；结构 JSON 仅保留存储、来源规则、任务限额等结构项，不再接受认证、规划或日志选项。需要自定义文件时，使用 `python3 deploy/generate-config.py --env-file <环境文件路径> --output <结构JSON路径>`，并让 `MEDIA_CONFIG_PATH` 对应实际结构 JSON 路径；Compose 通过 `docker compose --env-file <环境文件路径> ...` 选择同一文件。根目录 Compose 的相对路径按仓库解析；单独使用旧 `-f deploy/compose.yaml` 时相对配置路径按 deploy 目录解析，建议外部配置使用绝对路径。
 
 确认没有活动任务后，修改 `.env` 或结构 JSON 并执行下列命令重新创建容器，不能只 restart 沿用旧容器环境：
 
@@ -116,6 +116,21 @@ docker compose up -d --no-build --force-recreate --wait media
 默认 1 个 Worker、2 CPU、2 GiB 内存、128 PID、64 MiB `/tmp`、60 秒容器停止宽限期。配置中的 `max_work_bytes`、存储 `quota_bytes` 和磁盘余量控制持久工作/输出区域；Compose 的内存限制不构成磁盘配额。`max_frame_count` 默认 100，可按容量调整每次抽帧请求上限；`max_frame_rate` 默认 240 fps，只限制显式 constant/max 帧率，source 模式保留源帧时间节奏。这两项在服务 JSON 中配置，并通过 capabilities 公开。提高 Worker 数量之前先完成目标宿主机实测。构建参数 `BUILD_REVISION` 记录交付版本，不修改冻结操作或预设含义。
 
 模型规划预算在 `.env` 的 `MEDIA_PLANNING_TIMEOUT_SECONDS`，默认 300 秒；媒体任务预算在结构 JSON 的 `task_timeout_seconds`，默认 3600 秒。客户端的 `--wait-seconds` 只影响一次等待，不会取消服务端任务。具体配置见[自然语言与 A2A 指南](../docs/usage/agent.zh-CN.md)。
+
+### 日志级别与规划诊断
+
+`MEDIA_LOG_LEVEL` 控制服务结构化事件日志的最低级别，支持大写 `DEBUG`、`INFO`、`WARNING`、`ERROR`、`CRITICAL`；缺省为 `INFO`，空值或其他值会拒绝启动且不会回显输入内容。日常运行使用 `INFO` 查看任务状态与规划总耗时；排查卡顿时使用 `DEBUG` 增加模型请求和内部阶段诊断；只关注异常时选择 `WARNING` 或 `ERROR`。日志中的任务标识可用于串联同一次规划的各个阶段。
+
+普通 `DEBUG` 仅记录阶段和结构信息。需要排查模型请求与响应正文时，同时设置 `MEDIA_LOG_MODEL_CONTENT=true`；该开关默认 `false`，且只有 `DEBUG` 级别才生效。每条正文最多 128 KiB；超限时只记录原始字节数并省略正文，避免截断破坏凭据的 JSON 转义边界。可解析正文按敏感字段和已知凭据脱敏；无法可靠划分敏感值的文本整段省略。保留的正文仍可能包含本次任务内容，适合使用受控素材临时诊断。
+
+调整 `.env` 后，确认没有活动任务，再执行 `docker compose up -d --no-build --force-recreate --wait media`。仅 `restart` 不会加载新环境。复现完后改回 `MEDIA_LOG_LEVEL=INFO`、`MEDIA_LOG_MODEL_CONTENT=false`，并按相同方式重新创建容器。
+
+```sh
+docker compose logs --since 10m --tail 200 media
+docker compose logs --follow --since 1m media
+```
+
+所有级别均禁止输出 API Key、Token、认证头、原始异常或未脱敏外部地址；只通过服务自己的字段过滤与正文脱敏器记录诊断。`DEBUG` 不会打开第三方 SDK 原始日志或 Uvicorn access log；Docker 日志仍沿用单文件 10 MiB、保留 3 个文件的轮转上限。
 
 ## GHCR 镜像发布
 

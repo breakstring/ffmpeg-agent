@@ -14,11 +14,11 @@ def main():
             "Run one API process; configure MEDIA_WORKER_CONCURRENCY for logical workers"
         )
     os.umask(0o077)
-    configure()
     try:
         settings = Settings.from_file()
     except Exception:
         raise SystemExit("Invalid private service configuration") from None
+    configure(settings.log_level)
     uvicorn.run(
         create_app(settings),
         host=settings.host,
