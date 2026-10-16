@@ -1,0 +1,288 @@
+{
+  "python_version": "3.10.21",
+  "implementation": "cpython",
+  "python_no_site": true,
+  "python_no_bytecode": true,
+  "python_media_env_cleared": true,
+  "isolated_skill_count": 1,
+  "client_version": "0.1.0",
+  "manifest_sha256": "e91bd85cb02f27e1292de6a85fc9457d327140774dd8c75bd771502561577974",
+  "manifest_files_verified": true,
+  "fixture_sha256": "b66e6a869d49a0660598a798890c075357a0610fe6a6cf15ea4c3be2dbf5e86b",
+  "help": {
+    "exit_code": 0,
+    "elapsed_seconds": 0.121,
+    "stderr_empty": true,
+    "help_contains_commands": true
+  },
+  "check": {
+    "exit_code": 0,
+    "elapsed_seconds": 0.296,
+    "stderr_empty": true,
+    "result": {
+      "ok": true,
+      "authentication": "bearer",
+      "checks": {
+        "live": {
+          "ok": true
+        },
+        "ready": {
+          "ok": true
+        },
+        "http": {
+          "ok": true,
+          "operations": [
+            "audio.transcode.v1",
+            "image.resize.v1",
+            "media.probe.v1",
+            "video.extract_audio.v1",
+            "video.extract_frames.v1",
+            "video.transcode.v1"
+          ]
+        },
+        "mcp": {
+          "ok": true,
+          "tools": [
+            "list_capabilities",
+            "submit_job",
+            "get_job",
+            "cancel_job",
+            "get_artifact",
+            "list_artifact_members",
+            "create_lease",
+            "renew_lease",
+            "release_lease",
+            "extend_artifact",
+            "release_artifact",
+            "get_uploaded_file",
+            "release_uploaded_file",
+            "probe_media",
+            "transcode_video",
+            "transcode_audio",
+            "extract_audio",
+            "extract_frames",
+            "resize_image",
+            "generate_media",
+            "get_agent_task",
+            "cancel_agent_task"
+          ]
+        },
+        "a2a": {
+          "ok": true,
+          "enabled": true
+        }
+      }
+    }
+  },
+  "http_probe": {
+    "exit_code": 0,
+    "elapsed_seconds": 1.234,
+    "stderr_empty": true,
+    "result": {
+      "job_id": "job_eb99e991058945379481a9f1e69f1a72",
+      "status": "succeeded",
+      "inputs_released": true,
+      "terminal": true,
+      "outputs": {
+        "result": {
+          "status": "succeeded",
+          "artifact_id": "art_84e32d4a3e2642388d447f8e2395b7fe"
+        }
+      },
+      "downloads": {
+        "result": {
+          "artifact_id": "art_84e32d4a3e2642388d447f8e2395b7fe",
+          "kind": "file",
+          "path": "python310-probe-output/result",
+          "files": [
+            {
+              "path": "python310-probe-output/result",
+              "size_bytes": 401,
+              "sha256": "7aa865bb5039bd4c4dc808a6d021fe0cf4f79d73e7f8ad43d442199ba9ceeaf7",
+              "reused": false
+            }
+          ],
+          "failures": [],
+          "partial": false
+        }
+      },
+      "uploads_released": true,
+      "ok": true
+    },
+    "local_hashes_verified": true,
+    "probe_properties": {
+      "type": "audio",
+      "format": "mp3",
+      "duration_ms": 8072,
+      "codec": "mp3",
+      "channels": 1,
+      "sample_rate": 22050
+    },
+    "probe_properties_verified": true
+  },
+  "passed": true,
+  "initial_report_sha256": "5e7822062cf1a408102ffa25c608a73622fd2a093b500277bf484fd285622aa4",
+  "final_bundle": {
+    "python_version": "3.10.21",
+    "python_no_site": true,
+    "python_no_bytecode": true,
+    "python_media_env_cleared": true,
+    "isolated_skill_count": 1,
+    "client_version": "0.1.0",
+    "manifest_sha256": "cb06cda3a6b12ceee4ec55eaafc0044005e278649e8ab3caf1110ad88adc8794",
+    "manifest_files_verified": true,
+    "model_requests": 0,
+    "check": {
+      "exit_code": 0,
+      "elapsed_seconds": 0.252,
+      "stderr_empty": true,
+      "result": {
+        "ok": true,
+        "authentication": "bearer",
+        "checks": {
+          "live": {
+            "ok": true
+          },
+          "ready": {
+            "ok": true
+          },
+          "http": {
+            "ok": true,
+            "operations": [
+              "audio.transcode.v1",
+              "image.resize.v1",
+              "media.probe.v1",
+              "video.extract_audio.v1",
+              "video.extract_frames.v1",
+              "video.transcode.v1"
+            ]
+          },
+          "mcp": {
+            "ok": true,
+            "tools": [
+              "list_capabilities",
+              "submit_job",
+              "get_job",
+              "cancel_job",
+              "get_artifact",
+              "list_artifact_members",
+              "create_lease",
+              "renew_lease",
+              "release_lease",
+              "extend_artifact",
+              "release_artifact",
+              "get_uploaded_file",
+              "release_uploaded_file",
+              "probe_media",
+              "transcode_video",
+              "transcode_audio",
+              "extract_audio",
+              "extract_frames",
+              "resize_image",
+              "generate_media",
+              "get_agent_task",
+              "cancel_agent_task"
+            ]
+          },
+          "a2a": {
+            "ok": true,
+            "enabled": true
+          }
+        }
+      }
+    },
+    "http_resume": {
+      "exit_code": 0,
+      "elapsed_seconds": 0.165,
+      "stderr_empty": true,
+      "result": {
+        "job_id": "job_eb99e991058945379481a9f1e69f1a72",
+        "status": "succeeded",
+        "inputs_released": true,
+        "terminal": true,
+        "outputs": {
+          "result": {
+            "status": "succeeded",
+            "artifact_id": "art_84e32d4a3e2642388d447f8e2395b7fe"
+          }
+        },
+        "downloads": {
+          "result": {
+            "artifact_id": "art_84e32d4a3e2642388d447f8e2395b7fe",
+            "kind": "file",
+            "path": "python310-probe-output/result",
+            "files": [
+              {
+                "path": "python310-probe-output/result",
+                "size_bytes": 401,
+                "sha256": "7aa865bb5039bd4c4dc808a6d021fe0cf4f79d73e7f8ad43d442199ba9ceeaf7",
+                "reused": true
+              }
+            ],
+            "failures": [],
+            "partial": false
+          }
+        },
+        "uploads_released": true,
+        "ok": true
+      },
+      "local_hashes_verified": true,
+      "probe_properties": {
+        "type": "audio",
+        "format": "mp3",
+        "duration_ms": 8072,
+        "codec": "mp3",
+        "channels": 1,
+        "sample_rate": 22050
+      },
+      "probe_properties_verified": true
+    },
+    "mcp_probe": {
+      "exit_code": 0,
+      "elapsed_seconds": 1.272,
+      "stderr_empty": true,
+      "result": {
+        "job_id": "job_448425d14a8945bbacb04854178eb9e8",
+        "status": "succeeded",
+        "inputs_released": true,
+        "terminal": true,
+        "outputs": {
+          "result": {
+            "status": "succeeded",
+            "artifact_id": "art_f01d4fe0c10f46c983275c16c2e6c7b4"
+          }
+        },
+        "downloads": {
+          "result": {
+            "artifact_id": "art_f01d4fe0c10f46c983275c16c2e6c7b4",
+            "kind": "file",
+            "path": "python310-mcp-output/result",
+            "files": [
+              {
+                "path": "python310-mcp-output/result",
+                "size_bytes": 401,
+                "sha256": "7aa865bb5039bd4c4dc808a6d021fe0cf4f79d73e7f8ad43d442199ba9ceeaf7",
+                "reused": false
+              }
+            ],
+            "failures": [],
+            "partial": false
+          }
+        },
+        "uploads_released": true,
+        "ok": true
+      },
+      "local_hashes_verified": true,
+      "probe_properties": {
+        "type": "audio",
+        "format": "mp3",
+        "duration_ms": 8072,
+        "codec": "mp3",
+        "channels": 1,
+        "sample_rate": 22050
+      },
+      "probe_properties_verified": true
+    },
+    "passed": true
+  }
+}

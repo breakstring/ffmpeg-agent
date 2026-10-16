@@ -1,0 +1,319 @@
+{
+  "schema_version": 1,
+  "scope": "independent-consumer-existing-service",
+  "consumer_site_packages": false,
+  "server_source_imported_by_consumer": false,
+  "skill_manifest_sha256": {
+    "ffmpeg-agent-connect": "cb06cda3a6b12ceee4ec55eaafc0044005e278649e8ab3caf1110ad88adc8794",
+    "ffmpeg-agent-media": "cb06cda3a6b12ceee4ec55eaafc0044005e278649e8ab3caf1110ad88adc8794"
+  },
+  "fixtures": [
+    {
+      "name": "video_h264_aac_square.mp4",
+      "size_bytes": 6464850,
+      "sha256": "4a19ca2d096989f00d7eddcc9ea9c3b0bff84868a97578062062647ef2335243"
+    },
+    {
+      "name": "audio_mp3_mono_22050.mp3",
+      "size_bytes": 129610,
+      "sha256": "b66e6a869d49a0660598a798890c075357a0610fe6a6cf15ea4c3be2dbf5e86b"
+    },
+    {
+      "name": "image_jpeg_portrait_odd.jpg",
+      "size_bytes": 267778,
+      "sha256": "990b60e737edd31c4c3609181cf069d92f66c4d34e9fe588f2f37445b331b429"
+    },
+    {
+      "name": "video_h264_high_bitrate_1080p.mp4",
+      "size_bytes": 8795431,
+      "sha256": "491fcd11bd47c1b9d29221c60a769e6f6edcade1dec9a6cfaf9de7c5126d643c"
+    },
+    {
+      "name": "video_hevc_640x360.mp4",
+      "size_bytes": 44398,
+      "sha256": "65a956690af38678f5b65967f234e402c1e86b5c387b615951bdc2dbd6df29e9"
+    },
+    {
+      "name": "video_h264_640x360.mkv",
+      "size_bytes": 62056,
+      "sha256": "3befa1884aaeeedc2fd99eb1e8701dc1ca8dd294f9a6e01da8e042fb853602f9"
+    }
+  ],
+  "cases": [
+    {
+      "name": "connect_http_mcp_a2a",
+      "passed": true,
+      "checks": {
+        "live": {
+          "ok": true
+        },
+        "ready": {
+          "ok": true
+        },
+        "http": {
+          "ok": true,
+          "operations": [
+            "audio.transcode.v1",
+            "image.resize.v1",
+            "media.probe.v1",
+            "video.extract_audio.v1",
+            "video.extract_frames.v1",
+            "video.transcode.v1"
+          ]
+        },
+        "mcp": {
+          "ok": true,
+          "tools": [
+            "list_capabilities",
+            "submit_job",
+            "get_job",
+            "cancel_job",
+            "get_artifact",
+            "list_artifact_members",
+            "create_lease",
+            "renew_lease",
+            "release_lease",
+            "extend_artifact",
+            "release_artifact",
+            "get_uploaded_file",
+            "release_uploaded_file",
+            "probe_media",
+            "transcode_video",
+            "transcode_audio",
+            "extract_audio",
+            "extract_frames",
+            "resize_image",
+            "generate_media",
+            "get_agent_task",
+            "cancel_agent_task"
+          ]
+        },
+        "a2a": {
+          "ok": true,
+          "enabled": true
+        }
+      },
+      "elapsed_seconds": 0.136
+    },
+    {
+      "name": "http_image",
+      "passed": true,
+      "protocol": "http",
+      "status": "succeeded",
+      "verified_files": 1,
+      "media": [
+        {
+          "codec_name": "png",
+          "codec_type": "video",
+          "width": 80,
+          "height": 107
+        }
+      ],
+      "elapsed_seconds": 1.249
+    },
+    {
+      "name": "http_video",
+      "passed": true,
+      "protocol": "http",
+      "status": "succeeded",
+      "verified_files": 1,
+      "media": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 160,
+          "height": 90
+        },
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "sample_rate": "44100",
+          "channels": 1
+        }
+      ],
+      "elapsed_seconds": 1.247
+    },
+    {
+      "name": "http_frames",
+      "passed": true,
+      "protocol": "http",
+      "status": "succeeded",
+      "verified_files": 2,
+      "media": [
+        {
+          "codec_name": "png",
+          "codec_type": "video",
+          "width": 80,
+          "height": 45
+        },
+        {
+          "codec_name": "png",
+          "codec_type": "video",
+          "width": 80,
+          "height": 45
+        }
+      ],
+      "elapsed_seconds": 2.202
+    },
+    {
+      "name": "wait_resume_idempotent_collect",
+      "passed": true,
+      "same_job": true,
+      "verified_files": 1,
+      "existing_verified_file_reused": true,
+      "elapsed_seconds": 5.46
+    },
+    {
+      "name": "cancel_wait_release",
+      "passed": true,
+      "status": "canceled",
+      "actual_stop_confirmed": true,
+      "elapsed_seconds": 1.366
+    },
+    {
+      "name": "natural_http_image",
+      "passed": true,
+      "protocol": "http",
+      "status": "succeeded",
+      "verified_files": 1,
+      "real_model": true,
+      "media": [
+        {
+          "codec_name": "png",
+          "codec_type": "video",
+          "width": 80,
+          "height": 107
+        }
+      ],
+      "elapsed_seconds": 25.583
+    },
+    {
+      "name": "http_probe_defaults",
+      "passed": true,
+      "status": "succeeded",
+      "verified_files": 1,
+      "default_params_omitted": true,
+      "elapsed_seconds": 0.111
+    },
+    {
+      "name": "mcp_audio",
+      "passed": true,
+      "protocol": "mcp",
+      "status": "succeeded",
+      "verified_files": 1,
+      "media": [
+        {
+          "codec_name": "flac",
+          "codec_type": "audio",
+          "sample_rate": "48000",
+          "channels": 1
+        }
+      ],
+      "elapsed_seconds": 0.125
+    },
+    {
+      "name": "mcp_extract_audio",
+      "passed": true,
+      "protocol": "mcp",
+      "status": "succeeded",
+      "verified_files": 1,
+      "media": [
+        {
+          "codec_name": "mp3",
+          "codec_type": "audio",
+          "sample_rate": "44100",
+          "channels": 2
+        }
+      ],
+      "elapsed_seconds": 0.146
+    },
+    {
+      "name": "partial_collection",
+      "passed": true,
+      "status": "partial",
+      "exit_code": 2,
+      "verified_files": 1,
+      "failure_code": "TIMESTAMP_OUT_OF_RANGE",
+      "elapsed_seconds": 0.105
+    },
+    {
+      "name": "failed_media_release",
+      "passed": true,
+      "status": "failed",
+      "exit_code": 1,
+      "code": "UNSUPPORTED_MEDIA",
+      "elapsed_seconds": 1.248
+    },
+    {
+      "name": "mcp_upload_external_submit_collect",
+      "passed": true,
+      "upload_file_refs": 1,
+      "collect_status": "succeeded",
+      "verified_files": 1,
+      "elapsed_seconds": 0.174,
+      "mcp_submit_outside_cli_run": true
+    },
+    {
+      "name": "natural_mcp_audio",
+      "passed": true,
+      "protocol": "mcp",
+      "status": "succeeded",
+      "verified_files": 1,
+      "real_model": true,
+      "media": [
+        {
+          "codec_name": "flac",
+          "codec_type": "audio",
+          "sample_rate": "48000",
+          "channels": 1
+        }
+      ],
+      "elapsed_seconds": 0.111
+    },
+    {
+      "name": "two_input_definition",
+      "passed": true,
+      "protocol": "mcp",
+      "status": "succeeded",
+      "inputs": 2,
+      "verified_files": 2,
+      "elapsed_seconds": 1.316,
+      "skill_manifest_sha256": "cb06cda3a6b12ceee4ec55eaafc0044005e278649e8ab3caf1110ad88adc8794"
+    },
+    {
+      "name": "natural_needs_input",
+      "passed": true,
+      "protocol": "http",
+      "status": "needs_input",
+      "exit_code": 1,
+      "bounded_message_present": true,
+      "media_job_created": false,
+      "elapsed_seconds": 5.341,
+      "skill_manifest_sha256": "cb06cda3a6b12ceee4ec55eaafc0044005e278649e8ab3caf1110ad88adc8794"
+    }
+  ],
+  "credential_output_scan": "passed",
+  "invocation_elapsed_seconds": 6.681,
+  "case_timing_note": "--resume reuses accepted tasks; case durations measure this CLI invocation, not model planning latency",
+  "runtime": {
+    "image_id": "sha256:754a08caaf17fe025c8f925606683f475d28df15695498ee8868806589ef3b1b",
+    "healthy": true,
+    "current_flags": {
+      "MEDIA_LLM_ENABLED": "true",
+      "MEDIA_A2A_ENABLED": "true"
+    },
+    "container_log_window": "4h",
+    "container_log_lines_scanned": 899,
+    "secret_matches": 0
+  },
+  "resolved_findings": [
+    "MCP structuredContent.error is a domain field, not a protocol failure; fixed and recovered original requests with unchanged idempotency keys",
+    "Verification assertions aligned with normalized probe codec field and fixtures containing audio"
+  ],
+  "scope_limits": [
+    "existing local arm64 service; not two-host validation",
+    "no new service image or container crash validation",
+    "HTTPS/proxy and Windows runtime not exercised",
+    "MCP helper upload/submit/collect verified; no host-specific MCP configuration or native connector integration claim"
+  ]
+}

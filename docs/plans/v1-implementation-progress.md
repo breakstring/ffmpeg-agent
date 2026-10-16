@@ -286,3 +286,25 @@ sha256:680953c259022ca9d1ad9e703021e67a1ad431eab04be6189da0a0e6f663a0c4
 成功场景均等待媒体终态与输入释放，再实际下载，核对字节数/SHA-256、HEAD/Range、图片解码与音视频属性；幂等重放保持相同任务，重启后任务、计划、媒体 job 和产物保持一致。HTTP/MCP/A2A/Card 鉴权、官方 A2A 发现、MCP 22 工具及 fixture 未变检查通过。凭据只进入受保护临时文件挂载，Docker 参数、环境、公开响应、日志和报告的敏感值扫描全部通过；自有容器和卷剩余均为零。
 
 本次仅新增验收证据，生产代码与本机默认功能开关未修改，不重跑未变化的 702 项回归。上述时长为本次端到端观测，不作为供应商延迟保证。既有模拟配置测试与历史真实模型报告均保留，真实双宿主机等待办不变；仅本地提交，不推送或部署。
+
+## 2026-10-16：独立消费者技能（P23 / CFK-813）
+
+交付 [`ffmpeg-agent-connect`](../../skills/ffmpeg-agent-connect/SKILL.md) 与 [`ffmpeg-agent-media`](../../skills/ffmpeg-agent-media/SKILL.md)。两个目录分别自包含 Python 3.10+ 标准库客户端，共用 `consumer/ffmpeg_agent_client/` 维护源，通过生成器同步 11 个运行文件及摘要；不依赖服务端源码、Docker、FFmpeg 或模型 Key。双语[接入指南](../usage/consumer-skills.zh-CN.md)覆盖宿主原生 MCP 与辅助 CLI、私有配置、上传、三协议提交、恢复、取消、集合/部分结果下载和定向 release。
+
+任务记录保存冻结请求与稳定幂等键，接受结果未知时复用原请求，已接受后只查询；媒体终态且输入停止使用后才收集。输出目录受所有权标记保护，已有文件仅在大小与 SHA-256 一致时复用；集合保存清单与失败项。只 release 本次上传，保留本地源文件和服务产物。私有配置仅含服务地址/Token，不复制服务端模型配置。
+
+本次复用健康的现有 arm64 服务，精确镜像为 `sha256:754a08caaf17fe025c8f925606683f475d28df15695498ee8868806589ef3b1b`。没有修改服务源码、部署配置或凭据，也未重建/停止容器；实际模型与 A2A 继续开启。最终技能运行包 manifest SHA-256 为 `cb06cda3a6b12ceee4ec55eaafc0044005e278649e8ab3caf1110ad88adc8794`。
+
+| 验证 | 实际结果 | 证据 |
+| --- | --- | --- |
+| Ruff / Pyright / 完整 pytest | 全部退出 0；Pyright 0 errors / 0 warnings；**762 passed in 83.02s**，含新增 60 项消费者测试 | [本机验证](../verification/consumer-skills-local-validation.json) |
+| 独立目录真实服务 | **16/16 场景通过**；六操作、HTTP/MCP、双输入双输出、部分抽帧、失败、等待恢复、取消、上传后独立 MCP 提交再收集 | [消费者闭环](../verification/consumer-skills-live-validation.json) |
+| 真实模型 | HTTP PNG 80×107、MCP FLAC 48 kHz 单声道；需补充格式返回 `needs_input`、有脱敏说明且无媒体 job | 同上 |
+| 仅按技能执行的 A2A 前向验证 | 0 秒等待后用原状态恢复；两张 PNG 80×45，大小/SHA-256 与 PNG 头检查通过；最终包再次恢复保持 ID 并复用文件 | [前向验证](../verification/consumer-skills-forward.json) |
+| 实际最低 Python 基线 | CPython **3.10.21**，单技能、`-S -B`、清除相关进程环境；连接、HTTP 探测恢复及新 MCP 探测完整通过 | [最低版本](../verification/consumer-skills-python310.json) |
+| 技能与文档 | 两个技能结构验证、生成副本一致；8 份使用/技能文档链接与 shell 语法、37 个示例参数解析通过 | 本机验证 |
+| 凭据与输入保护 | 变更文件、消费者输出/私有状态及当前服务 4 小时日志无实际 Token/模型 Key 匹配；模型 Key 未进入消费者目录，fixture 摘要未变 | 本机验证、消费者闭环 |
+
+真实验收发现并修复 MCP 响应解析错误：`structuredContent.error` 是任务领域字段，`null` 或任务失败都不能当作 MCP 工具调用失败；现在仅以协议 `isError` 判定，补充两项回归。原有接受请求通过同一状态/幂等键恢复，未重复模型规划。验收脚本也修正了探测结果的 `codec` 字段断言及基础视频实际含音轨的假设。最终报告中的恢复耗时是当次 CLI 收集耗时，不是模型规划延迟。
+
+原生宿主 MCP 的配置和发现遵循宿主文档；本次验证了独立 MCP 客户端及上传/独立提交/收集组合，没有把它表述为所有宿主连接器兼容。A2A 前向验证只统计消费者观察到的唯一任务 ID，未查询服务端全库任务数，也未独立解码源视频核对帧时间点。实际双宿主机、Windows、HTTPS/代理部署、容量和新容器强停未在本轮验证，既有待办与历史证据保留。本轮仅本地提交，不 push、merge、tag 或部署。

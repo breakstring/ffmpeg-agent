@@ -17,6 +17,12 @@
 
 可选自然语言入口使用 PydanticAI 将描述转换为受校验的媒体计划，也可开启官方 A2A 入口供其他 Agent 调用同一任务服务。两项能力默认关闭，配置和示例见[自然语言与 A2A 使用指南](docs/usage/agent.zh-CN.md) / [English guide](docs/usage/agent.md)。
 
+## 让你的 Agent 使用已部署的服务
+
+消费者无需安装 Docker、FFmpeg 或服务端源码。安装 [`ffmpeg-agent-connect`](skills/ffmpeg-agent-connect/SKILL.md) 完成连接和能力检查，使用 [`ffmpeg-agent-media`](skills/ffmpeg-agent-media/SKILL.md) 完成日常上传、处理、恢复和下载。两个技能各自附带同一套独立客户端，只需 Python 3.10+、服务地址和服务 Token；模型 Key 留在服务端。
+
+已连接远程 MCP 的 Agent 优先使用原生工具，本地文件通过 HTTP 上传下载；也支持自然语言 A2A 委托及纯 HTTP 调用。安装、私有配置、原生 MCP 衔接和完整示例见[消费者技能使用指南](docs/usage/consumer-skills.zh-CN.md)。
+
 ## 使用 Docker Compose 启动
 
 需要 Docker、Compose 和 Python 3。以下命令均在仓库根目录运行。

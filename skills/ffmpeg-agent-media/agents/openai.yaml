@@ -1,0 +1,4 @@
+interface:
+  display_name: "ffmpeg-agent 媒体处理"
+  short_description: "上传本地媒体，提交或恢复处理任务，下载校验结果并清理本次上传"
+  default_prompt: "请使用 $ffmpeg-agent-media 处理我选择的媒体文件，并把经过校验的结果保存到指定目录。"

@@ -17,6 +17,12 @@ Tasks can chain operations, reuse inputs and return multiple outputs. Start with
 
 Optional natural-language tasks turn a description into a validated media plan using PydanticAI. Enable the official A2A endpoint to expose the same task service to other agents. Both features are off by default. See the [natural-language and A2A guide](docs/usage/agent.md) / [自然语言与 A2A 使用指南](docs/usage/agent.zh-CN.md).
 
+## Connect your Agent to an existing service
+
+Consumers do not need Docker, FFmpeg or server source. Install [`ffmpeg-agent-connect`](skills/ffmpeg-agent-connect/SKILL.md) for connection and capability checks, and use [`ffmpeg-agent-media`](skills/ffmpeg-agent-media/SKILL.md) for uploads, processing, recovery and downloads. Each skill bundles the same independent client, requiring only Python 3.10+, a service URL and service Token. The model key stays on the server.
+
+Agents already connected through remote MCP can use native tools with HTTP file transfers. Natural-language A2A delegation and plain HTTP are also supported. See the [consumer skills guide](docs/usage/consumer-skills.md) for installation, private configuration, native MCP handoff and complete examples.
+
 ## Start with Docker Compose
 
 You need Docker with Compose and Python 3. Run the commands below from the repository root.

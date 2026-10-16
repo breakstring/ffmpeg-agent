@@ -1,0 +1,4 @@
+interface:
+  display_name: "连接 ffmpeg-agent"
+  short_description: "连接已有媒体服务，检查认证、HTTP、远程 MCP 与 A2A 可用能力"
+  default_prompt: "请使用 $ffmpeg-agent-connect 连接我的媒体服务，验证可用协议和完整文件处理流程。"

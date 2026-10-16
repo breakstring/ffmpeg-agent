@@ -1,0 +1,261 @@
+{
+  "schema_version": 1,
+  "protocol": "A2A 1.0",
+  "transport": "a2a",
+  "runtime": {
+    "version": "3.14.7",
+    "site_disabled": true,
+    "bytecode_disabled": true,
+    "environment_media_python_removed": true
+  },
+  "bundle_manifests": {
+    "ffmpeg-agent-connect": {
+      "manifest_sha256": "ea6cc76e3a3bb8caea7ab03d06c69b3c01d59093b8f3679875de8c84c66f17e2",
+      "files_verified": true,
+      "file_count": 11
+    },
+    "ffmpeg-agent-media": {
+      "manifest_sha256": "ea6cc76e3a3bb8caea7ab03d06c69b3c01d59093b8f3679875de8c84c66f17e2",
+      "files_verified": true,
+      "file_count": 11
+    }
+  },
+  "commands": [
+    {
+      "command": "check",
+      "exit_code": 0,
+      "duration_seconds": 0.174,
+      "result": {
+        "ok": true,
+        "authentication": "bearer",
+        "checks": {
+          "live": {
+            "ok": true
+          },
+          "ready": {
+            "ok": true
+          },
+          "http": {
+            "ok": true,
+            "operations": [
+              "audio.transcode.v1",
+              "image.resize.v1",
+              "media.probe.v1",
+              "video.extract_audio.v1",
+              "video.extract_frames.v1",
+              "video.transcode.v1"
+            ]
+          },
+          "mcp": {
+            "ok": true,
+            "tools": [
+              "list_capabilities",
+              "submit_job",
+              "get_job",
+              "cancel_job",
+              "get_artifact",
+              "list_artifact_members",
+              "create_lease",
+              "renew_lease",
+              "release_lease",
+              "extend_artifact",
+              "release_artifact",
+              "get_uploaded_file",
+              "release_uploaded_file",
+              "probe_media",
+              "transcode_video",
+              "transcode_audio",
+              "extract_audio",
+              "extract_frames",
+              "resize_image",
+              "generate_media",
+              "get_agent_task",
+              "cancel_agent_task"
+            ]
+          },
+          "a2a": {
+            "ok": true,
+            "enabled": true
+          }
+        }
+      }
+    },
+    {
+      "command": "capabilities",
+      "exit_code": 0,
+      "duration_seconds": 0.061,
+      "result": {
+        "operation_names": [
+          "audio.transcode.v1",
+          "image.resize.v1",
+          "media.probe.v1",
+          "video.extract_audio.v1",
+          "video.extract_frames.v1",
+          "video.transcode.v1"
+        ],
+        "agent_flags": {
+          "enabled": true,
+          "a2a_enabled": true,
+          "continuations": false,
+          "streaming": false
+        },
+        "code": null
+      }
+    },
+    {
+      "command": "run",
+      "wait_seconds": 0,
+      "exit_code": 3,
+      "duration_seconds": 0.159,
+      "result": {
+        "agent_task_id": "agent_5690b0205a9244b5a42b4c06da0c83ba",
+        "status": "planning",
+        "inputs_released": false,
+        "terminal": false,
+        "outputs": {},
+        "ok": false,
+        "code": "WAIT_TIMEOUT",
+        "resumable": true
+      }
+    },
+    {
+      "command": "resume",
+      "wait_seconds": 45,
+      "exit_code": 0,
+      "duration_seconds": 26.461,
+      "result": {
+        "agent_task_id": "agent_5690b0205a9244b5a42b4c06da0c83ba",
+        "status": "succeeded",
+        "inputs_released": true,
+        "terminal": true,
+        "outputs": {
+          "frames": {
+            "status": "succeeded",
+            "artifact_id": "art_c659af2b3b534959b7e63f8157dd9842"
+          }
+        },
+        "job_id": "job_c75012c3637b41fa981c06259af689df",
+        "decision": "execute",
+        "uploads_released": true,
+        "ok": true
+      }
+    }
+  ],
+  "submission": {
+    "new_run_calls": 1,
+    "request_id": "11ef105aabda45e5900af439f1fc6ffd",
+    "agent_task_id": "agent_5690b0205a9244b5a42b4c06da0c83ba",
+    "job_id": null
+  },
+  "source_sha256": "3befa1884aaeeedc2fd99eb1e8701dc1ca8dd294f9a6e01da8e042fb853602f9",
+  "resume": {
+    "same_request_id": true,
+    "same_agent_task_id": true,
+    "same_uploaded_file_ids": true,
+    "agent_task_id": "agent_5690b0205a9244b5a42b4c06da0c83ba",
+    "job_id": "job_c75012c3637b41fa981c06259af689df"
+  },
+  "observed_task_counts": {
+    "agent_tasks": 1,
+    "media_jobs": 1,
+    "scope": "unique identifiers observed in this consumer state; server-wide count not queried"
+  },
+  "independent_output_checks": [
+    {
+      "relative_path": "output/frames/frame_000.png",
+      "size_bytes": 2673,
+      "sha256": "3a658608808a3554d874739375e70c5427d5dd8ccde6ff0e5dca005584612604",
+      "sha256_matches_manifest": true,
+      "size_matches_manifest": true,
+      "png_signature_valid": true,
+      "width": 80,
+      "height": 45,
+      "aspect_ratio_preserved": true
+    },
+    {
+      "relative_path": "output/frames/frame_001.png",
+      "size_bytes": 3091,
+      "sha256": "ea6a51a8631775fd35fede87bc7439beed825d9b005fecf1a7828a2fdddcb16d",
+      "sha256_matches_manifest": true,
+      "size_matches_manifest": true,
+      "png_signature_valid": true,
+      "width": 80,
+      "height": 45,
+      "aspect_ratio_preserved": true
+    }
+  ],
+  "output_counts": {
+    "artifact_collections": 1,
+    "png_files": 2
+  },
+  "input_unchanged": true,
+  "duration_seconds": {
+    "run_and_resume_cli": 26.62,
+    "submission_to_collected_state": 40.266
+  },
+  "validation": {
+    "passed": true,
+    "requested_frame_times_ms": [
+      0,
+      500
+    ],
+    "timestamp_verification": "request intent preserved; timestamp identity not independently decoded from source",
+    "only_this_state_uploads_released": true
+  },
+  "final_bundle_recheck": {
+    "command": "resume",
+    "new_model_requests": 0,
+    "exit_code": 0,
+    "duration_seconds": 0.098,
+    "status": "succeeded",
+    "code": null,
+    "terminal": true,
+    "inputs_released": true,
+    "uploads_released": true,
+    "agent_task_id": "agent_5690b0205a9244b5a42b4c06da0c83ba",
+    "job_id": "job_c75012c3637b41fa981c06259af689df",
+    "identity_checks": {
+      "same_request_id": true,
+      "same_agent_task_id": true,
+      "same_job_id": true,
+      "same_uploaded_file_ids": true
+    },
+    "bundle_manifests": {
+      "ffmpeg-agent-connect": {
+        "manifest_sha256": "cb06cda3a6b12ceee4ec55eaafc0044005e278649e8ab3caf1110ad88adc8794",
+        "files_verified": true,
+        "file_count": 11
+      },
+      "ffmpeg-agent-media": {
+        "manifest_sha256": "cb06cda3a6b12ceee4ec55eaafc0044005e278649e8ab3caf1110ad88adc8794",
+        "files_verified": true,
+        "file_count": 11
+      }
+    },
+    "files": [
+      {
+        "relative_path": "output/frames/frame_000.png",
+        "reused": true,
+        "sha256": "3a658608808a3554d874739375e70c5427d5dd8ccde6ff0e5dca005584612604",
+        "sha256_matches_download_metadata": true,
+        "sha256_matches_original_evidence": true,
+        "size_matches_download_metadata": true,
+        "png_signature_valid": true,
+        "width": 80,
+        "height": 45
+      },
+      {
+        "relative_path": "output/frames/frame_001.png",
+        "reused": true,
+        "sha256": "ea6a51a8631775fd35fede87bc7439beed825d9b005fecf1a7828a2fdddcb16d",
+        "sha256_matches_download_metadata": true,
+        "sha256_matches_original_evidence": true,
+        "size_matches_download_metadata": true,
+        "png_signature_valid": true,
+        "width": 80,
+        "height": 45
+      }
+    ],
+    "passed": true
+  }
+}

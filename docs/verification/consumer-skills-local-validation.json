@@ -1,0 +1,74 @@
+{
+  "date": "2026-10-16",
+  "phase": "P23",
+  "issue": "CFK-813",
+  "python": "3.14.7",
+  "platform": "macOS arm64",
+  "checks": [
+    {
+      "command": "uv run ruff check .",
+      "exit_code": 0
+    },
+    {
+      "command": "uv run pyright",
+      "exit_code": 0,
+      "errors": 0,
+      "warnings": 0
+    },
+    {
+      "command": "uv run pytest",
+      "exit_code": 0,
+      "passed": 762,
+      "elapsed_seconds": 83.02
+    },
+    {
+      "command": "python scripts/sync-consumer-skills.py --check",
+      "exit_code": 0
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0
+    }
+  ],
+  "consumer_tests": {
+    "transport": 36,
+    "workflow": 16,
+    "packaging": 8,
+    "total": 60
+  },
+  "skill_validation": {
+    "quick_validate": 2,
+    "markdown_files": 8,
+    "cli_examples_parsed": 37,
+    "local_links_and_shell_syntax": "passed",
+    "final_changed_markdown_local_links": 138,
+    "json_and_python_syntax": "passed"
+  },
+  "security": {
+    "changed_secret_matches": 0,
+    "consumer_secret_matches_outside_private_env": 0,
+    "model_key_in_consumer_files": 0,
+    "consumer_env_mode": "0600",
+    "fixtures_unchanged": true
+  },
+  "runtime": {
+    "image_id": "sha256:754a08caaf17fe025c8f925606683f475d28df15695498ee8868806589ef3b1b",
+    "healthy": true,
+    "current_flags": {
+      "MEDIA_LLM_ENABLED": "true",
+      "MEDIA_A2A_ENABLED": "true"
+    },
+    "container_log_window": "4h",
+    "container_log_lines_scanned": 899,
+    "secret_matches": 0
+  },
+  "final_skill_manifest_sha256": "cb06cda3a6b12ceee4ec55eaafc0044005e278649e8ab3caf1110ad88adc8794",
+  "source_changes": "consumer packages, skills, documentation and validation; no service implementation or deployment configuration changes",
+  "remaining_conditions": [
+    "real two-host networking",
+    "Windows runtime",
+    "HTTPS/proxy deployment",
+    "host-specific native MCP connector setup",
+    "capacity and container crash verification not rerun in this consumer-only change"
+  ]
+}
