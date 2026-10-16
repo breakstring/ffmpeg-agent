@@ -1,0 +1,303 @@
+{
+  "status": "passed",
+  "recorded_at": "2026-10-16T06:59:21.593158+00:00",
+  "scope": "规划日志与可选思考开关版本的 GHCR 发布、双架构 CI 和匿名拉取验证",
+  "source_revision": "a6673371a1d9a9ea3236611805cebde7b57e13e0",
+  "workflow": {
+    "id": 38863296691,
+    "url": "https://github.com/breakstring/ffmpeg-agent/actions/runs/38863296691",
+    "event": "push",
+    "branch": "main",
+    "status": "completed",
+    "conclusion": "success",
+    "created_at": "2026-10-16T06:48:23Z",
+    "completed_at": "2026-10-16T06:57:21Z",
+    "jobs": [
+      {
+        "id": 116850302788,
+        "name": "原生验证 (amd64)",
+        "conclusion": "success"
+      },
+      {
+        "id": 116850303123,
+        "name": "原生验证 (arm64)",
+        "conclusion": "success"
+      },
+      {
+        "id": 116852520203,
+        "name": "发布已验证的多架构镜像",
+        "conclusion": "success"
+      }
+    ]
+  },
+  "image": {
+    "repository": "ghcr.io/breakstring/ffmpeg-agent",
+    "index_digest": "sha256:9f32b68ad94742850a57004d3543f0c7baeb57c33715b0def99f9a264015f3fa",
+    "immutable_reference": "ghcr.io/breakstring/ffmpeg-agent@sha256:9f32b68ad94742850a57004d3543f0c7baeb57c33715b0def99f9a264015f3fa",
+    "tags": {
+      "main": "sha256:9f32b68ad94742850a57004d3543f0c7baeb57c33715b0def99f9a264015f3fa",
+      "latest": "sha256:9f32b68ad94742850a57004d3543f0c7baeb57c33715b0def99f9a264015f3fa",
+      "sha-a6673371a1d9a9ea3236611805cebde7b57e13e0": "sha256:9f32b68ad94742850a57004d3543f0c7baeb57c33715b0def99f9a264015f3fa"
+    },
+    "platforms": {
+      "amd64": {
+        "os": "linux",
+        "architecture": "amd64",
+        "manifest_digest": "sha256:2616f06cc743fb5e18272d84ecba33178aaedc6f48201205014626a916ea6f15",
+        "config_digest": "sha256:9044c20da4dc736e58bf120fb7dfa9e42a363c541cdd7aed394f87f51f02dc16",
+        "ci_test_image_id": "sha256:9044c20da4dc736e58bf120fb7dfa9e42a363c541cdd7aed394f87f51f02dc16",
+        "matches_ci_tested_image": true
+      },
+      "arm64": {
+        "os": "linux",
+        "architecture": "arm64",
+        "manifest_digest": "sha256:db3047681054c9adf62f65584e4079f6ea4a224daba7ff524399f937acc0f284",
+        "config_digest": "sha256:d92127527b8868bf5de0148436248f9dca11182c6fc5eba83e0f10cfed9011fe",
+        "ci_test_image_id": "sha256:d92127527b8868bf5de0148436248f9dca11182c6fc5eba83e0f10cfed9011fe",
+        "matches_ci_tested_image": true
+      }
+    }
+  },
+  "verification_contract": {
+    "pytest_checks": [
+      "non_root",
+      "readonly_root",
+      "locked_test_dependencies",
+      "full_pytest_suite",
+      "consumer_skill_packages",
+      "source_from_tested_image"
+    ],
+    "media_checks": [
+      "nonroot_readonly_exact_image_without_shared_input",
+      "verified_raw_http_uploads",
+      "remote_mcp_discovery_and_http_capability_parity",
+      "six_media_tools_over_real_tcp_http_and_mcp",
+      "job_and_artifact_effective_parameter_parity",
+      "mcp_idempotency_replay",
+      "all_files_and_collection_members_head_range_size_sha_download",
+      "downloaded_media_decoded_and_properties_verified",
+      "all_six_tools_accept_omitted_mcp_params_and_empty_http_params",
+      "adaptive_defaults_preserve_video_timestamps_audio_properties_and_image_size",
+      "project_fixtures_remain_unchanged",
+      "only_owned_resources_removed"
+    ],
+    "operations": [
+      "audio.transcode.v1",
+      "image.resize.v1",
+      "media.probe.v1",
+      "video.extract_audio.v1",
+      "video.extract_frames.v1",
+      "video.transcode.v1"
+    ],
+    "parameter_modes": [
+      "explicit",
+      "adaptive_defaults"
+    ],
+    "transports": [
+      "http",
+      "mcp"
+    ],
+    "service_token_modes": [
+      true,
+      false
+    ],
+    "engine_series": "7.1",
+    "engine": {
+      "ffmpeg": "7.1.5-0+deb13u1",
+      "ffprobe": "7.1.5-0+deb13u1",
+      "image_version": "a6673371a1d9a9ea3236611805cebde7b57e13e0",
+      "implementation_sha256": "e0b35473b7fae63fbe23c249a91e9250b2db206b26aa23a7d3a035c84c96468f"
+    },
+    "fixtures": {
+      "video": {
+        "size_bytes": 62056,
+        "sha256": "3befa1884aaeeedc2fd99eb1e8701dc1ca8dd294f9a6e01da8e042fb853602f9"
+      },
+      "audio": {
+        "size_bytes": 129610,
+        "sha256": "b66e6a869d49a0660598a798890c075357a0610fe6a6cf15ea4c3be2dbf5e86b"
+      },
+      "image": {
+        "size_bytes": 267778,
+        "sha256": "990b60e737edd31c4c3609181cf069d92f66c4d34e9fe588f2f37445b331b429"
+      }
+    },
+    "count_method": "逐个解析 cases[].results[]，以 job_id/artifact_id 去重，并累加 files[]；未用固定乘数替代结果计数。"
+  },
+  "platforms": [
+    {
+      "platform": "linux/amd64",
+      "ci_image_id": "sha256:9044c20da4dc736e58bf120fb7dfa9e42a363c541cdd7aed394f87f51f02dc16",
+      "pytest": {
+        "status": "passed",
+        "exit_code": 0,
+        "recorded_at": "2026-10-16T06:49:23.991877+00:00",
+        "passed": 843,
+        "pytest_seconds": 264.48,
+        "harness_elapsed_seconds": 269.264485789
+      },
+      "real_media": {
+        "status": "passed",
+        "created_at": "2026-10-16T06:53:54.810324+00:00",
+        "modes": [
+          {
+            "token_enabled": true,
+            "case_count": 12,
+            "unique_job_count": 24,
+            "unique_artifact_count": 24,
+            "downloaded_verified_file_count": 28,
+            "jobs_by_transport": {
+              "http": 12,
+              "mcp": 12
+            },
+            "files_by_transport": {
+              "http": 14,
+              "mcp": 14
+            },
+            "cleanup": {
+              "containers_remaining": 0,
+              "volumes_remaining": 0
+            }
+          },
+          {
+            "token_enabled": false,
+            "case_count": 12,
+            "unique_job_count": 24,
+            "unique_artifact_count": 24,
+            "downloaded_verified_file_count": 28,
+            "jobs_by_transport": {
+              "http": 12,
+              "mcp": 12
+            },
+            "files_by_transport": {
+              "http": 14,
+              "mcp": 14
+            },
+            "cleanup": {
+              "containers_remaining": 0,
+              "volumes_remaining": 0
+            }
+          }
+        ],
+        "unique_jobs": 48,
+        "unique_artifacts": 48,
+        "downloaded_verified_files": 56
+      },
+      "source_reports_sha256": {
+        "tests.json": "52b9cdd4eff69c0934e409b4263894bca49bba70d75f329e0118e796841d9d84",
+        "tests.log": "dc2885e5ece076d49125f85385e695c68f005ce30045b8c802b501f1aaf6b963",
+        "parameters.json": "34336989944ae0665318cc178364d8ec1d278ab45491da8c788a2e2a392bb963"
+      }
+    },
+    {
+      "platform": "linux/arm64",
+      "ci_image_id": "sha256:d92127527b8868bf5de0148436248f9dca11182c6fc5eba83e0f10cfed9011fe",
+      "pytest": {
+        "status": "passed",
+        "exit_code": 0,
+        "recorded_at": "2026-10-16T06:49:23.939304+00:00",
+        "passed": 843,
+        "pytest_seconds": 252.22,
+        "harness_elapsed_seconds": 256.84164151
+      },
+      "real_media": {
+        "status": "passed",
+        "created_at": "2026-10-16T06:53:42.345434+00:00",
+        "modes": [
+          {
+            "token_enabled": true,
+            "case_count": 12,
+            "unique_job_count": 24,
+            "unique_artifact_count": 24,
+            "downloaded_verified_file_count": 28,
+            "jobs_by_transport": {
+              "http": 12,
+              "mcp": 12
+            },
+            "files_by_transport": {
+              "http": 14,
+              "mcp": 14
+            },
+            "cleanup": {
+              "containers_remaining": 0,
+              "volumes_remaining": 0
+            }
+          },
+          {
+            "token_enabled": false,
+            "case_count": 12,
+            "unique_job_count": 24,
+            "unique_artifact_count": 24,
+            "downloaded_verified_file_count": 28,
+            "jobs_by_transport": {
+              "http": 12,
+              "mcp": 12
+            },
+            "files_by_transport": {
+              "http": 14,
+              "mcp": 14
+            },
+            "cleanup": {
+              "containers_remaining": 0,
+              "volumes_remaining": 0
+            }
+          }
+        ],
+        "unique_jobs": 48,
+        "unique_artifacts": 48,
+        "downloaded_verified_files": 56
+      },
+      "source_reports_sha256": {
+        "tests.json": "63ad959dbd099a5ccbd48b6dbc9aec452b88000cdd72bafcea39d0390ba28eee",
+        "tests.log": "443f844022a27a245bc46b515481136d93b629bcdd3296f52e22d088d14fb3bd",
+        "parameters.json": "ea64fc25ad3060ab1e916368a42ee58025b7db6247c9eb5caac216be0b9e1452"
+      }
+    }
+  ],
+  "anonymous_registry": {
+    "status": "passed",
+    "recorded_at": "2026-10-16T06:57:48.053950+00:00",
+    "all_three_tags_match_published_digest": true,
+    "both_platform_configs_match_ci_tested_images": true,
+    "arm64_pull": {
+      "anonymous_pull_exit_code": 0,
+      "docker_config_empty": true,
+      "docker_config_unchanged": true,
+      "docker_credentials_isolated": true,
+      "reference": "ghcr.io/breakstring/ffmpeg-agent@sha256:9f32b68ad94742850a57004d3543f0c7baeb57c33715b0def99f9a264015f3fa",
+      "platform": "linux/arm64",
+      "docker_image_inspect_id": "sha256:9f32b68ad94742850a57004d3543f0c7baeb57c33715b0def99f9a264015f3fa",
+      "docker_image_id_kind": "index_digest",
+      "registry_config_digest": "sha256:d92127527b8868bf5de0148436248f9dca11182c6fc5eba83e0f10cfed9011fe",
+      "matches_ci_tested_image": true,
+      "source_revision": "a6673371a1d9a9ea3236611805cebde7b57e13e0",
+      "media_image_version": "a6673371a1d9a9ea3236611805cebde7b57e13e0",
+      "elapsed_seconds": 4.313
+    },
+    "local_id_note": "本机 inspect.Id 为多架构 index digest；平台 config digest 单独与 CI image_id 比较。"
+  },
+  "totals": {
+    "pytest_passed_per_architecture": 843,
+    "pytest_architecture_executions": 1686,
+    "unique_real_media_jobs": 96,
+    "unique_artifacts": 96,
+    "downloaded_verified_files": 112
+  },
+  "source_reports_sha256": {
+    "workflow-run.json": "cde4bce2b94b516398b6f75dd792c5ae549c52832d19dfe85be9fdbd08104bac",
+    "published-manifest.json": "265247c59ddf23dcf4b8be6c08a38031ba7aafd7c084831ce0b171f7233eb3cb",
+    "registry-validation.json": "84fa8ab2e651e21a82d81be63d6adebf662bf3e3437d0cc9e38dbf91a2c1f852"
+  },
+  "limitations": [
+    "双架构分别在原生 GitHub runner 验证，不代替双实际业务宿主机的网络、卷权限和备份验收。",
+    "本轮 CI 真实媒体覆盖 HTTP/MCP；不将其扩张为真实模型规划、A2A 媒体端到端或 HTTPS/反向代理验收。",
+    "完整匿名拉取在本机 arm64 验证；amd64 匿名清单及 config digest 已核对，未在本机拉取其全部层。",
+    "本文件只记录发布与镜像身份；本地实例切换、配置数据保留和切换后测试另行记录。"
+  ],
+  "evidence_retention": {
+    "image_transfer_days": 1,
+    "ci_reports_days": 14,
+    "published_manifest_days": 90,
+    "note": "保留公开摘要与原始报告 SHA-256；Actions 原始完整报告仍受保留期限制。"
+  }
+}

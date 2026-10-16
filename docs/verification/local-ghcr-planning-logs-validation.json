@@ -1,0 +1,705 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "recorded_at": "2026-10-16T07:01:38.054808+00:00",
+  "scope": "将现有本地服务切换到本次 GHCR 精确镜像，保留配置和数据并执行真实媒体回归",
+  "release": {
+    "source_revision": "a6673371a1d9a9ea3236611805cebde7b57e13e0",
+    "image_reference": "ghcr.io/breakstring/ffmpeg-agent@sha256:9f32b68ad94742850a57004d3543f0c7baeb57c33715b0def99f9a264015f3fa",
+    "architecture": "arm64",
+    "ci_config_digest": "sha256:d92127527b8868bf5de0148436248f9dca11182c6fc5eba83e0f10cfed9011fe",
+    "local_image_inspect_id": "sha256:9f32b68ad94742850a57004d3543f0c7baeb57c33715b0def99f9a264015f3fa",
+    "local_image_id_kind": "index_digest",
+    "matches_ci_tested_image": true,
+    "workflow_url": "https://github.com/breakstring/ffmpeg-agent/actions/runs/38863296691"
+  },
+  "backup": {
+    "clean_stop": true,
+    "container_exit_code": 143,
+    "schema": 3,
+    "quick_check": "ok",
+    "foreign_key_errors": 0,
+    "active": {
+      "media_jobs": 0,
+      "planning_requests": 0,
+      "submitted_active_media": 0,
+      "running_attempts": 0,
+      "uploads": 0,
+      "active_sends": 0,
+      "publishing": 0
+    },
+    "row_counts": {
+      "jobs": 26,
+      "attempts": 26,
+      "artifacts": 32,
+      "steps": 34,
+      "refs": 0,
+      "leases": 0,
+      "downloads": 0,
+      "uploaded_files": 30,
+      "file_refs": 0,
+      "agent_requests": 12,
+      "meta": 1
+    },
+    "archives": {
+      "state": {
+        "bytes": 337920,
+        "sha256": "7059faca27d9a247552ab3ee7ecea07793e8261152a622ca6caf60c6f9ebaeb6",
+        "entries": 2,
+        "matches_source": true
+      },
+      "work": {
+        "bytes": 10240,
+        "sha256": "32d6f7136e0f591b7b829351ec0683ae1376cc06f76fd9c0f7eecf893da12088",
+        "entries": 1,
+        "matches_source": true
+      },
+      "shared_input": {
+        "bytes": 10240,
+        "sha256": "b82a84f796e5094785d264910ec9c9a324dde589722a6158c6f691b58900dd1e",
+        "entries": 0,
+        "matches_source": true
+      },
+      "shared_output": {
+        "bytes": 7403520,
+        "sha256": "eba772c03dc171b453d44eec6d89d825b1abe5547962442e6dd0fe7830256a83",
+        "entries": 103,
+        "matches_source": true
+      }
+    }
+  },
+  "switch": {
+    "previous_image_id": "sha256:8e3e3ebcbc4a8e78f1d650367b930ab5ad001a2fccc89744e80a5ed8a8ec4244",
+    "previous_source_revision": "ef3dbc6f8258cbfb537c391856f2ac92ee73c6c3",
+    "new_container_id": "7e2def751752eadbf16f44ab09f0dfb3d464173bb15a619b1edbd96353de3fb9",
+    "health": "healthy",
+    "changed_environment_keys": [
+      "MEDIA_IMAGE_VERSION"
+    ],
+    "same_mounts": true,
+    "same_port_mapping": true,
+    "same_security_settings": true,
+    "structural_config_unchanged": true,
+    "only_approved_environment_changes": true,
+    "env_mode": "0600",
+    "only_image_reference_changed": true,
+    "all_other_environment_bytes_unchanged": true,
+    "all_other_config_and_credentials_unchanged": true,
+    "log_level": "INFO",
+    "model_content_logging": false,
+    "thinking_enabled": false,
+    "planning_timeout_seconds": 300
+  },
+  "history_before_new_tests": {
+    "passed": true,
+    "schema": 3,
+    "quick_check": "ok",
+    "foreign_key_errors": 0,
+    "tables": {
+      "jobs": {
+        "before_count": 26,
+        "after_count": 26,
+        "missing_rows": 0,
+        "new_rows": 0,
+        "changed_rows": 0
+      },
+      "attempts": {
+        "before_count": 26,
+        "after_count": 26,
+        "missing_rows": 0,
+        "new_rows": 0,
+        "changed_rows": 0
+      },
+      "artifacts": {
+        "before_count": 32,
+        "after_count": 32,
+        "missing_rows": 0,
+        "new_rows": 0,
+        "changed_rows": 0
+      },
+      "steps": {
+        "before_count": 34,
+        "after_count": 34,
+        "missing_rows": 0,
+        "new_rows": 0,
+        "changed_rows": 0
+      },
+      "refs": {
+        "before_count": 0,
+        "after_count": 0,
+        "missing_rows": 0,
+        "new_rows": 0,
+        "changed_rows": 0
+      },
+      "leases": {
+        "before_count": 0,
+        "after_count": 0,
+        "missing_rows": 0,
+        "new_rows": 0,
+        "changed_rows": 0
+      },
+      "downloads": {
+        "before_count": 0,
+        "after_count": 0,
+        "missing_rows": 0,
+        "new_rows": 0,
+        "changed_rows": 0
+      },
+      "uploaded_files": {
+        "before_count": 30,
+        "after_count": 30,
+        "missing_rows": 0,
+        "new_rows": 0,
+        "changed_rows": 0
+      },
+      "file_refs": {
+        "before_count": 0,
+        "after_count": 0,
+        "missing_rows": 0,
+        "new_rows": 0,
+        "changed_rows": 0
+      },
+      "agent_requests": {
+        "before_count": 12,
+        "after_count": 12,
+        "missing_rows": 0,
+        "new_rows": 0,
+        "changed_rows": 0
+      },
+      "meta": {
+        "before_count": 1,
+        "after_count": 1,
+        "missing_rows": 0,
+        "new_rows": 0,
+        "changed_rows": 0
+      }
+    },
+    "volumes": {
+      "work": {
+        "entries": 1,
+        "files": 0,
+        "all_contents_and_metadata_unchanged": true
+      },
+      "shared_input": {
+        "entries": 0,
+        "files": 0,
+        "all_contents_and_metadata_unchanged": true
+      },
+      "shared_output": {
+        "entries": 103,
+        "files": 71,
+        "all_contents_and_metadata_unchanged": true
+      }
+    },
+    "active": {
+      "media_jobs": 0,
+      "planning_requests": 0,
+      "submitted_active_media": 0,
+      "running_attempts": 0,
+      "uploads": 0,
+      "active_sends": 0,
+      "publishing": 0
+    },
+    "expected_runtime_metadata_change": true
+  },
+  "connection_checks": {
+    "ok": true,
+    "authentication": "bearer",
+    "checks": {
+      "live": {
+        "ok": true
+      },
+      "ready": {
+        "ok": true
+      },
+      "http": {
+        "ok": true,
+        "operations": [
+          "audio.transcode.v1",
+          "image.resize.v1",
+          "media.probe.v1",
+          "video.extract_audio.v1",
+          "video.extract_frames.v1",
+          "video.transcode.v1"
+        ]
+      },
+      "mcp": {
+        "ok": true,
+        "tools": [
+          "list_capabilities",
+          "submit_job",
+          "get_job",
+          "cancel_job",
+          "get_artifact",
+          "list_artifact_members",
+          "create_lease",
+          "renew_lease",
+          "release_lease",
+          "extend_artifact",
+          "release_artifact",
+          "get_uploaded_file",
+          "release_uploaded_file",
+          "probe_media",
+          "transcode_video",
+          "transcode_audio",
+          "extract_audio",
+          "extract_frames",
+          "resize_image",
+          "generate_media",
+          "get_agent_task",
+          "cancel_agent_task"
+        ]
+      },
+      "a2a": {
+        "ok": true,
+        "enabled": true
+      }
+    }
+  },
+  "http_image": {
+    "passed": true,
+    "job_id": "job_e3ff85f559624a1fa513b0ce42d092cc",
+    "artifact_id": "art_68f0e546e1fb4618b032c4da61b18660",
+    "format": "PNG",
+    "dimensions": [
+      80,
+      107
+    ],
+    "mode": "RGB",
+    "full_decode": true,
+    "size_bytes": 7962,
+    "sha256": "ecad0d6508fb8ab8e99ff6c0262b0efa7be6c01783ac9768c8753b50dbc625f0",
+    "matches_download_metadata": true,
+    "source_sha256": "990b60e737edd31c4c3609181cf069d92f66c4d34e9fe588f2f37445b331b429",
+    "operation": "image.resize.v1",
+    "transport": "http",
+    "params": {
+      "width": 80,
+      "format": "png"
+    },
+    "inputs_released": true,
+    "uploads_released": true,
+    "fixture": "tests/fixtures/image_jpeg_portrait_odd.jpg"
+  },
+  "native_mcp_natural_language": {
+    "fixture": "tests/fixtures/video_h264_640x360.mkv",
+    "source_size_bytes": 62056,
+    "source_sha256": "3befa1884aaeeedc2fd99eb1e8701dc1ca8dd294f9a6e01da8e042fb853602f9",
+    "same_intent_as_previous_thinking_off_validation": true,
+    "intent_summary": "H.264 MP4 宽320；保留源帧节奏、音频内容和采样率/声道；原始视频0/500ms提取宽160 PNG",
+    "tools": [
+      "list_capabilities",
+      "generate_media",
+      "get_agent_task",
+      "get_artifact",
+      "list_artifact_members"
+    ],
+    "file_transfer": "已安装媒体技能通过 HTTP 上传、下载与释放本次上传；规划提交及结果查询使用宿主原生 MCP",
+    "agent_task_id": "agent_7af82bfa92634f3082d95080ae13cf9d",
+    "created_at": "2026-10-16T06:59:35.533Z",
+    "planning_deadline_at": "2026-10-16T07:04:35.533Z",
+    "status": "succeeded",
+    "decision": "execute",
+    "job_id": "job_f87f9d5a3e51441ba71cfcd647373b91",
+    "job_created_at": "2026-10-16T06:59:42.292Z",
+    "job_status": "succeeded",
+    "execution_attempts": 1,
+    "inputs_released": true,
+    "uploads_released": true,
+    "operations": [
+      "video.transcode.v1",
+      "video.extract_frames.v1"
+    ],
+    "both_steps_use_original_source": true,
+    "timing": {
+      "acceptance_to_job_creation_seconds": 6.759,
+      "planning_outcome_saved_duration_ms": 6714.76,
+      "media_execution_ms": 1297.15,
+      "scope": "INFO 的规划耗时含模型、校验和持久化，不能当作单独模型请求耗时；本轮不打开 DEBUG 正文或改变模型配置。"
+    },
+    "downloaded_file_count": 3,
+    "downloaded_size_and_sha256_equal_previous_thinking_off_run": true,
+    "execution": {
+      "ffmpeg": "7.1.5-0+deb13u1",
+      "ffprobe": "7.1.5-0+deb13u1",
+      "pillow": "12.3.0",
+      "image_version": "a6673371a1d9a9ea3236611805cebde7b57e13e0",
+      "implementation_sha256": "e0b35473b7fae63fbe23c249a91e9250b2db206b26aa23a7d3a035c84c96468f"
+    }
+  },
+  "independent_media_validation": {
+    "schema_version": 1,
+    "checked_at_utc": "2026-10-16T07:00:18.267403+00:00",
+    "status": "passed",
+    "tools": {
+      "ffmpeg": "ffmpeg version 9.0.1 Copyright (c) 2000-2026 the FFmpeg developers",
+      "ffprobe": "ffprobe version 9.0.1 Copyright (c) 2007-2026 the FFmpeg developers",
+      "pillow": "12.3.0",
+      "python": "3.14.7"
+    },
+    "source": {
+      "fixture": "video_h264_640x360.mkv",
+      "sha256": "3befa1884aaeeedc2fd99eb1e8701dc1ca8dd294f9a6e01da8e042fb853602f9",
+      "expected_sha256_matches": true
+    },
+    "download_identity": [
+      {
+        "file": "results/extracted_frames/frame_000.png",
+        "size_bytes": 6939,
+        "sha256": "b3db64854dbe8f57d4b0cd95f341e2fd7477c007cb9079a4fd25cfebf78ad220",
+        "matches_download_summary": true,
+        "matches_native_mcp_metadata": true
+      },
+      {
+        "file": "results/extracted_frames/frame_001.png",
+        "size_bytes": 8123,
+        "sha256": "26d7235cb8496fc85979bf38c6e7da376b0cce209054f12356c91a8616f1b426",
+        "matches_download_summary": true,
+        "matches_native_mcp_metadata": true
+      },
+      {
+        "file": "results/transcoded_video",
+        "size_bytes": 30736,
+        "sha256": "6fefad925b8544a8d749a0b7c25a7a58d3562a8a0700c8c528b6b0e77ee37682",
+        "matches_download_summary": true,
+        "matches_native_mcp_metadata": true
+      }
+    ],
+    "video": {
+      "file": "results/transcoded_video",
+      "codec": "h264",
+      "width": 320,
+      "height": 180,
+      "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+      "full_decode_with_xerror": true,
+      "audio_stream_count": 1,
+      "audio_sample_rate": "44100",
+      "audio_channels": 1,
+      "source_audio_properties_preserved": true,
+      "pass": true
+    },
+    "timeline": {
+      "source_frame_count": 24,
+      "result_frame_count": 24,
+      "source_relative_pts_seconds": [
+        0.0,
+        0.042,
+        0.083,
+        0.125,
+        0.167,
+        0.208,
+        0.25,
+        0.292,
+        0.333,
+        0.375,
+        0.417,
+        0.458,
+        0.5,
+        0.542,
+        0.583,
+        0.625,
+        0.667,
+        0.708,
+        0.75,
+        0.792,
+        0.833,
+        0.875,
+        0.917,
+        0.958
+      ],
+      "result_relative_pts_seconds": [
+        0.0,
+        0.042,
+        0.083,
+        0.125,
+        0.167,
+        0.208,
+        0.25,
+        0.292,
+        0.333,
+        0.375,
+        0.417,
+        0.458,
+        0.5,
+        0.542,
+        0.583,
+        0.625,
+        0.667,
+        0.708,
+        0.75,
+        0.792,
+        0.833,
+        0.875,
+        0.917,
+        0.958
+      ],
+      "maximum_absolute_relative_pts_difference_seconds": 0.0,
+      "tolerance_seconds": 0.001,
+      "pass": true,
+      "scope": "按首帧归零逐帧比较 PTS；容器平均帧率字段和绝对音视频起点不作为保持保证"
+    },
+    "audio_content": {
+      "source_sample_count": 45056,
+      "result_sample_count": 46049,
+      "best_sample_alignment_shift": -1024,
+      "correlation": 0.9997968906507603,
+      "rms_ratio_result_to_source": 1.0004202157078503,
+      "overlap_ratio": 0.9777628178679233,
+      "thresholds": {
+        "min_correlation": 0.97,
+        "min_overlap_ratio": 0.9,
+        "rms_ratio_range": [
+          0.8,
+          1.2
+        ],
+        "max_alignment_samples": 2048
+      },
+      "pass": true,
+      "scope": "解码 PCM 对齐后比较内容；不证明绝对起始时间、AAC 字节或无损音频保持不变"
+    },
+    "extracted_images": [
+      {
+        "format": "PNG",
+        "dimensions": [
+          160,
+          90
+        ],
+        "full_png_decode": true,
+        "rgb_mean_absolute_error": 0.671087962962963,
+        "rgb_max_absolute_error": 3,
+        "thresholds": {
+          "max_mean_absolute_error": 2.0,
+          "max_pixel_channel_error": 20
+        },
+        "pass": true,
+        "file": "results/extracted_frames/frame_000.png",
+        "requested_time_ms": 0,
+        "native_actual_time_ms": 0,
+        "independently_selected_source_frame": 0,
+        "independently_selected_source_time_ms": 0.0,
+        "native_time_matches_source": true
+      },
+      {
+        "format": "PNG",
+        "dimensions": [
+          160,
+          90
+        ],
+        "full_png_decode": true,
+        "rgb_mean_absolute_error": 0.6796296296296296,
+        "rgb_max_absolute_error": 3,
+        "thresholds": {
+          "max_mean_absolute_error": 2.0,
+          "max_pixel_channel_error": 20
+        },
+        "pass": true,
+        "file": "results/extracted_frames/frame_001.png",
+        "requested_time_ms": 500,
+        "native_actual_time_ms": 500,
+        "independently_selected_source_frame": 12,
+        "independently_selected_source_time_ms": 500.0,
+        "native_time_matches_source": true
+      }
+    ],
+    "limitations": [
+      "仅验证本次短 H.264/AAC fixture 的已下载产物，不代表全部格式、长媒体或并发验收",
+      "PNG 由宿主 FFmpeg 9.0.1 解码并用 Pillow 12.3.0 LANCZOS 独立重建；服务 FFmpeg 为 7.1 系列，跨版本像素比较采用明示 RGB 误差阈值",
+      "PCM 对齐验证用于音频内容保持，不证明绝对 A/V 起点或压缩字节保持；周期测试音存在对齐歧义",
+      "独立脚本不访问服务、模型、凭据或私有状态；模型规划及任务终态由主代理原生 MCP 证据记录"
+    ]
+  },
+  "logs": {
+    "level": "INFO",
+    "known_credential_matches": 0,
+    "known_credential_check_includes_json_escaped_variants": true,
+    "model_content_event_count": 0,
+    "matched_events": 8,
+    "events": [
+      {
+        "event": "planning_claimed",
+        "timestamp": 1792133975.569,
+        "level": "INFO",
+        "status": "planning",
+        "queue_ms": 35.05,
+        "remaining_ms": 299964.9
+      },
+      {
+        "event": "planning_outcome_saved",
+        "timestamp": 1792133982.283,
+        "level": "INFO",
+        "decision": "execute",
+        "duration_ms": 6714.76
+      },
+      {
+        "event": "planning_claimed",
+        "timestamp": 1792133982.291,
+        "level": "INFO",
+        "status": "submitting",
+        "remaining_ms": 293242.8
+      },
+      {
+        "event": "planning_media_accepted",
+        "timestamp": 1792133982.303,
+        "level": "INFO",
+        "job_id": "job_f87f9d5a3e51441ba71cfcd647373b91",
+        "duration_ms": 11.83
+      },
+      {
+        "event": "job_started",
+        "timestamp": 1792133982.317,
+        "level": "INFO",
+        "job_id": "job_f87f9d5a3e51441ba71cfcd647373b91",
+        "queue_ms": 24.26
+      },
+      {
+        "event": "step_stopped",
+        "timestamp": 1792133982.676,
+        "level": "INFO",
+        "job_id": "job_f87f9d5a3e51441ba71cfcd647373b91",
+        "code": null,
+        "status": "succeeded",
+        "duration_ms": 349.51
+      },
+      {
+        "event": "step_stopped",
+        "timestamp": 1792133983.607,
+        "level": "INFO",
+        "job_id": "job_f87f9d5a3e51441ba71cfcd647373b91",
+        "code": null,
+        "status": "succeeded",
+        "duration_ms": 931.38
+      },
+      {
+        "event": "job_stopped",
+        "timestamp": 1792133983.614,
+        "level": "INFO",
+        "job_id": "job_f87f9d5a3e51441ba71cfcd647373b91",
+        "status": "succeeded",
+        "code": null,
+        "duration_ms": 1297.15
+      }
+    ]
+  },
+  "final_service": {
+    "passed": true,
+    "container_id": "7e2def751752eadbf16f44ab09f0dfb3d464173bb15a619b1edbd96353de3fb9",
+    "image_id": "sha256:9f32b68ad94742850a57004d3543f0c7baeb57c33715b0def99f9a264015f3fa",
+    "image_reference": "ghcr.io/breakstring/ffmpeg-agent@sha256:9f32b68ad94742850a57004d3543f0c7baeb57c33715b0def99f9a264015f3fa",
+    "source_revision": "a6673371a1d9a9ea3236611805cebde7b57e13e0",
+    "matches_verified_release": true,
+    "healthy": true,
+    "restart_count": 0,
+    "oom_killed": false,
+    "database_quick_check": "ok",
+    "foreign_key_errors": 0,
+    "active": {
+      "media_jobs": 0,
+      "planning_requests": 0,
+      "submitted_active_media": 0,
+      "running_attempts": 0,
+      "uploads": 0,
+      "active_sends": 0,
+      "publishing": 0
+    },
+    "historic_tables": {
+      "jobs": {
+        "historical_rows_unchanged": 26,
+        "new_rows": 2
+      },
+      "attempts": {
+        "historical_rows_unchanged": 26,
+        "new_rows": 2
+      },
+      "artifacts": {
+        "historical_rows_unchanged": 32,
+        "new_rows": 3
+      },
+      "steps": {
+        "historical_rows_unchanged": 34,
+        "new_rows": 3
+      },
+      "refs": {
+        "historical_rows_unchanged": 0,
+        "new_rows": 0
+      },
+      "leases": {
+        "historical_rows_unchanged": 0,
+        "new_rows": 0
+      },
+      "downloads": {
+        "historical_rows_unchanged": 0,
+        "new_rows": 0
+      },
+      "uploaded_files": {
+        "historical_rows_unchanged": 30,
+        "new_rows": 2
+      },
+      "file_refs": {
+        "historical_rows_unchanged": 0,
+        "new_rows": 0
+      },
+      "agent_requests": {
+        "historical_rows_unchanged": 12,
+        "new_rows": 1
+      },
+      "meta": {
+        "historical_rows_unchanged": 0,
+        "new_rows": 0
+      }
+    },
+    "historic_files": {
+      "work": {
+        "historical_entries_unchanged": 1,
+        "new_entries": 0
+      },
+      "shared_input": {
+        "historical_entries_unchanged": 0,
+        "new_entries": 0
+      },
+      "shared_output": {
+        "historical_entries_unchanged": 103,
+        "new_entries": 10
+      }
+    },
+    "only_env_image_changed": true,
+    "other_environment_bytes_unchanged": true,
+    "other_config_and_credentials_unchanged": true,
+    "changed_container_environment_keys": [
+      "MEDIA_IMAGE_VERSION"
+    ],
+    "log_level": "INFO",
+    "model_content_logging": false,
+    "thinking_enabled": false,
+    "local_validation": {
+      "natural_language": {
+        "ok": true,
+        "inputs_released": true,
+        "uploads_released": true
+      },
+      "http_image": {
+        "ok": true,
+        "inputs_released": true,
+        "uploads_released": true
+      }
+    }
+  },
+  "source_evidence_sha256": {
+    "backup-verified/backup-metadata.json": "8ad5bab7820f89d13cfea4caa2372a4e5166a2661653565c74f757fca33c839d",
+    "preservation-validation.json": "e0deebe506a47cd570deef82adbbdce9be29ad0171abed8a8776a3199bc6b279",
+    "connection-check.json": "486e3fafcb3ce32fdafff7488d228a12f4da906f33cb45aa14cbd8efebd38020",
+    "image-summary.json": "ee97ce2c6c046d69d844b8523cfba028b9a99e9e9e033cf262b1738093e0a31c",
+    "image-validation.json": "5cf3e26bd0ba1813fe6fc2e8d8765fc61b51d0261117c0cd24b3641c2df69cb1",
+    "upload-summary.json": "bc22556cc87a1cc7ccb481357b561f4edb117c7e1746633dc7c80c5192de574a",
+    "native-evidence.json": "85eda378e0dbc79cc704faf9989502c3fa153ddcef10398f890e4a190fda3257",
+    "collect-summary.json": "fc23987856cc2f142cb88228940d5aac48ee020562326a27bd3390cf21a50ec9",
+    "independent-validation.json": "3e0e5c9abebf8c670aad859d655e7d72682733f484fbc6e8e1a36537fccbd8e0",
+    "planning-log-summary.json": "6506e67a3413885997795280a2b13a732891ab7e9aae59bb6f536f4492d381e8",
+    "final-service-validation.json": "71479b14cf8e0edfc236c95f3b7c359957ce17f628a6f50f12b43b0ee416725a"
+  },
+  "limitations": [
+    "本轮本地新增2项真实媒体任务，未扩展为全格式、长媒体、并发或双实际业务宿主机验收。",
+    "A2A仅验证接入和发现，未再次执行A2A媒体端到端任务；未验证HTTPS/反向代理。",
+    "保持INFO和正文关闭，因此本轮没有单独模型请求耗时或实际请求正文证据；不由规划总耗时推断模型调用次数。",
+    "四卷备份逐项与停止后的源数据核对，但未执行恢复演练；旧证据与既有待验项保留。"
+  ]
+}
