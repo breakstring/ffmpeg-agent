@@ -1,0 +1,126 @@
+{
+  "date": "2026-10-16",
+  "passed": true,
+  "installation": {
+    "installed_skills": [
+      "ffmpeg-agent-connect",
+      "ffmpeg-agent-media"
+    ],
+    "mcp_server": "ffmpeg_agent",
+    "transport": "streamable_http",
+    "authentication": "private_file_header_helper",
+    "python": "Python 3.12.13",
+    "config_mode": "0600",
+    "consumer_env_mode": "0600",
+    "private_directory_mode": "0700",
+    "unrelated_config_preserved": true,
+    "model_key_copied": false,
+    "skill_manifest_sha256": "cb06cda3a6b12ceee4ec55eaafc0044005e278649e8ab3caf1110ad88adc8794"
+  },
+  "skills_discovered": [
+    {
+      "name": "ffmpeg-agent-connect",
+      "enabled": true
+    },
+    {
+      "name": "ffmpeg-agent-media",
+      "enabled": true
+    }
+  ],
+  "native_host": {
+    "app_server_version": "0.162.1",
+    "cli_version": "0.163.0",
+    "server": "ffmpeg_agent",
+    "runtime_status": "connected",
+    "tool_count": 22,
+    "actual_tool_namespace": "mcp__ffmpeg_agent",
+    "methods_called": [
+      "list_capabilities",
+      "submit_job",
+      "get_job",
+      "get_artifact",
+      "list_artifact_members"
+    ]
+  },
+  "file_transfer": "installed skill HTTP upload/collect; media submit and query through native Codex MCP tools",
+  "fixture": {
+    "name": "video_h264_640x360.mkv",
+    "sha256": "3befa1884aaeeedc2fd99eb1e8701dc1ca8dd294f9a6e01da8e042fb853602f9",
+    "unchanged": true
+  },
+  "job_id": "job_6a789ab9ce314eed840a728b5c64c435",
+  "job_status": "succeeded",
+  "inputs_released": true,
+  "owned_uploads_released": true,
+  "verified_files": [
+    {
+      "output": "frames",
+      "relative_path": "results/frames/frame_000.png",
+      "size_bytes": 2673,
+      "sha256": "3a658608808a3554d874739375e70c5427d5dd8ccde6ff0e5dca005584612604"
+    },
+    {
+      "output": "frames",
+      "relative_path": "results/frames/frame_001.png",
+      "size_bytes": 3091,
+      "sha256": "ea6a51a8631775fd35fede87bc7439beed825d9b005fecf1a7828a2fdddcb16d"
+    },
+    {
+      "output": "report",
+      "relative_path": "results/report",
+      "size_bytes": 734,
+      "sha256": "42f1dc61646764d97fdbd72471886b2828b5bf130feb3ff4083c35ec08200abc"
+    },
+    {
+      "output": "video",
+      "relative_path": "results/video",
+      "size_bytes": 30736,
+      "sha256": "6fefad925b8544a8d749a0b7c25a7a58d3562a8a0700c8c528b6b0e77ee37682"
+    }
+  ],
+  "media": {
+    "video": {
+      "codec": "h264",
+      "width": 320,
+      "height": 180,
+      "format": "mov,mp4,m4a,3gp,3g2,mj2"
+    },
+    "frames": {
+      "format": "png",
+      "count": 2,
+      "width": 80,
+      "height": 45,
+      "png_decoded": true,
+      "requested_time_ms": [
+        0,
+        500
+      ],
+      "reported_actual_time_ms": [
+        0,
+        500
+      ]
+    },
+    "probe_report_parsed": true
+  },
+  "security": {
+    "private_config_fields": [
+      "MEDIA_PUBLIC_BASE_URL",
+      "MEDIA_SERVICE_TOKEN"
+    ],
+    "known_secret_matches_in_state": 0,
+    "token_in_global_config": false,
+    "model_key_copied": false
+  },
+  "scope_limits": [
+    "same-host Codex native MCP; not cross-host, Windows or HTTPS/proxy validation",
+    "frame times verified against native service metadata; source timeline not independently decoded in this run"
+  ],
+  "service": {
+    "image_id": "sha256:754a08caaf17fe025c8f925606683f475d28df15695498ee8868806589ef3b1b",
+    "healthy": true,
+    "model_enabled": true,
+    "a2a_enabled": true,
+    "log_scan_minutes": 20,
+    "known_secret_matches": 0
+  }
+}

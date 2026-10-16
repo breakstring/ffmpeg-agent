@@ -308,3 +308,13 @@ sha256:680953c259022ca9d1ad9e703021e67a1ad431eab04be6189da0a0e6f663a0c4
 真实验收发现并修复 MCP 响应解析错误：`structuredContent.error` 是任务领域字段，`null` 或任务失败都不能当作 MCP 工具调用失败；现在仅以协议 `isError` 判定，补充两项回归。原有接受请求通过同一状态/幂等键恢复，未重复模型规划。验收脚本也修正了探测结果的 `codec` 字段断言及基础视频实际含音轨的假设。最终报告中的恢复耗时是当次 CLI 收集耗时，不是模型规划延迟。
 
 原生宿主 MCP 的配置和发现遵循宿主文档；本次验证了独立 MCP 客户端及上传/独立提交/收集组合，没有把它表述为所有宿主连接器兼容。A2A 前向验证只统计消费者观察到的唯一任务 ID，未查询服务端全库任务数，也未独立解码源视频核对帧时间点。实际双宿主机、Windows、HTTPS/代理部署、容量和新容器强停未在本轮验证，既有待办与历史证据保留。本轮仅本地提交，不 push、merge、tag 或部署。
+
+## 2026-10-16：本机 Codex 安装与原生 MCP 补验（P23 / CFK-813）
+
+按用户追加授权，将两个完整消费者技能安装到本机 Codex 用户技能目录，逐文件与已提交包核对一致。Codex `skills/list` 实际发现两技能且均为 enabled；持久 Python 3.12.13 可运行客户端。新增 `ffmpeg_agent` Streamable HTTP 配置，使用官方 `http_headers_helper` 从权限为 `0600` 的私有消费者文件读取服务 Token，全局配置不含该 Token；消费者不持有模型 Key。原有配置保留并已私有备份，未重启 Codex 或媒体服务。
+
+运行中的 Codex App Server 0.162.1 重载后，当前线程连接状态为 `connected`，发现 **22 个工具**。本轮实际调用会话的 **`mcp__ffmpeg_agent` 原生工具**：`list_capabilities`、`submit_job`、`get_job`、`get_artifact` 和 `list_artifact_members`；辅助客户端仅负责 HTTP 上传和下载收集。
+
+自有 `video_h264_640x360.mkv` 上传后，原生 MCP 提交一个三步骤任务，实际到达 `succeeded` 且 `inputs_released=true`。下载 H.264 MP4 **320×180**、0/500 ms 的两张 PNG **80×45** 和 JSON 探测报告，共四个文件；独立大小/SHA-256、ffprobe 属性、PNG 完整解码及报告解析通过。仅 release 本次上传，fixture 与本地源副本摘要未变。详见[原生 MCP 验收报告](../verification/codex-native-mcp-validation.json)。
+
+本次补齐本机 Codex 的安装发现、原生 MCP 与文件传输闭环；不扩展为所有宿主、真实双宿主机、Windows 或 HTTPS/代理兼容保证。帧时间按服务原生元数据核对，未在本轮独立解码源时间线。没有修改服务实现或技能运行代码，沿用前轮 762 项回归证据；只验证本轮安装和实际闭环，并本地提交新增报告。
