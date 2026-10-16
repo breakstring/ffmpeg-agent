@@ -122,6 +122,43 @@ async def test_planner_uses_structured_output_without_tools_or_private_bindings(
         assert secret not in serialized
 
 
+@pytest.mark.parametrize("timeout_seconds", [180, 300])
+@pytest.mark.parametrize("injected", [False, True])
+async def test_planner_applies_configured_timeout_to_actual_provider_request(
+        settings, monkeypatch, timeout_seconds, injected):
+    observed_timeouts = []
+
+    async def respond(request):
+        observed_timeouts.append(request.extensions["timeout"])
+        return response(json.dumps(executable()))
+
+    async with httpx2.AsyncClient(transport=httpx2.MockTransport(respond)) as transport:
+        configured = model_settings(settings).model_copy(update={
+            "planning_timeout_seconds": timeout_seconds,
+        })
+        client = None
+        if injected:
+            client = AsyncOpenAI(
+                api_key="isolated-model-api-key", timeout=60, http_client=transport,
+            )
+        else:
+            monkeypatch.setattr(
+                planning, "AsyncOpenAI",
+                lambda **options: AsyncOpenAI(**options, http_client=transport),
+            )
+        planner = PydanticPlanner(configured, client=client)
+        try:
+            assert (await planner.plan(media_request(), {})).decision == "execute"
+            assert observed_timeouts == [{
+                phase: timeout_seconds for phase in ("connect", "read", "write", "pool")
+            }]
+        finally:
+            await planner.close()
+            if client is not None:
+                assert not transport.is_closed
+                await client.close()
+
+
 async def test_planner_only_sends_names_for_all_input_kinds(settings):
     request = AgentRequest.model_validate({
         "intent": "处理这些媒体",

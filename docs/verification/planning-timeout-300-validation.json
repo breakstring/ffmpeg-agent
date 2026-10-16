@@ -1,0 +1,881 @@
+{
+  "date": "2026-10-16",
+  "issue": "CFK-814",
+  "result": "passed",
+  "scope": "同一自然语言组合请求、同一源 fixture，经本机 Codex 原生 MCP 规划及执行，使用已安装消费者技能进行 HTTP 上传与结果下载。",
+  "diagnosis": {
+    "confirmed": "原请求在接受后 60 秒触发 PLANNING_TIMEOUT，plan 与 job_id 均为空；超时发生在媒体任务建立前。",
+    "planning_budget_scope": "规划排队、模型请求、最多一次受控输出纠错、计划校验和媒体任务提交共享规划总预算。",
+    "client_timeout_mapping": "AsyncOpenAI 新建客户端与注入客户端均从 planning_timeout_seconds 派生 connect/read/write/pool 超时，max_retries=0；没有额外写死的 60 秒客户端上限。",
+    "media_budget_scope": "媒体任务被接受时建立独立 task_timeout_seconds 期限，覆盖媒体排队、执行和产物发布；已有媒体 job 不受之后规划期限到期影响。",
+    "unresolved": "原失败未记录独立模型耗时和供应商排队明细，因此不能确定具体慢阶段或归因供应商故障。",
+    "implementation_references": [
+      "src/media_service/agent_tasks.py",
+      "src/media_service/planning.py",
+      "src/media_service/state.py",
+      "src/media_service/service.py"
+    ]
+  },
+  "configuration": {
+    "planning": {
+      "location": ".env",
+      "key": "MEDIA_PLANNING_TIMEOUT_SECONDS",
+      "before_seconds": 60,
+      "default_and_current_seconds": 300,
+      "allowed_range": "0 < seconds <= 300"
+    },
+    "media": {
+      "location": "MEDIA_CONFIG_FILE 指定的结构 JSON",
+      "key": "task_timeout_seconds",
+      "default_and_current_seconds": 3600,
+      "changed": false
+    },
+    "consumer_wait": {
+      "option": "--wait-seconds",
+      "scope": "仅本次客户端等待，超时不会取消服务端任务；保留状态后 resume 继续"
+    },
+    "existing_env_upgrade": "生成器保留已有显式值；本次按授权仅将本机该字段 60 改为 300，其他配置与凭据不变，重建并重新创建本地服务后由原生 MCP 读回。"
+  },
+  "before": {
+    "report": "docs/verification/codex-native-mcp-natural-language-validation.json",
+    "report_sha256": "6c6c032b1bea016121123948e1a35d29dba4b20b08eb7d73bb5f3786eb7818ce",
+    "historical_report_unchanged": true,
+    "service_image_id": "sha256:754a08caaf17fe025c8f925606683f475d28df15695498ee8868806589ef3b1b",
+    "combined_request": {
+      "intent": "请将 source 视频转为 H.264 编码的 MP4，宽度设为 320 像素，高度保持原比例，保留原有帧率和音轨；另外从原始 source 视频的 0 秒和 0.5 秒各提取一张 PNG，图片宽度设为 160 像素，高度保持原比例。分别返回转码视频和两张截图，不需要其他输出。",
+      "agent_task_id": "agent_7f86730e122d4834b1e5444c3778f572",
+      "status": "failed",
+      "error_code": "PLANNING_TIMEOUT",
+      "created_at": "2026-10-16T03:12:04.367Z",
+      "planning_deadline_at": "2026-10-16T03:13:04.367Z",
+      "plan": null,
+      "job_id": null,
+      "owned_upload_released": true,
+      "same_request_retried": false
+    }
+  },
+  "source": {
+    "path": "tests/fixtures/video_h264_640x360.mkv",
+    "size_bytes": 62056,
+    "sha256": "3befa1884aaeeedc2fd99eb1e8701dc1ca8dd294f9a6e01da8e042fb853602f9",
+    "same_fixture_as_before": true,
+    "before_and_after_unchanged": true
+  },
+  "after": {
+    "service_image_id": "sha256:c23c8b4c22d32bd564be488045d31dffe35f94032d80f9d14a08d686cba6d085",
+    "service_health": "healthy",
+    "engine": {
+      "ffmpeg": "7.1.5-0+deb13u1",
+      "ffprobe": "7.1.5-0+deb13u1",
+      "pillow": "12.3.0",
+      "image_version": "local",
+      "contract_sha256": "cea602fd6f880ef0a4103b77a1c6752316e729259147b5323be77fa97be981c2",
+      "presets_sha256": "3075a9273018409fe3a523a84d845bfa4683dc4a266be868b8904b4fc950dc13",
+      "available_encoders": [
+        "aac",
+        "flac",
+        "libmp3lame",
+        "libopus",
+        "libsvtav1",
+        "libvpx-vp9",
+        "libx264",
+        "libx265",
+        "pcm_f32le",
+        "pcm_s16le",
+        "pcm_s24le"
+      ],
+      "available_muxers": [
+        "flac",
+        "ipod",
+        "matroska",
+        "mp3",
+        "mp4",
+        "ogg",
+        "wav",
+        "webm"
+      ],
+      "implementation_sha256": "e0b35473b7fae63fbe23c249a91e9250b2db206b26aa23a7d3a035c84c96468f"
+    },
+    "protocol": {
+      "planning_and_queries": "会话 mcp__ffmpeg_agent 原生工具",
+      "native_tools_used": [
+        "list_capabilities",
+        "generate_media",
+        "get_agent_task",
+        "get_job",
+        "get_artifact",
+        "list_artifact_members"
+      ],
+      "file_transfer": "已安装 ffmpeg-agent-media 技能客户端，HTTP 上传与下载收集",
+      "new_generate_media_calls": 1
+    },
+    "agent_capability_readback": {
+      "enabled": true,
+      "planning_timeout_seconds": 300
+    },
+    "intent": "请将 source 视频转为 H.264 编码的 MP4，宽度设为 320 像素，高度保持原比例，保留原有帧率和音轨；另外从原始 source 视频的 0 秒和 0.5 秒各提取一张 PNG，图片宽度设为 160 像素，高度保持原比例。分别返回转码视频和两张截图，不需要其他输出。",
+    "intent_identical_to_before": true,
+    "agent_task_id": "agent_d95ad79838a1409cae4399ffb86f4b39",
+    "agent_status": "succeeded",
+    "decision": "execute",
+    "observed_agent_statuses": [
+      "queued",
+      "planning",
+      "succeeded"
+    ],
+    "accepted_at": "2026-10-16T03:24:31.108Z",
+    "planning_deadline_at": "2026-10-16T03:29:31.108Z",
+    "validated_plan": {
+      "steps": [
+        {
+          "id": "transcode_video",
+          "operation": "video.transcode.v1",
+          "inputs": {
+            "video": {
+              "source": "source"
+            }
+          },
+          "params": {
+            "preset": null,
+            "container": "mp4",
+            "codec": "h264",
+            "video_stream": 0,
+            "resize": {
+              "width": 320,
+              "height": null,
+              "fit": "contain",
+              "allow_upscale": false,
+              "background": "#000000",
+              "crop_x": 0.5,
+              "crop_y": 0.5
+            },
+            "frame_rate": {
+              "mode": "source",
+              "value": null
+            },
+            "rate_control": {
+              "mode": "crf",
+              "value": 23
+            },
+            "speed": "medium",
+            "pixel_format": "yuv420p",
+            "audio": {
+              "mode": "encode",
+              "audio_stream": 0,
+              "codec": "aac",
+              "sample_rate": "auto",
+              "channels": "auto",
+              "channel_layout": null,
+              "sample_format": null,
+              "rate_control": {
+                "mode": "auto"
+              },
+              "compression_level": null
+            },
+            "range": {
+              "start_ms": 0,
+              "end_ms": null
+            }
+          }
+        },
+        {
+          "id": "extract_frames",
+          "operation": "video.extract_frames.v1",
+          "inputs": {
+            "video": {
+              "source": "source"
+            }
+          },
+          "params": {
+            "video_stream": 0,
+            "sampling": {
+              "mode": "timestamps",
+              "timestamps_ms": [
+                0,
+                500
+              ]
+            },
+            "frame_selection": "next",
+            "image": {
+              "width": 160,
+              "height": null,
+              "fit": "contain",
+              "allow_upscale": false,
+              "background": "#ffffff",
+              "crop_x": 0.5,
+              "crop_y": 0.5,
+              "resampling": "lanczos",
+              "format": "png",
+              "quality": null,
+              "compression_level": 6,
+              "jpeg_subsampling": null,
+              "progressive": null,
+              "lossless": null,
+              "method": null
+            }
+          }
+        }
+      ],
+      "outputs": {
+        "frames": {
+          "step": "extract_frames",
+          "output": "frames"
+        },
+        "transcoded_video": {
+          "step": "transcode_video",
+          "output": "video"
+        }
+      }
+    },
+    "job_id": "job_4288d0e952ee405bbf5dd5d6a6b2be8f",
+    "job_status": "succeeded",
+    "job_created_at": "2026-10-16T03:25:27.594Z",
+    "media_deadline_at": "2026-10-16T04:25:27.594Z",
+    "execution_attempts": 1,
+    "inputs_released": true,
+    "owned_upload_released": true,
+    "last_artifact_published_at": "2026-10-16T03:25:28.922Z",
+    "accepted_to_job_created_seconds": 56.486,
+    "job_created_to_last_artifact_published_seconds": 1.328,
+    "timing_note": "服务时间戳区间；前段包含排队、模型规划、校验和提交，不能当作独立模型耗时。本次 56.486 秒小于旧 60 秒上限，证明扩大预算后的闭环与配置生效，不证明本次成功必然需要超过 60 秒。",
+    "artifacts": {
+      "transcoded_video": {
+        "artifact_id": "art_d8cefcd3359a44cfbb6ae0a3ca1aca1a",
+        "job_id": "job_4288d0e952ee405bbf5dd5d6a6b2be8f",
+        "kind": "file",
+        "state": "ready",
+        "media": {
+          "content_type": "video/mp4",
+          "duration_ms": 1044,
+          "effective_params": {
+            "audio": {
+              "audio_stream": 0,
+              "channel_layout": null,
+              "channels": "auto",
+              "codec": "aac",
+              "compression_level": null,
+              "mode": "encode",
+              "rate_control": {
+                "mode": "auto"
+              },
+              "sample_format": null,
+              "sample_rate": "auto"
+            },
+            "codec": "h264",
+            "container": "mp4",
+            "frame_rate": {
+              "mode": "source",
+              "value": null
+            },
+            "pixel_format": "yuv420p",
+            "preset": null,
+            "range": {
+              "end_ms": null,
+              "start_ms": 0
+            },
+            "rate_control": {
+              "mode": "crf",
+              "value": 23
+            },
+            "resize": {
+              "allow_upscale": false,
+              "background": "#000000",
+              "crop_x": 0.5,
+              "crop_y": 0.5,
+              "fit": "contain",
+              "height": null,
+              "width": 320
+            },
+            "resolved": {
+              "audio": {
+                "channels": 1,
+                "codec": "aac",
+                "rate_control": {
+                  "bitrate_bps": 64000,
+                  "mode": "bitrate"
+                },
+                "sample_rate": 44100
+              },
+              "height": 180,
+              "width": 320
+            },
+            "speed": "medium",
+            "video_stream": 0
+          },
+          "format": "mov,mp4,m4a,3gp,3g2,mj2",
+          "preset": null,
+          "size_bytes": 30736,
+          "streams": [
+            {
+              "attached_pic": false,
+              "bits_per_raw_sample": 8,
+              "channels": null,
+              "codec": "h264",
+              "color_primaries": null,
+              "color_space": null,
+              "color_transfer": null,
+              "duration_ms": 999,
+              "frame_rate": "8000/333",
+              "height": 180,
+              "index": 0,
+              "pixel_format": "yuv420p",
+              "rotation_degrees": 0,
+              "sample_aspect_ratio": "1:1",
+              "sample_rate": null,
+              "type": "video",
+              "width": 320
+            },
+            {
+              "attached_pic": false,
+              "bitrate_bps": 64259,
+              "bits_per_raw_sample": null,
+              "channel_layout": "mono",
+              "channels": 1,
+              "codec": "aac",
+              "color_primaries": null,
+              "color_space": null,
+              "color_transfer": null,
+              "duration_ms": 1044,
+              "frame_rate": "0/0",
+              "height": null,
+              "index": 1,
+              "pixel_format": null,
+              "rotation_degrees": 0,
+              "sample_aspect_ratio": null,
+              "sample_format": "fltp",
+              "sample_rate": 44100,
+              "type": "audio",
+              "width": null
+            }
+          ],
+          "type": "video"
+        },
+        "size_bytes": 30736,
+        "sha256": "6fefad925b8544a8d749a0b7c25a7a58d3562a8a0700c8c528b6b0e77ee37682",
+        "retain_until": "2026-10-17T03:25:27.944Z",
+        "published_at": "2026-10-16T03:25:27.944Z",
+        "member_count": 1,
+        "item_count": 0
+      },
+      "frames": {
+        "artifact_id": "art_3a376805d2da4a42b90ccd520960643f",
+        "job_id": "job_4288d0e952ee405bbf5dd5d6a6b2be8f",
+        "kind": "collection",
+        "state": "ready",
+        "media": {
+          "content_type": "image/png",
+          "effective_params": {
+            "frame_selection": "next",
+            "image": {
+              "allow_upscale": false,
+              "background": "#ffffff",
+              "compression_level": 6,
+              "crop_x": 0.5,
+              "crop_y": 0.5,
+              "fit": "contain",
+              "format": "png",
+              "height": null,
+              "jpeg_subsampling": null,
+              "lossless": null,
+              "method": null,
+              "progressive": null,
+              "quality": null,
+              "resampling": "lanczos",
+              "width": 160
+            },
+            "resolved": {
+              "requested_frame_count": 2,
+              "successful_frame_count": 2,
+              "video_stream_index": 0
+            },
+            "sampling": {
+              "mode": "timestamps",
+              "timestamps_ms": [
+                0,
+                500
+              ]
+            },
+            "video_stream": 0
+          },
+          "format": "png",
+          "frame_selection": "next",
+          "time_origin": "first_decodable_pts",
+          "type": "image"
+        },
+        "size_bytes": 15062,
+        "sha256": "78c3fd9eaebd8bee0f8ae66827a2eba992c79b67445858f08795122600c60278",
+        "retain_until": "2026-10-17T03:25:28.922Z",
+        "published_at": "2026-10-16T03:25:28.922Z",
+        "member_count": 2,
+        "item_count": 2
+      }
+    },
+    "members": {
+      "frames": {
+        "items": [
+          {
+            "index": 0,
+            "member_key": "frame_000.png",
+            "requested_time_ms": 0,
+            "actual_time_ms": 0,
+            "size_bytes": 6939,
+            "sha256": "b3db64854dbe8f57d4b0cd95f341e2fd7477c007cb9079a4fd25cfebf78ad220",
+            "error": null,
+            "media": {
+              "color_space": "srgb",
+              "content_type": "image/png",
+              "format": "png",
+              "height": 90,
+              "type": "image",
+              "width": 160
+            }
+          },
+          {
+            "index": 1,
+            "member_key": "frame_001.png",
+            "requested_time_ms": 500,
+            "actual_time_ms": 500,
+            "size_bytes": 8123,
+            "sha256": "26d7235cb8496fc85979bf38c6e7da376b0cce209054f12356c91a8616f1b426",
+            "error": null,
+            "media": {
+              "color_space": "srgb",
+              "content_type": "image/png",
+              "format": "png",
+              "height": 90,
+              "type": "image",
+              "width": 160
+            }
+          }
+        ],
+        "next_cursor": null
+      }
+    },
+    "downloaded_media_count": 3
+  },
+  "independent_validation": {
+    "schema_version": 1,
+    "verified_at_utc": "2026-10-16T03:28:19.327922+00:00",
+    "ok": true,
+    "checks": [
+      {
+        "name": "源文件身份未变",
+        "passed": true,
+        "size_bytes": 62056,
+        "sha256": "3befa1884aaeeedc2fd99eb1e8701dc1ca8dd294f9a6e01da8e042fb853602f9"
+      },
+      {
+        "name": "消费者确认成功并完成收集",
+        "passed": true,
+        "status": "succeeded",
+        "uploads_released": true
+      },
+      {
+        "name": "frames:有原生产物元数据",
+        "passed": true
+      },
+      {
+        "name": "frames:无部分失败",
+        "passed": true
+      },
+      {
+        "name": "frames/frame_000.png:下载身份一致",
+        "passed": true,
+        "size_bytes": 6939,
+        "sha256": "b3db64854dbe8f57d4b0cd95f341e2fd7477c007cb9079a4fd25cfebf78ad220"
+      },
+      {
+        "name": "frames/frame_001.png:下载身份一致",
+        "passed": true,
+        "size_bytes": 8123,
+        "sha256": "26d7235cb8496fc85979bf38c6e7da376b0cce209054f12356c91a8616f1b426"
+      },
+      {
+        "name": "frames:集合摘要与原生元数据一致",
+        "passed": true
+      },
+      {
+        "name": "frames/frame_000.png:清单身份一致",
+        "passed": true
+      },
+      {
+        "name": "frames/frame_000.png:原生成员身份一致",
+        "passed": true
+      },
+      {
+        "name": "frames/frame_000.png:原生抽帧时刻正确",
+        "passed": true,
+        "actual_time_ms": 0,
+        "requested_time_ms": 0
+      },
+      {
+        "name": "frames/frame_001.png:清单身份一致",
+        "passed": true
+      },
+      {
+        "name": "frames/frame_001.png:原生成员身份一致",
+        "passed": true
+      },
+      {
+        "name": "frames/frame_001.png:原生抽帧时刻正确",
+        "passed": true,
+        "actual_time_ms": 500,
+        "requested_time_ms": 500
+      },
+      {
+        "name": "transcoded_video:有原生产物元数据",
+        "passed": true
+      },
+      {
+        "name": "transcoded_video:无部分失败",
+        "passed": true
+      },
+      {
+        "name": "transcoded_video/transcoded_video:下载身份一致",
+        "passed": true,
+        "size_bytes": 30736,
+        "sha256": "6fefad925b8544a8d749a0b7c25a7a58d3562a8a0700c8c528b6b0e77ee37682"
+      },
+      {
+        "name": "transcoded_video:文件与原生元数据一致",
+        "passed": true
+      },
+      {
+        "name": "结果目录没有额外或缺失媒体文件",
+        "passed": true,
+        "excluded_consumer_metadata": [
+          "manifest.json",
+          ".ffmpeg-agent-owner"
+        ]
+      },
+      {
+        "name": "恰好交付三个媒体文件",
+        "passed": true,
+        "file_count": 3
+      },
+      {
+        "name": "frame_000.png:PNG完整解码且160x90",
+        "passed": true
+      },
+      {
+        "name": "frame_000.png:匹配源视频指定时刻",
+        "passed": true,
+        "requested_time_ms": 0,
+        "matched_time_ms": 0,
+        "mean_absolute_rgb_error": {
+          "0": 0.671087962962963,
+          "500": 10.52837962962963
+        },
+        "exactly_equal": false,
+        "max_channel_error": 3,
+        "comparison": "本机 FFmpeg 独立解码源帧 0/12，Pillow Lanczos 缩为160x90后逐像素比较"
+      },
+      {
+        "name": "frame_000.png:FFmpeg完整解码PNG",
+        "passed": true
+      },
+      {
+        "name": "frame_001.png:PNG完整解码且160x90",
+        "passed": true
+      },
+      {
+        "name": "frame_001.png:匹配源视频指定时刻",
+        "passed": true,
+        "requested_time_ms": 500,
+        "matched_time_ms": 500,
+        "mean_absolute_rgb_error": {
+          "0": 10.528773148148149,
+          "500": 0.6796296296296296
+        },
+        "exactly_equal": false,
+        "max_channel_error": 3,
+        "comparison": "本机 FFmpeg 独立解码源帧 0/12，Pillow Lanczos 缩为160x90后逐像素比较"
+      },
+      {
+        "name": "frame_001.png:FFmpeg完整解码PNG",
+        "passed": true
+      },
+      {
+        "name": "视频为MP4内H264且320x180",
+        "passed": true
+      },
+      {
+        "name": "视频标称帧率保持24fps",
+        "passed": true,
+        "source_r_frame_rate": "24/1",
+        "source_avg_frame_rate": "24/1",
+        "output_avg_frame_rate": "8000/333",
+        "output_r_frame_rate": "24/1",
+        "average_frame_rate_metadata_identical": false
+      },
+      {
+        "name": "视频保留帧数与呈现时间",
+        "passed": true,
+        "source_frame_count": 24,
+        "output_frame_count": 24,
+        "max_timestamp_delta_ms": 0.0,
+        "source_avg_frame_rate": "24/1",
+        "output_avg_frame_rate": "8000/333"
+      },
+      {
+        "name": "视频保留音轨数与音频属性",
+        "passed": true,
+        "source_audio": [
+          {
+            "codec_type": "audio",
+            "codec_name": "aac",
+            "avg_frame_rate": "0/0",
+            "r_frame_rate": "0/0",
+            "sample_rate": "44100",
+            "channels": 1,
+            "channel_layout": "mono"
+          }
+        ],
+        "output_audio": [
+          {
+            "codec_type": "audio",
+            "codec_name": "aac",
+            "avg_frame_rate": "0/0",
+            "r_frame_rate": "0/0",
+            "sample_rate": "44100",
+            "channels": 1,
+            "channel_layout": "mono"
+          }
+        ]
+      },
+      {
+        "name": "MP4全部视频和音频完整解码",
+        "passed": true
+      },
+      {
+        "name": "交付一个视频与两个指定时刻PNG",
+        "passed": true
+      },
+      {
+        "name": "验证结束源文件身份仍未变",
+        "passed": true
+      }
+    ],
+    "source": {
+      "name": "video_h264_640x360.mkv",
+      "streams": [
+        {
+          "codec_type": "video",
+          "codec_name": "h264",
+          "width": 640,
+          "height": 360,
+          "pix_fmt": "yuv420p",
+          "avg_frame_rate": "24/1",
+          "r_frame_rate": "24/1"
+        },
+        {
+          "codec_type": "audio",
+          "codec_name": "aac",
+          "avg_frame_rate": "0/0",
+          "r_frame_rate": "0/0",
+          "sample_rate": "44100",
+          "channels": 1,
+          "channel_layout": "mono"
+        }
+      ]
+    },
+    "outputs": [
+      {
+        "path": "results/frames/frame_000.png",
+        "size_bytes": 6939,
+        "sha256": "b3db64854dbe8f57d4b0cd95f341e2fd7477c007cb9079a4fd25cfebf78ad220",
+        "streams": [
+          {
+            "codec_type": "video",
+            "codec_name": "png",
+            "width": 160,
+            "height": 90,
+            "pix_fmt": "rgb24",
+            "avg_frame_rate": "25/1",
+            "r_frame_rate": "25/1"
+          }
+        ],
+        "matched_time_ms": 0
+      },
+      {
+        "path": "results/frames/frame_001.png",
+        "size_bytes": 8123,
+        "sha256": "26d7235cb8496fc85979bf38c6e7da376b0cce209054f12356c91a8616f1b426",
+        "streams": [
+          {
+            "codec_type": "video",
+            "codec_name": "png",
+            "width": 160,
+            "height": 90,
+            "pix_fmt": "rgb24",
+            "avg_frame_rate": "25/1",
+            "r_frame_rate": "25/1"
+          }
+        ],
+        "matched_time_ms": 500
+      },
+      {
+        "path": "results/transcoded_video",
+        "size_bytes": 30736,
+        "sha256": "6fefad925b8544a8d749a0b7c25a7a58d3562a8a0700c8c528b6b0e77ee37682",
+        "streams": [
+          {
+            "codec_type": "video",
+            "codec_name": "h264",
+            "width": 320,
+            "height": 180,
+            "pix_fmt": "yuv420p",
+            "avg_frame_rate": "8000/333",
+            "r_frame_rate": "24/1"
+          },
+          {
+            "codec_type": "audio",
+            "codec_name": "aac",
+            "avg_frame_rate": "0/0",
+            "r_frame_rate": "0/0",
+            "sample_rate": "44100",
+            "channels": 1,
+            "channel_layout": "mono"
+          }
+        ],
+        "audio_packet_payloads_identical": false,
+        "timing_observations": {
+          "relative_pts_identical": true,
+          "source_relative_pts_ms": [
+            0.0,
+            42.0,
+            83.0,
+            125.0,
+            167.0,
+            208.0,
+            250.0,
+            292.0,
+            333.0,
+            375.0,
+            417.0,
+            458.0,
+            500.0,
+            542.0,
+            583.0,
+            625.0,
+            667.0,
+            708.0,
+            750.0,
+            792.0,
+            833.0,
+            875.0,
+            917.0,
+            958.0
+          ],
+          "output_relative_pts_ms": [
+            0.0,
+            42.0,
+            83.0,
+            125.0,
+            167.0,
+            208.0,
+            250.0,
+            292.0,
+            333.0,
+            375.0,
+            417.0,
+            458.0,
+            500.0,
+            542.0,
+            583.0,
+            625.0,
+            667.0,
+            708.0,
+            750.0,
+            792.0,
+            833.0,
+            875.0,
+            917.0,
+            958.0
+          ],
+          "source_video_start_ms": 0.0,
+          "output_video_start_ms": 23.0,
+          "video_absolute_start_shift_ms": 23.0,
+          "all_video_frames_share_same_absolute_shift": true,
+          "source_video_time_base": "1/1000",
+          "output_video_time_base": "1/16000",
+          "source_video_tag_duration": "00:00:01.000000000",
+          "output_video_duration_ms": 999.0,
+          "output_average_rate_equals_frame_count_over_track_duration": true,
+          "source_container_duration_ms": 1023.0,
+          "output_container_duration_ms": 1043.991,
+          "container_duration_delta_ms": 20.991,
+          "source_audio_packet_count": 45,
+          "output_audio_packet_count": 46,
+          "source_audio_start_time": "0.000000",
+          "output_audio_start_time": "0.000000",
+          "source_audio_tag_duration": "00:00:01.023000000",
+          "output_audio_duration": "1.043991"
+        }
+      }
+    ],
+    "tools": {
+      "ffmpeg": "ffmpeg version 9.0.1 Copyright (c) 2000-2026 the FFmpeg developers",
+      "pillow": "12.3.0"
+    },
+    "limitations": [
+      "验证使用本机 FFmpeg 9.0.1 与 Pillow；服务端媒体引擎版本可能不同，像素比较允许微小解码或色彩转换差异。",
+      "本地 collection manifest 为消费者脱敏副本，不能用于重算服务端原始完整 manifest 的集合 SHA-256；仅核对集合摘要一致、成员摘要和总字节数。",
+      "视频标称帧率为24fps且全部24帧的相对PTS完全相同，但MP4平均帧率元数据为8000/333、视频track时长999ms；不能宣称avg_frame_rate字段保持24/1。",
+      "视频绝对起点统一后移23ms；AAC已重编码，packet由45个变为46个，容器总时长增加20.991ms。音轨属性兼容，但不能宣称原样复制或绝对时序完全不变。"
+    ]
+  },
+  "regression": {
+    "ruff": {
+      "command": "uv run --frozen ruff check .",
+      "exit_code": 0,
+      "result": "All checks passed!"
+    },
+    "pyright": {
+      "command": "uv run --frozen pyright",
+      "exit_code": 0,
+      "errors": 0,
+      "warnings": 0
+    },
+    "pytest": {
+      "command": "uv run --frozen pytest",
+      "exit_code": 0,
+      "passed": 772,
+      "duration_seconds": 83.85
+    },
+    "execution_note": "使用独立 UV cache。首轮受沙箱禁止绑定本机 loopback 端口影响，确认环境原因后在获准权限下重跑完整测试，全部通过。测试使用项目 fixture、临时目录和模拟模型。",
+    "added_coverage": [
+      "默认 300 秒与环境变量覆盖、范围校验",
+      "180/300 秒映射至新建及原 60 秒注入模型客户端的所有 HTTP 超时",
+      "媒体 job 已接受后查询与恢复不被规划期限到期终止",
+      "新生成 .env 使用 300 秒，保留已有显式 60 秒配置"
+    ]
+  },
+  "security": {
+    "service_image_id": "sha256:c23c8b4c22d32bd564be488045d31dffe35f94032d80f9d14a08d686cba6d085",
+    "service_health": "healthy",
+    "planning_timeout_seconds": 300.0,
+    "model_enabled": true,
+    "a2a_enabled": true,
+    "service_token_matches_existing_consumer": true,
+    "model_key_unchanged": true,
+    "only_env_field_changed": "MEDIA_PLANNING_TIMEOUT_SECONDS",
+    "other_env_values_unchanged": true,
+    "private_env_mode": "0o600",
+    "known_credential_matches_in_run_records": 0,
+    "known_credential_matches_in_container_logs": 0,
+    "log_streams_scanned": [
+      "stdout",
+      "stderr"
+    ],
+    "private_configs_or_run_data_tracked": false,
+    "source_sha256": "3befa1884aaeeedc2fd99eb1e8701dc1ca8dd294f9a6e01da8e042fb853602f9"
+  },
+  "limitations": [
+    "单次同宿主真实模型验收，不承诺未来模型延迟或复杂计划稳定性；300 秒预算仍有明确上限。",
+    "本次未等待真实请求超过 60 秒才完成；180/300 秒内部传递和两类期限隔离由有针对性的回归测试补充验证。",
+    "视频的 24 帧与相对 PTS 保持一致，音轨存在且属性兼容；平均帧率字段、绝对起点与 AAC 编码字节并非原样保留，详见 independent_validation.outputs 中的 timing_observations。",
+    "集合摘要与原生元数据一致；独立重算的是三个下载文件的 SHA-256，不声称重算了服务端原始集合清单摘要。",
+    "未新增双宿主机、Windows、HTTPS/代理、容量或容器强停验收；本轮 772 项全量回归在本机运行，真实媒体在记录的精确镜像运行。"
+  ]
+}

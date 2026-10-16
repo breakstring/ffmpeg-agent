@@ -16,7 +16,7 @@
 - 模型默认关闭；A2A 独立开关，启用 A2A 要求自然语言规划配置完整。关闭模型时原结构化 HTTP/MCP 功能保持可用。
 - 使用可配置 OpenAI-compatible base URL/model/API key；key 为 `SecretStr`。不硬编码供应商的 thinking 参数。只开启有界模型输出与显式请求预算，不启用 trace、原始 HTTP/body 日志或 SDK 隐式 HTTP 重试。
 - 根目录 `.env` 统一保存服务 Token、模型 Key/model/base URL、LLM/A2A 开关和规划预算；结构 JSON 不接受这些字段。服务默认读取当前目录 `.env`，可用 `MEDIA_ENV_FILE` 显式选文件；不自动读取 `.env.local`。Compose 从 `.env` 按白名单传入环境，进程 `MEDIA_*` 优先于文件；修改后必须重新创建容器。`.env` 权限为 0600，不能提交或复制进镜像，不公开展开的 Compose 配置、inspect 或凭据值。显式本地验收仍兼容 `llm_provider/llm_default_model/llm_api_key/llm_base_url`，解析不执行 shell、不展开变量。旧 JSON 通过 `deploy/generate-config.py` 原子迁移，先保存 `.env` 再移除重复字段；已有 `.env` 明确值优先。
-- 规划并发默认 2（1～4），全局未完成请求上限默认 32，规划总期限默认 60 秒，输出 token 上限默认 4096。模型网络 I/O 始终在数据库事务外，与媒体 Worker 槽分开计数。
+- 规划并发默认 2（1～4），全局未完成请求上限默认 32，规划总期限默认 300 秒（可配置范围 `(0, 300]`），输出 token 上限默认 4096。该期限从规划请求接受起计算，包含排队、模型调用、受控纠错和媒体任务提交；媒体任务接受后独立使用 `task_timeout_seconds`（默认 3600 秒），不沿用规划期限。模型网络 I/O 始终在数据库事务外，与媒体 Worker 槽分开计数。
 
 ## 公共请求与计划
 

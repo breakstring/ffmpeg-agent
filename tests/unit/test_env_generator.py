@@ -24,6 +24,7 @@ def test_new_environment_has_unique_token_and_repeat_is_idempotent(tmp_path, cap
     before_env, before_json = environment.read_bytes(), output.read_bytes()
     values = generator.env_support.read_env_file(environment)
     token = values["MEDIA_SERVICE_TOKEN"]
+    assert values["MEDIA_PLANNING_TIMEOUT_SECONDS"] == "300"
     assert len(token) >= 24 and not generator.is_placeholder(token)
     assert stat.S_IMODE(environment.stat().st_mode) == 0o600
     assert stat.S_IMODE(output.stat().st_mode) == 0o644
@@ -124,7 +125,7 @@ def test_legacy_environment_gains_defaults_without_overwriting_alias_or_custom_v
         "# preserve comment\nllm_api_key='isolated-existing-key'\n"
         "llm_default_model='existing-model'\nllm_base_url='https://existing.invalid/v1'\n"
         "MEDIA_LLM_ENABLED=true\nMEDIA_PUBLIC_BASE_URL=https://existing-service.invalid\n"
-        "MEDIA_PLANNING_CONCURRENCY=1\n"
+        "MEDIA_PLANNING_CONCURRENCY=1\nMEDIA_PLANNING_TIMEOUT_SECONDS=60\n"
     )
     output = tmp_path / "private/config.json"
     generator.generate(environment, output)
@@ -135,6 +136,7 @@ def test_legacy_environment_gains_defaults_without_overwriting_alias_or_custom_v
     assert values["MEDIA_LLM_ENABLED"] == "true"
     assert values["MEDIA_PUBLIC_BASE_URL"] == "https://existing-service.invalid"
     assert values["MEDIA_PLANNING_CONCURRENCY"] == "1"
+    assert values["MEDIA_PLANNING_TIMEOUT_SECONDS"] == "60"
     assert values["MEDIA_A2A_ENABLED"] == "false"
     assert values["MEDIA_PLANNING_MAX_OUTPUT_TOKENS"] == "4096"
     assert environment.read_text().startswith("# preserve comment\n")

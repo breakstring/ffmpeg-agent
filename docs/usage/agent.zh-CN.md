@@ -13,6 +13,7 @@ MEDIA_LLM_ENABLED=true
 MEDIA_LLM_API_KEY='<模型服务密钥>'
 MEDIA_LLM_MODEL='<模型标识>'
 MEDIA_LLM_BASE_URL=https://<供应商地址>/compatible-mode/v1
+MEDIA_PLANNING_TIMEOUT_SECONDS=300
 MEDIA_A2A_ENABLED=false
 ```
 
@@ -25,13 +26,17 @@ MEDIA_A2A_ENABLED=false
 | `MEDIA_LLM_OUTPUT_MODE` | `prompted` | `native` 要求供应商支持原生结构化输出 |
 | `MEDIA_PLANNING_CONCURRENCY` | `2` | 并发模型请求数，允许 1～4 |
 | `MEDIA_MAX_AGENT_REQUESTS` | `32` | 全局未完成规划请求上限 |
-| `MEDIA_PLANNING_TIMEOUT_SECONDS` | `60` | 包含受控纠错的规划总预算，单位秒 |
+| `MEDIA_PLANNING_TIMEOUT_SECONDS` | `300` | 规划总预算，单位秒，允许大于 0 且不超过 300 |
 | `MEDIA_PLANNING_MAX_OUTPUT_TOKENS` | `4096` | 模型输出 token 上限 |
 | `MEDIA_A2A_ENABLED` | `false` | 启用 A2A，要求规划配置完整 |
 
+规划预算包括规划排队、模型请求、受控纠错、计划校验和媒体任务提交。转码、抽帧等媒体执行使用独立的 `task_timeout_seconds`：它配置在结构 JSON 中，默认 `3600` 秒，从媒体任务被接受时开始计时，包含媒体排队、执行和产物发布。长视频处理需要调整这个媒体任务预算，不消耗模型规划预算。
+
+消费者技能 CLI 的 `--wait-seconds` 只限制本次客户端等待；等待超时会保留状态文件，不会取消服务端任务，可用同一状态文件执行 `resume` 继续查询和下载。用法见[消费者技能](consumer-skills.zh-CN.md)。
+
 Compose 会显式传递这些值。直接运行 Python 服务默认读取 `.env`，必要时可用 `MEDIA_ENV_FILE` 指定其他文件；进程环境变量优先于文件值。加载器只解析内容，不执行 shell 或插值。`MEDIA_CONFIG_FILE` 指定的结构 JSON 仍提供适合本机的目录、存储、来源规则与限额，但会拒绝服务 Token、规划参数和功能开关，避免与 `.env` 静默冲突。已有 JSON 中的这些字段由生成器迁移。`.env.local` 不会自动发现，也不会复制进镜像。
 
-修改 `.env` 后，重新创建服务容器以读取新配置：
+升级不会覆盖 `.env` 中已有的值；若仍为 `MEDIA_PLANNING_TIMEOUT_SECONDS=60`，请编辑为 `300`。修改 `.env` 或结构 JSON 后，先确认没有活动规划或媒体任务，再重新创建服务容器以读取新配置：
 
 ```sh
 docker compose up -d --force-recreate --wait media

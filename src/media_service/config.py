@@ -105,7 +105,7 @@ class Settings(BaseSettings):
     llm_output_mode: Literal["native", "prompted"] = "prompted"
     planning_concurrency: int = Field(default=2, ge=1, le=4)
     max_agent_requests: int = Field(default=32, ge=1, le=1024)
-    planning_timeout_seconds: float = Field(default=60, gt=0, le=300)
+    planning_timeout_seconds: float = Field(default=300, gt=0, le=300)
     planning_max_output_tokens: int = Field(default=4096, ge=256, le=16384)
     a2a_enabled: bool = False
     ffmpeg_path: str = "ffmpeg"

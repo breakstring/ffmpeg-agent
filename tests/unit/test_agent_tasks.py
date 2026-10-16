@@ -147,6 +147,31 @@ async def test_planning_timeout_and_error_do_not_expose_provider(settings):
         assert "private-provider" not in encode(await service.agent_tasks.get("test", identifier))
 
 
+async def test_accepted_media_job_outlives_planning_deadline_during_get_and_recovery(settings):
+    settings.planning_timeout_seconds = 180
+    settings.task_timeout_seconds = 7200
+    async with control(settings) as service:
+        identifier, _ = await service.agent_tasks.submit("test", "independent-timeouts", request())
+        row = await wait_state(service, identifier, "submitted")
+        job = await service.db.one("SELECT * FROM jobs WHERE id=?", (row["job_id"],))
+        assert job["deadline"] - job["created"] == 7200
+        assert job["deadline"] > row["deadline"]
+        before = await service.agent_tasks.get("test", identifier)
+        await service.db.run(lambda tx: tx.execute(
+            "UPDATE agent_requests SET deadline=? WHERE id=?", (time.time() - 1, identifier),
+        ))
+        for recovered in (False, True):
+            if recovered:
+                await service.agent_tasks.recover()
+            result = await service.agent_tasks.get("test", identifier)
+            assert result["status"] == "queued" and result["error"] is None
+            assert result["job_id"] == row["job_id"]
+            assert result["job"]["deadline_at"] == before["job"]["deadline_at"]
+            persisted = await service.db.one("SELECT * FROM jobs WHERE id=?", (row["job_id"],))
+            assert persisted["deadline"] == job["deadline"]
+            assert persisted["status"] == "queued" and persisted["error"] is None
+
+
 async def test_cancel_while_error_settlement_waits_clears_private_request(settings, monkeypatch):
     async with control(settings, Planner(fail=True), workers=False) as service:
         entered = asyncio.Event()

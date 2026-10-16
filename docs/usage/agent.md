@@ -13,6 +13,7 @@ MEDIA_LLM_ENABLED=true
 MEDIA_LLM_API_KEY='<provider-api-key>'
 MEDIA_LLM_MODEL='<model-id>'
 MEDIA_LLM_BASE_URL=https://<provider-host>/compatible-mode/v1
+MEDIA_PLANNING_TIMEOUT_SECONDS=300
 MEDIA_A2A_ENABLED=false
 ```
 
@@ -25,13 +26,17 @@ The provider must support the configured OpenAI-compatible API. The service does
 | `MEDIA_LLM_OUTPUT_MODE` | `prompted` | `native` requires provider support for native structured output |
 | `MEDIA_PLANNING_CONCURRENCY` | `2` | Concurrent model requests, from 1 to 4 |
 | `MEDIA_MAX_AGENT_REQUESTS` | `32` | Global limit for unfinished planning requests |
-| `MEDIA_PLANNING_TIMEOUT_SECONDS` | `60` | Total planning budget, including any controlled correction |
+| `MEDIA_PLANNING_TIMEOUT_SECONDS` | `300` | Total planning budget in seconds; greater than 0 and at most 300 |
 | `MEDIA_PLANNING_MAX_OUTPUT_TOKENS` | `4096` | Maximum model output tokens |
 | `MEDIA_A2A_ENABLED` | `false` | Enable the A2A endpoint; requires planning |
 
+The planning budget includes waiting for a planning slot, model requests, controlled correction, plan validation and media job submission. Transcoding, frame extraction and other media work use the independent `task_timeout_seconds` setting in the structural JSON. Its default is `3600` seconds, measured from media job acceptance and including media queueing, execution and artifact publication. Adjust this media job budget for long videos; media execution does not consume the model planning budget.
+
+The consumer skill CLI's `--wait-seconds` only limits how long that client invocation waits. On timeout it preserves the state file without canceling the server task; use `resume` with the same state file to continue querying and downloading. See [consumer skills](consumer-skills.md) for usage.
+
 Compose explicitly forwards these values to the service. A direct Python launch reads `.env` by default; `MEDIA_ENV_FILE` selects another file when needed. Process environment variables override file values. The loader reads values without shell execution or interpolation. The structural JSON selected by `MEDIA_CONFIG_FILE` still supplies directories, storage, source rules and limits appropriate to the machine; it rejects service Token and planning/feature settings so they cannot silently disagree with `.env`. Existing JSON settings are migrated by the generator. `.env.local` is not discovered automatically or copied into the image.
 
-After changing `.env`, recreate the service to load the new values:
+An upgrade does not replace existing `.env` values. If it still contains `MEDIA_PLANNING_TIMEOUT_SECONDS=60`, edit that value to `300`. After changing `.env` or the structural JSON, confirm there are no active planning requests or media jobs, then recreate the service to load the new values:
 
 ```sh
 docker compose up -d --force-recreate --wait media

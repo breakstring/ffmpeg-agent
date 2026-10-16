@@ -35,15 +35,19 @@ def test_default_dotenv_is_shared_source_and_host_port_is_not_app_port(configura
     assert result.port == 8080
     assert result.public_base_url == "https://media.invalid"
     assert result.llm_api_key is None and not result.llm_enabled and not result.a2a_enabled
+    assert result.planning_timeout_seconds == 300
 
 
-def test_model_flags_and_budgets_load_and_process_values_override(configuration, monkeypatch):
+@pytest.mark.parametrize("planning_timeout", [75, 180, 300])
+def test_model_flags_and_budgets_load_and_process_values_override(
+        configuration, monkeypatch, planning_timeout):
     _, path = configuration
     with path.open("a") as stream:
         stream.write("MEDIA_LLM_ENABLED=true\nMEDIA_A2A_ENABLED=true\n"
                      "MEDIA_LLM_API_KEY='isolated-model-key'\nMEDIA_LLM_MODEL=file-model\n"
                      "MEDIA_LLM_BASE_URL=https://model.invalid/v1\n"
-                     "MEDIA_PLANNING_TIMEOUT_SECONDS=75\nMEDIA_PLANNING_CONCURRENCY=3\n"
+                     f"MEDIA_PLANNING_TIMEOUT_SECONDS={planning_timeout}\n"
+                     "MEDIA_PLANNING_CONCURRENCY=3\n"
                      "MEDIA_PLANNING_MAX_OUTPUT_TOKENS=2048\nMEDIA_MAX_AGENT_REQUESTS=20\n")
     monkeypatch.setenv("MEDIA_LLM_MODEL", "process-model")
     monkeypatch.setenv("MEDIA_SERVICE_TOKEN", "null")
@@ -51,8 +55,17 @@ def test_model_flags_and_budgets_load_and_process_values_override(configuration,
     assert result.service_token is None and result.llm_enabled and result.a2a_enabled
     assert result.llm_api_key.get_secret_value() == "isolated-model-key"
     assert result.llm_model == "process-model"
-    assert result.planning_timeout_seconds == 75 and result.planning_concurrency == 3
+    assert result.planning_timeout_seconds == planning_timeout and result.planning_concurrency == 3
     assert result.planning_max_output_tokens == 2048 and result.max_agent_requests == 20
+
+
+@pytest.mark.parametrize("timeout", ["0", "-1", "300.01"])
+def test_out_of_range_planning_timeout_is_rejected(configuration, timeout):
+    _, path = configuration
+    with path.open("a") as stream:
+        stream.write(f"MEDIA_PLANNING_TIMEOUT_SECONDS={timeout}\n")
+    with pytest.raises(ValueError, match="invalid local environment configuration"):
+        Settings.from_file()
 
 
 @pytest.mark.parametrize("field", sorted(ENV_ONLY_FIELDS))
