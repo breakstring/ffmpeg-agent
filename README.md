@@ -19,16 +19,39 @@ Optional natural-language tasks turn a description into a validated media plan u
 
 ## Start with Docker Compose
 
-You need Docker with Compose and Python 3. Run these commands from the repository root. Existing configuration is kept, so you can run them again:
+You need Docker with Compose and Python 3. Run the commands below from the repository root.
+
+### First-time setup and startup
+
+Initialize the configuration before starting the service for the first time:
 
 ```sh
 python3 deploy/generate-config.py
+```
+
+The generator only prepares `.env` and `deploy/local/media-config.json`; it does not start the service. It fills missing settings, preserves your existing valid Token and configuration, and migrates legacy JSON credentials and feature switches into `.env`. The random service Token is stored only in `.env`, with mode `0600`. Keep `deploy/local` private (`0700`); the examples read `.env` automatically, so Tokens do not need to appear in commands.
+
+Review `.env` and adjust any settings you need (see below), then build the image and start the service:
+
+```sh
 docker compose up -d --build --wait
 ```
 
-Compose waits for the service to become ready. The generator creates or migrates `.env` and the structural JSON without replacing your current settings. The random service Token is stored only in `.env`, with mode `0600`. Keep `deploy/local` private (`0700`); the examples read `.env` automatically, so Tokens do not need to appear in commands.
+Compose waits for the service to become ready.
 
-Configure the service Bearer Token, model key, model settings and feature switches in `.env`. Docker Compose explicitly forwards these settings to the service. The structural JSON contains storage, source rules and service limits; it must not contain `service_token`, model credentials or feature switches. Existing installations should run the generator before upgrading to migrate those settings. A process environment value overrides the corresponding `.env` setting; an empty Token is rejected. Keep credentials out of Git, shell commands and logs. Do not run `source .env`, print resolved Compose configuration, or share container environment inspection output.
+### Routine startup
+
+After initialization, start the service with the existing configuration:
+
+```sh
+docker compose up -d --wait
+```
+
+You do not need to run `generate-config.py` again for routine startup. When source code, dependencies or the Dockerfile change, add `--build` to rebuild the image.
+
+### Configuration and legacy migration
+
+Configure the service Bearer Token, model key, model settings and feature switches in `.env`. Docker Compose explicitly forwards these settings to the service. The structural JSON contains storage, source rules and service limits; it must not contain `service_token`, model credentials or feature switches. If an existing installation still stores those settings in JSON, run the generator once before upgrading to migrate them. A process environment value overrides the corresponding `.env` setting; an empty Token is rejected. Keep credentials out of Git, shell commands and logs. Do not run `source .env`, print resolved Compose configuration, or share container environment inspection output.
 
 | `.env` variable | Default | Purpose |
 | --- | --- | --- |

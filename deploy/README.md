@@ -6,15 +6,38 @@
 
 ## 准备和运行
 
-在仓库根目录执行：
+以下命令均在仓库根目录执行。
+
+### 首次初始化并启动
+
+首次部署时，先准备配置：
 
 ```sh
 python3 deploy/generate-config.py
-docker compose up -d --build
+```
+
+脚本只生成或迁移 `.env` 和结构 JSON，不会启动容器。按需编辑 `.env` 后，再构建并启动服务：
+
+```sh
+docker compose up -d --build --wait
 docker compose ps
 curl --fail http://127.0.0.1:8080/health/live
 curl --fail http://127.0.0.1:8080/health/ready
 ```
+
+### 日常启动
+
+配置已初始化且镜像已构建时，直接运行以下命令，无需再次执行 `generate-config.py`：
+
+```sh
+docker compose up -d --wait
+```
+
+更新源码或 Dockerfile 后需要重新构建时，使用 `docker compose up -d --build --wait`。修改 `.env` 后按下文重新创建容器。
+
+### 配置与旧版本迁移
+
+旧部署仍将凭据或功能开关保存在 JSON 中时，需在升级启动前运行生成器进行迁移；已完成迁移的部署无需每次启动或升级都重新生成配置。
 
 生成器可重复执行：创建 `.env` 和结构 JSON，或将旧 JSON 中的服务 Token、模型 Key、规划参数与功能开关迁入 `.env`，移除重复字段。已有非空模型值和明确的 `false` 开关优先；模板中空的模型字段可从旧 JSON 迁入。旧 `callers.tokens` 按已选服务调用方迁移首个 Token，随后移除全部旧 Token。随机 Token 只在缺少配置或仍为已知占位符时生成，只写入权限为 `0600` 的 `.env`，不打印到终端。结构 JSON 所在目录保持 `0700`，文件为 `0644`，便于绑定后由容器 UID/GID `10001:10001` 读取。凭据与本地配置不得加入 Git、构建上下文或日志。
 

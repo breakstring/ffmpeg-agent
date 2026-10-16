@@ -19,16 +19,37 @@
 
 ## 使用 Docker Compose 启动
 
-需要 Docker、Compose 和 Python 3。在仓库根目录运行以下命令；已有配置会保留，可以重复执行：
+需要 Docker、Compose 和 Python 3。以下命令均在仓库根目录运行。
+
+### 首次初始化并启动
+
+首次部署时，先生成配置：
 
 ```sh
 python3 deploy/generate-config.py
+```
+
+脚本准备 `.env` 和 `deploy/local/media-config.json`，不会启动容器。随机服务 Token 只写入权限为 `0600` 的 `.env`；保持 `deploy/local` 目录权限为 `0700`。按需编辑 `.env` 中的服务地址、模型配置和功能开关，再构建并启动：
+
+```sh
 docker compose up -d --build --wait
 ```
 
-Compose 会等待服务就绪。生成器可重复执行，创建或迁移 `.env` 和结构 JSON，保留已有设置。随机服务 Token 只写入权限为 `0600` 的 `.env`。保持 `deploy/local` 目录权限为 `0700`；下面的客户端示例自动读取 `.env`，无需将 Token 复制到命令中。
+Compose 会等待服务就绪。下面的客户端示例自动读取 `.env`，无需将 Token 复制到命令中。
 
-服务级 Bearer Token、模型 Key、模型参数和功能开关统一在 `.env` 中配置，Docker Compose 会显式传给服务。结构 JSON 只保留存储、来源规则和服务限额等设置，不再接受 `service_token`、模型凭据或功能开关。已有部署升级前先运行生成器迁移这些字段。进程环境变量优先于 `.env`，空 Token 会被拒绝。凭据不能进入 Git、命令参数或日志；不要 `source .env`、打印展开后的 Compose 配置或分享容器环境检查输出。
+### 日常启动
+
+配置已初始化且镜像已构建时，直接运行：
+
+```sh
+docker compose up -d --wait
+```
+
+**日常启动无需再次运行 `generate-config.py`。** 更新源码或 Dockerfile 后需要重新构建时，使用 `docker compose up -d --build --wait`。修改 `.env` 后的生效命令见下文。
+
+### 配置与旧版本迁移
+
+服务级 Bearer Token、模型 Key、模型参数和功能开关统一在 `.env` 中配置，Docker Compose 会显式传给服务。结构 JSON 只保留存储、来源规则和服务限额等设置，不再接受 `service_token`、模型凭据或功能开关。只有旧部署仍将这些字段保存在 JSON 中时，才需要在升级启动前运行生成器进行迁移。生成器可重复执行，会保留已有有效 Token 和明确配置，补齐缺项并迁移旧字段；它不是每次启动的必需步骤。进程环境变量优先于 `.env`，空 Token 会被拒绝。凭据不能进入 Git、命令参数或日志；不要 `source .env`、打印展开后的 Compose 配置或分享容器环境检查输出。
 
 | `.env` 变量 | 默认值 | 用途 |
 | --- | --- | --- |
